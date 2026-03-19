@@ -20,7 +20,11 @@ MIN_MARKET_LIQUIDITY = 10_000
 MIN_SIGNALS_REQUIRED = 2
 
 # Exposure
-MAX_GROUP_EXPOSURE_PCT = 0.25   # 25% of bankroll per direction-bucket
+MAX_GROUP_EXPOSURE_PCT = 0.20   # 20% of bankroll per direction-bucket
+
+# Supported assets
+SUPPORTED_CRYPTO_ASSETS = ["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX"]
+DERIBIT_DVOL_ASSETS = ["BTC", "ETH", "SOL"]  # others use realized vol estimate
 
 # Paper mode (set PAPER=false in .env to go live)
 PAPER = os.getenv("PAPER", "true").lower() != "false"

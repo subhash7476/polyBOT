@@ -36,18 +36,20 @@ class RiskManager:
         self.open_positions: dict[str, Position] = {}
         self._lock = asyncio.Lock()
 
+    _CRYPTO_ASSETS = {"BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX"}
+
     @staticmethod
     def _contract_group_key(parsed: ParsedContract) -> str:
         """
-        v2.1 Fix 3: direction-bucketed group key.
-        "BTC above $85k" and "BTC above $90k" → both "btc_above" → shared exposure limit.
+        Direction-bucketed group key. All contracts for the same asset+direction
+        share an exposure bucket: "sol_above", "btc_below", etc.
         """
-        if parsed.asset == "BTC":
-            return f"btc_{parsed.direction or 'above'}"
-        if parsed.asset == "ETH":
-            return f"eth_{parsed.direction or 'above'}"
+        if parsed.asset in RiskManager._CRYPTO_ASSETS:
+            return f"{parsed.asset.lower()}_{parsed.direction or 'above'}"
         if parsed.category == "rates":
             return "macro_rates"
+        if parsed.category == "macro":
+            return "macro_econ"
         return "other"
 
     @property
@@ -67,6 +69,10 @@ class RiskManager:
         feeds: FeedState,
     ) -> tuple[bool, str]:
         async with self._lock:
+            # 0. Already in this position
+            if token_id in self.open_positions:
+                return False, "position already open"
+
             # 1. Daily loss hard stop
             if self.daily_pnl <= -self.max_daily_loss:
                 return False, "daily loss limit hit"

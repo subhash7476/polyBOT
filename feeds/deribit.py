@@ -14,6 +14,7 @@ _SUBSCRIBE_DVOL = {
     "params": {"channels": [
         "deribit_volatility_index.btc_usd",
         "deribit_volatility_index.eth_usd",
+        "deribit_volatility_index.sol_usd",
     ]},
 }
 _SUBSCRIBE_OPTIONS = {
@@ -22,52 +23,61 @@ _SUBSCRIBE_OPTIONS = {
 }
 
 
+_DVOL_CHANNEL_TO_ASSET = {
+    "deribit_volatility_index.btc_usd": "BTC",
+    "deribit_volatility_index.eth_usd": "ETH",
+    "deribit_volatility_index.sol_usd": "SOL",
+}
+
+
 def parse_dvol_message(msg: dict) -> Optional[dict]:
+    """
+    Parse Deribit DVOL subscription message.
+    Payload: {timestamp, index_name, volatility} — no index_price (confirmed live).
+    Returns {asset: symbol, dvol: value} or None if not a DVOL message.
+    """
     if msg.get("method") != "subscription":
         return None
     channel = msg.get("params", {}).get("channel", "")
     data = msg.get("params", {}).get("data", {})
-    if channel == "deribit_volatility_index.btc_usd":
-        return {"btc_dvol": data["volatility"], "btc_price": data["index_price"]}
-    if channel == "deribit_volatility_index.eth_usd":
-        return {"eth_dvol": data["volatility"], "eth_price": data["index_price"]}
-    return None
-
-
-def _compute_skew(calls: list, puts: list, target_delta: float = 0.25) -> float:
-    """25-delta put IV minus 25-delta call IV. Positive = downside bias."""
-    if not calls or not puts:
-        return 0.0
-    call_25 = min(calls, key=lambda x: abs(abs(x["delta"]) - target_delta))
-    put_25  = min(puts,  key=lambda x: abs(abs(x["delta"]) - target_delta))
-    return put_25["iv"] - call_25["iv"]
-
-
-def _compute_term_structure(instruments: list) -> float:
-    """Front/back vol ratio — placeholder until expiry parsing is wired."""
-    return 1.0
+    asset = _DVOL_CHANNEL_TO_ASSET.get(channel)
+    if asset is None:
+        return None
+    return {"asset": asset, "dvol": data["volatility"]}
 
 
 def parse_options_chain(instruments: list) -> dict:
-    """Parse markprice.options payload → skew + call/put counts."""
-    calls, puts = [], []
+    """
+    Parse markprice.options payload → vol skew.
+    Deribit sends: {timestamp, iv, instrument_name, mark_price} — no delta field.
+    Near-OTM filter: mark_price in [0.005, 0.08] BTC selects options near ATM
+    (deep OTM → mark≈0, deep ITM → mark>0.5).
+    Skew = median(put IV) - median(call IV) for those options. Positive = downside bias.
+    """
+    call_ivs, put_ivs = [], []
     for inst in instruments:
         name = inst.get("instrument_name", "")
         iv = inst.get("iv", 0)
-        delta = inst.get("delta", 0)
-        if not iv:
+        mark = inst.get("mark_price", 0)
+        if not iv or iv <= 0 or iv > 5:   # skip zero or wildly illiquid
+            continue
+        if not (0.005 <= mark <= 0.08):   # near-OTM filter
             continue
         if name.endswith("-C"):
-            calls.append({"iv": iv, "delta": delta, "name": name})
+            call_ivs.append(iv)
         elif name.endswith("-P"):
-            puts.append({"iv": iv, "delta": delta, "name": name})
+            put_ivs.append(iv)
 
-    return {
-        "skew": _compute_skew(calls, puts),
-        "term_ratio": _compute_term_structure(calls + puts),
-        "call_count": len(calls),
-        "put_count": len(puts),
-    }
+    if not call_ivs or not put_ivs:
+        return {"skew": 0.0, "call_count": len(call_ivs), "put_count": len(put_ivs)}
+
+    call_ivs.sort()
+    put_ivs.sort()
+    med_call = call_ivs[len(call_ivs) // 2]
+    med_put  = put_ivs[len(put_ivs) // 2]
+    skew = med_put - med_call
+
+    return {"skew": skew, "call_count": len(call_ivs), "put_count": len(put_ivs)}
 
 
 class DeribitFeed(BaseFeed):
@@ -89,12 +99,11 @@ class DeribitFeed(BaseFeed):
                 if "deribit_volatility_index" in channel:
                     update = parse_dvol_message(msg)
                     if update:
-                        await self._state.update_feeds(**update)
-                        self.log.debug(f"dvol update: {update}")
+                        await self._state.update_asset_feed(update["asset"], dvol=update["dvol"])
+                        self.log.debug(f"dvol {update['asset']}={update['dvol']:.1f}")
 
                 elif "markprice.options" in channel:
                     parsed = parse_options_chain(msg["params"].get("data", []))
-                    await self._state.update_feeds(
-                        btc_vol_skew=parsed["skew"],
-                        btc_term_ratio=parsed["term_ratio"],
-                    )
+                    if parsed["call_count"] and parsed["put_count"]:
+                        await self._state.update_asset_feed("BTC", vol_skew=parsed["skew"])
+                        self.log.debug(f"skew={parsed['skew']:.4f} calls={parsed['call_count']} puts={parsed['put_count']}")

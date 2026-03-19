@@ -14,11 +14,21 @@ from typing import Optional
 from config import FEDWATCH_POLL_INTERVAL
 from market.state import AppState
 from utils.logger import get_logger
+import os
 
 log = get_logger(__name__)
 
 _POLL_INTERVAL = 300   # 5 minutes
 _FALLBACK_CONFIDENCE = 0.3
+
+# FRED API — free with API key (https://fred.stlouisfed.org/docs/api/)
+_FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
+_FRED_SERIES = {
+    "consensus_cpi": "CPIAUCSL",        # CPI for All Urban Consumers (MoM %)
+    "consensus_unemployment": "UNRATE", # Unemployment Rate
+    "consensus_gdp": "GDP",             # Gross Domestic Product growth rate
+}
+_FRED_API_KEY = os.getenv("FRED_API_KEY", "")
 
 
 @dataclass
@@ -102,6 +112,7 @@ class MacroFeed:
             yield_10y=y10,       yield_10y_confidence=y10_conf,
             fed_may_cut_prob=fed, fed_confidence=fed_conf,
         )
+        await self._fetch_fred_consensus(client)
         # Store prev DXY for next trend computation
         self._cache["dxy_prev"] = CachedValue(
             value=dxy, fetched_at=datetime.now(timezone.utc)
@@ -112,6 +123,36 @@ class MacroFeed:
         r = await client.get(url, params={"interval": "1d", "range": "1d"})
         r.raise_for_status()
         return float(r.json()["chart"]["result"][0]["meta"]["regularMarketPrice"])
+
+    async def _fetch_fred_consensus(self, client: httpx.AsyncClient):
+        """
+        Fetch latest macro consensus forecasts from FRED API.
+        Gracefully skips if FRED_API_KEY is not set.
+        """
+        if not _FRED_API_KEY:
+            return
+        updates = {}
+        for field, series_id in _FRED_SERIES.items():
+            try:
+                r = await client.get(
+                    _FRED_BASE,
+                    params={
+                        "series_id": series_id,
+                        "api_key": _FRED_API_KEY,
+                        "file_type": "json",
+                        "limit": 1,
+                        "sort_order": "desc",
+                    },
+                )
+                r.raise_for_status()
+                obs = r.json().get("observations", [])
+                if obs and obs[0]["value"] != ".":
+                    updates[field] = float(obs[0]["value"])
+                    log.debug(f"FRED {series_id}={updates[field]}")
+            except Exception as e:
+                log.warning(f"FRED {series_id} fetch failed: {e}")
+        if updates:
+            await self._state.update_feeds(**updates)
 
     async def _fetch_fedwatch(self, client: httpx.AsyncClient) -> float:
         """

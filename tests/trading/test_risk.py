@@ -22,7 +22,9 @@ def rm():
 
 @pytest.fixture
 def feeds():
-    return FeedState(btc_dvol=60.0)
+    fs = FeedState()
+    fs.dvol["BTC"] = 60.0
+    return fs
 
 
 @pytest.mark.asyncio
@@ -74,7 +76,7 @@ async def test_different_group_allowed(rm, feeds):
 
 @pytest.mark.asyncio
 async def test_high_vol_throttles_large_position(rm, feeds):
-    feeds.btc_dvol = 85.0
+    feeds.dvol["BTC"] = 85.0
     ok, msg = await rm.can_trade("t1", make_parsed(), 80.0, feeds)  # >50% of max_pos=100
     assert ok is False
     assert "vol" in msg.lower() or "dvol" in msg.lower()
