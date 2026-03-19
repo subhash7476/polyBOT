@@ -154,73 +154,82 @@ class MacroFeed:
         if updates:
             await self._state.update_feeds(**updates)
 
+    async def _fetch_fred_csv(self, client: httpx.AsyncClient, series_id: str) -> str:
+        """
+        Fetch a single FRED CSV series.
+        FRED blocks httpx (TLS fingerprint); use curl subprocess as fallback.
+        """
+        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+        # Try httpx first
+        try:
+            r = await client.get(url, timeout=15.0)
+            r.raise_for_status()
+            if r.text.strip():
+                return r.text
+        except Exception:
+            pass
+        # Fallback: curl (always available on Windows via Git Bash / system curl)
+        import asyncio as _aio
+        proc = await _aio.create_subprocess_exec(
+            "curl", "-s", "--max-time", "15", url,
+            stdout=_aio.subprocess.PIPE, stderr=_aio.subprocess.DEVNULL,
+        )
+        stdout, _ = await _aio.wait_for(proc.communicate(), timeout=20.0)
+        return stdout.decode(errors="replace")
+
     async def _fetch_fedwatch(self, client: httpx.AsyncClient) -> float:
         """
         Compute next-meeting cut probability from FRED + NY Fed free data.
-        Sources (no API key required):
-          - FRED CSV: current target rate lower/upper bounds
-          - NY Fed SOFR: overnight rate (proxy for money market expectations)
-          - FRED CSV: CPI and unemployment for Taylor-rule λ estimate
+        FRED CSV endpoints are fetched sequentially (FRED blocks parallel requests).
+        Results cached up to 6h — underlying data changes monthly.
         """
         try:
-            # Fetch Fed funds target bounds from FRED CSV (no API key needed)
-            r_lower = await client.get(
-                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARL", timeout=10.0
-            )
-            r_upper = await client.get(
-                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU", timeout=10.0
-            )
-            lower = float(r_lower.text.strip().split("\n")[-1].split(",")[1])
-            upper = float(r_upper.text.strip().split("\n")[-1].split(",")[1])
-            target_mid = (lower + upper) / 2.0
-
-            # SOFR from NY Fed
+            # SOFR from NY Fed (fast, reliable)
             r_sofr = await client.get(
                 "https://markets.newyorkfed.org/read?productCode=50&eventCodes=520"
                 "&limit=5&startPosition=0&sort=postDt:-1&format=json",
-                timeout=10.0,
+                timeout=15.0,
             )
             sofr = float(r_sofr.json()["refRates"][0]["percentRate"])
             await self._state.update_feeds(sofr=sofr)
 
-            # CPI and unemployment from FRED CSV (no key needed)
-            # CPI YoY: fetch 13 months of CPIAUCSL index to compute 12-month change
-            r_cpi = await client.get(
-                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL", timeout=10.0
-            )
-            r_unemp = await client.get(
-                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE", timeout=10.0
-            )
-            cpi_lines = [l for l in r_cpi.text.strip().split("\n") if not l.startswith("DATE") and "." in l]
-            unemp_lines = [l for l in r_unemp.text.strip().split("\n") if not l.startswith("DATE") and "." in l]
-            # Compute YoY CPI from index (last value vs 12 months ago)
+            # FRED: fetch sequentially to avoid rate-limit resets
+            lower_csv  = await self._fetch_fred_csv(client, "DFEDTARL")
+            upper_csv  = await self._fetch_fred_csv(client, "DFEDTARU")
+            cpi_csv    = await self._fetch_fred_csv(client, "CPIAUCSL")
+            unemp_csv  = await self._fetch_fred_csv(client, "UNRATE")
+
+            lower = float(lower_csv.strip().split("\n")[-1].split(",")[1])
+            upper = float(upper_csv.strip().split("\n")[-1].split(",")[1])
+
+            # CPI YoY from index (last vs 12 months ago)
+            cpi_lines = [l for l in cpi_csv.strip().split("\n")
+                         if not l.startswith("DATE") and "." in l]
             if len(cpi_lines) >= 13:
-                idx_now = float(cpi_lines[-1].split(",")[1])
+                idx_now  = float(cpi_lines[-1].split(",")[1])
                 idx_yago = float(cpi_lines[-13].split(",")[1])
                 cpi = round((idx_now / idx_yago - 1.0) * 100, 2) if idx_yago else 3.2
-            elif cpi_lines:
-                cpi = float(cpi_lines[-1].split(",")[1])  # fallback: raw index
             else:
                 cpi = 3.2
+
+            unemp_lines = [l for l in unemp_csv.strip().split("\n")
+                           if not l.startswith("DATE") and "." in l]
             unrate = float(unemp_lines[-1].split(",")[1]) if unemp_lines else 4.0
 
-            # Expected cuts remaining in 2026 (Poisson λ)
-            # Taylor-inspired: high inflation → fewer cuts; high unemployment → more cuts
-            cpi_factor = max(0.0, 1.0 - (cpi - 2.0) / 4.0)      # 1.0 at 2%, 0 at 6%
-            unemp_factor = max(0.0, (unrate - 3.5) / 2.0)         # 0 at 3.5%, 1.0 at 5.5%
-            lambda_cuts = max(0.1, 2.0 * cpi_factor + unemp_factor)
-
+            # Poisson lambda: Taylor-rule heuristic
+            cpi_factor   = max(0.0, 1.0 - (cpi - 2.0) / 4.0)   # 1.0 at 2%, 0 at 6%
+            unemp_factor = max(0.0, (unrate - 3.5) / 2.0)        # 0 at 3.5%, 1.0 at 5.5%
+            lambda_cuts  = max(0.1, 2.0 * cpi_factor + unemp_factor)
             await self._state.update_feeds(fed_expected_cuts=lambda_cuts)
 
-            # Implied single-meeting cut probability ≈ 1 - P(hold at next meeting)
-            # SOFR below target lower bound → market pricing in cuts soon
-            sofr_spread = sofr - lower   # negative = SOFR below lower bound → bullish for cuts
+            # Single-meeting cut probability from SOFR vs lower bound
+            sofr_spread = sofr - lower
             cut_prob = max(0.05, min(0.95, 0.5 - sofr_spread * 2.0))
 
             log.info(
                 f"fed model: target={lower:.2f}-{upper:.2f} SOFR={sofr:.2f} "
-                f"CPI={cpi:.1f} UNRATE={unrate:.1f} λ={lambda_cuts:.2f} "
-                f"cut_prob={cut_prob:.2f}"
+                f"CPI={cpi:.1f}% UNRATE={unrate:.1f}% "
+                f"lambda={lambda_cuts:.2f} cut_prob={cut_prob:.2f}"
             )
             return cut_prob
 
