@@ -62,8 +62,8 @@ async def trading_loop(
                     continue
                 n_parseable += 1
 
-                # 2. Build probability — dispatch to macro model for macro contracts
-                if parsed.category == "macro":
+                # 2. Build probability — dispatch by category
+                if parsed.category in ("macro", "rates"):
                     model_prob, signal_count, engine = build_macro_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )

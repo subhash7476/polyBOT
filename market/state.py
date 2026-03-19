@@ -30,6 +30,8 @@ class FeedState:
     yield_10y_confidence: float = 0.0
     fed_may_cut_prob: Optional[float] = None
     fed_confidence: float = 0.0
+    fed_expected_cuts: Optional[float] = None   # Poisson λ for annual cut-count markets
+    sofr: Optional[float] = None                # NY Fed SOFR overnight rate
 
     # === Backward-compatible properties (keep until all callers migrated) ===
     @property

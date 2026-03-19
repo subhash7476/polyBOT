@@ -156,17 +156,74 @@ class MacroFeed:
 
     async def _fetch_fedwatch(self, client: httpx.AsyncClient) -> float:
         """
-        Scrape CME FedWatch for next-meeting cut probability.
-        FRAGILE — isolated here so only one method needs updating if layout changes.
-        Returns 0.5 (neutral) on failure; cache handles staleness.
+        Compute next-meeting cut probability from FRED + NY Fed free data.
+        Sources (no API key required):
+          - FRED CSV: current target rate lower/upper bounds
+          - NY Fed SOFR: overnight rate (proxy for money market expectations)
+          - FRED CSV: CPI and unemployment for Taylor-rule λ estimate
         """
         try:
-            r = await client.get(
-                "https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html"
+            # Fetch Fed funds target bounds from FRED CSV (no API key needed)
+            r_lower = await client.get(
+                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARL", timeout=10.0
             )
-            # TODO: inspect current page structure and implement parser
-            # For now return 0.5 — cache will hold last good value once implemented
-            return 0.5
+            r_upper = await client.get(
+                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFEDTARU", timeout=10.0
+            )
+            lower = float(r_lower.text.strip().split("\n")[-1].split(",")[1])
+            upper = float(r_upper.text.strip().split("\n")[-1].split(",")[1])
+            target_mid = (lower + upper) / 2.0
+
+            # SOFR from NY Fed
+            r_sofr = await client.get(
+                "https://markets.newyorkfed.org/read?productCode=50&eventCodes=520"
+                "&limit=5&startPosition=0&sort=postDt:-1&format=json",
+                timeout=10.0,
+            )
+            sofr = float(r_sofr.json()["refRates"][0]["percentRate"])
+            await self._state.update_feeds(sofr=sofr)
+
+            # CPI and unemployment from FRED CSV (no key needed)
+            # CPI YoY: fetch 13 months of CPIAUCSL index to compute 12-month change
+            r_cpi = await client.get(
+                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL", timeout=10.0
+            )
+            r_unemp = await client.get(
+                "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE", timeout=10.0
+            )
+            cpi_lines = [l for l in r_cpi.text.strip().split("\n") if not l.startswith("DATE") and "." in l]
+            unemp_lines = [l for l in r_unemp.text.strip().split("\n") if not l.startswith("DATE") and "." in l]
+            # Compute YoY CPI from index (last value vs 12 months ago)
+            if len(cpi_lines) >= 13:
+                idx_now = float(cpi_lines[-1].split(",")[1])
+                idx_yago = float(cpi_lines[-13].split(",")[1])
+                cpi = round((idx_now / idx_yago - 1.0) * 100, 2) if idx_yago else 3.2
+            elif cpi_lines:
+                cpi = float(cpi_lines[-1].split(",")[1])  # fallback: raw index
+            else:
+                cpi = 3.2
+            unrate = float(unemp_lines[-1].split(",")[1]) if unemp_lines else 4.0
+
+            # Expected cuts remaining in 2026 (Poisson λ)
+            # Taylor-inspired: high inflation → fewer cuts; high unemployment → more cuts
+            cpi_factor = max(0.0, 1.0 - (cpi - 2.0) / 4.0)      # 1.0 at 2%, 0 at 6%
+            unemp_factor = max(0.0, (unrate - 3.5) / 2.0)         # 0 at 3.5%, 1.0 at 5.5%
+            lambda_cuts = max(0.1, 2.0 * cpi_factor + unemp_factor)
+
+            await self._state.update_feeds(fed_expected_cuts=lambda_cuts)
+
+            # Implied single-meeting cut probability ≈ 1 - P(hold at next meeting)
+            # SOFR below target lower bound → market pricing in cuts soon
+            sofr_spread = sofr - lower   # negative = SOFR below lower bound → bullish for cuts
+            cut_prob = max(0.05, min(0.95, 0.5 - sofr_spread * 2.0))
+
+            log.info(
+                f"fed model: target={lower:.2f}-{upper:.2f} SOFR={sofr:.2f} "
+                f"CPI={cpi:.1f} UNRATE={unrate:.1f} λ={lambda_cuts:.2f} "
+                f"cut_prob={cut_prob:.2f}"
+            )
+            return cut_prob
+
         except Exception as exc:
-            log.warning(f"fedwatch scrape failed: {exc}")
+            log.warning(f"fed model fetch failed: {exc}")
             return 0.5

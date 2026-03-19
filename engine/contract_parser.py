@@ -36,17 +36,21 @@ DIRECTION_ABOVE = ["above", "over", "exceed", "higher than", "hit", "reach", ">"
 DIRECTION_BELOW = ["below", "under", "drop", "fall below", "<"]
 RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]
 
+# Questions that look like crypto but aren't price threshold markets
+_SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
+
 
 @dataclass
 class ParsedContract:
     token_id: str
     question: str
     asset: Optional[str] = None         # "BTC" | "ETH" | None
-    direction: Optional[str] = None     # "above" | "below" | None
+    direction: Optional[str] = None     # "above" | "below" | "exactly" | None
     target_price: Optional[float] = None
     expiry: Optional[datetime] = None
-    category: str = "crypto"            # "crypto" | "rates" | "unknown"
+    category: str = "crypto"            # "crypto" | "rates" | "macro" | "unknown"
     parseable: bool = True
+    cut_count: Optional[int] = None     # for "exactly N cuts" rate markets
 
 
 def parse_contract(token_id: str, question: str) -> ParsedContract:
@@ -58,27 +62,44 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         contract.category = "rates"
         contract.asset = None
 
-        # Direction: cut/lower = below, hike/raise = above, hold = hold
-        if any(w in q for w in ["cut", "lower", "reduce", "ease"]):
-            contract.direction = "below"
-        elif any(w in q for w in ["hike", "raise", "increase", "tighten"]):
+        # Annual cut-count markets: "Will N Fed rate cuts happen in 2026?"
+        # "Will no Fed rate cuts happen in 2026?"
+        no_cuts = re.search(r"\bno\b.*\bfed\b.*\bcut|no fed rate cuts", q)
+        n_cuts = re.search(r"will\s+(\d+)\s+fed\s+rate\s+cut", q)
+        if no_cuts:
+            contract.direction = "exactly"
+            contract.cut_count = 0
+            contract.target_price = 0.0
+        elif n_cuts:
+            contract.direction = "exactly"
+            contract.cut_count = int(n_cuts.group(1))
+            contract.target_price = float(contract.cut_count)
+        elif re.search(r"\d+\s+or\s+more\s+fed\s+rate\s+cut", q):
+            m = re.search(r"(\d+)\s+or\s+more", q)
             contract.direction = "above"
-        elif any(w in q for w in ["hold", "steady", "unchanged"]):
-            contract.direction = "hold"
-        # "above X%" also implies direction
-        elif "above" in q:
-            contract.direction = "above"
-        elif "below" in q:
-            contract.direction = "below"
-
-        # Target: bps first, then percentage
-        bps_match = re.search(r"(\d+)\s*(?:basis points|bps|bp)", q)
-        if bps_match:
-            contract.target_price = float(bps_match.group(1))
+            contract.cut_count = int(m.group(1)) if m else None
+            contract.target_price = float(contract.cut_count) if contract.cut_count else None
         else:
-            pct_match = re.search(r"(\d+\.?\d*)\s*%", q)
-            if pct_match:
-                contract.target_price = float(pct_match.group(1))
+            # Single-meeting markets: direction based on cut/hike/hold keywords
+            if any(w in q for w in ["cut", "lower", "reduce", "ease", "decrease"]):
+                contract.direction = "below"
+            elif any(w in q for w in ["hike", "raise", "increase", "tighten"]):
+                contract.direction = "above"
+            elif any(w in q for w in ["hold", "steady", "unchanged"]):
+                contract.direction = "hold"
+            elif "above" in q:
+                contract.direction = "above"
+            elif "below" in q:
+                contract.direction = "below"
+
+            # Target: bps first, then percentage
+            bps_match = re.search(r"(\d+)\s*(?:basis points|bps|bp)", q)
+            if bps_match:
+                contract.target_price = float(bps_match.group(1))
+            else:
+                pct_match = re.search(r"(\d+\.?\d*)\s*%", q)
+                if pct_match:
+                    contract.target_price = float(pct_match.group(1))
 
         # Expiry
         contract.expiry = _parse_expiry(question)
@@ -120,7 +141,13 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             contract.parseable = (contract.direction is not None and contract.target_price is not None)
             return contract
 
-    # 3. Detect asset — try multi-word aliases first (longer first to avoid partial matches)
+    # 3. Skip non-price-threshold crypto questions (FDV, market cap, token launches)
+    if any(pat in q for pat in _SKIP_PATTERNS):
+        contract.parseable = False
+        log.debug(f"skip (non-price market): {question[:60]}")
+        return contract
+
+    # 4. Detect asset — try multi-word aliases first (longer first to avoid partial matches)
     for alias in sorted(ASSET_ALIASES, key=len, reverse=True):
         if alias in q:
             contract.asset = ASSET_ALIASES[alias]

@@ -73,6 +73,18 @@ class OnChainFeed:
     async def start(self):
         log.info("starting")
         async with httpx.AsyncClient(timeout=15.0) as client:
+            # Double-fetch stablecoin supply on startup so the diff signal
+            # is available immediately (first sets _prev, second computes it)
+            try:
+                await self._fetch_stablecoin_supply(client)
+                await asyncio.sleep(2)
+                await self._fetch_stablecoin_supply(client)
+                await self._fetch_btc_hash_rate(client)
+                if GLASSNODE_API_KEY:
+                    await self._fetch_glassnode(client)
+            except Exception as exc:
+                log.warning(f"on-chain startup fetch error: {exc}")
+
             while True:
                 try:
                     await self._fetch_free_sources(client)
