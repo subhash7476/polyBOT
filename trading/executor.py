@@ -6,12 +6,16 @@ BUY_NO routes to the NO token — py-clob-client handles YES and NO tokens ident
 Paper mode is the default. Set paper=False only after paper validation checklist passes.
 """
 
+import asyncio
 import os
 from dataclasses import dataclass
 from typing import Optional
 from eth_account import Account
 from config import POLYMARKET_CLOB_URL, POLY_PRIVATE_KEY, SIGNATURE_TYPE, FUNDER_ADDRESS
 from utils.logger import get_logger
+
+_MAX_RETRIES = 3
+_RETRY_DELAY = 1.0  # seconds between attempts
 
 log = get_logger(__name__)
 
@@ -92,31 +96,38 @@ class CLOBExecutor:
                 token_used=actual_token,
             )
 
-        try:
-            resp = self._clob.create_and_post_order(
-                self._clob.create_order(
-                    token_id=actual_token,
-                    price=price,
-                    size=size,
-                    side=clob_side,
+        last_exc = None
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                resp = self._clob.create_and_post_order(
+                    self._clob.create_order(
+                        token_id=actual_token,
+                        price=price,
+                        size=size,
+                        side=clob_side,
+                    )
                 )
-            )
-            order_id = resp.get("orderID")
-            log.info(f"ORDER | id={order_id} {side} size=${size:.2f} price={price:.4f}")
-            return OrderResult(
-                order_id=order_id,
-                status=resp.get("status", "UNKNOWN"),
-                filled_price=float(resp.get("price", price)),
-                filled_size=float(resp.get("size", size)),
-                token_used=actual_token,
-            )
-        except Exception as exc:
-            log.error(f"order failed: {exc}")
-            return OrderResult(
-                order_id=None, status="ERROR",
-                filled_price=0.0, filled_size=0.0,
-                error=str(exc),
-            )
+                order_id = resp.get("orderID")
+                log.info(f"ORDER | id={order_id} {side} size=${size:.2f} price={price:.4f}")
+                return OrderResult(
+                    order_id=order_id,
+                    status=resp.get("status", "UNKNOWN"),
+                    filled_price=float(resp.get("price", price)),
+                    filled_size=float(resp.get("size", size)),
+                    token_used=actual_token,
+                )
+            except Exception as exc:
+                last_exc = exc
+                log.warning(f"order attempt {attempt}/{_MAX_RETRIES} failed: {exc}")
+                if attempt < _MAX_RETRIES:
+                    await asyncio.sleep(_RETRY_DELAY)
+
+        log.error(f"order failed after {_MAX_RETRIES} attempts: {last_exc}")
+        return OrderResult(
+            order_id=None, status="ERROR",
+            filled_price=0.0, filled_size=0.0,
+            error=str(last_exc),
+        )
 
     async def cancel_order(self, order_id: str) -> bool:
         if self._paper:
