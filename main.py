@@ -15,6 +15,7 @@ v2.1 fixes applied:
 import asyncio
 import os
 from pathlib import Path
+import config
 from config import BANKROLL_USDC, SIGNAL_WEIGHTS, PAPER
 from market.state import AppState
 from feeds.deribit import DeribitFeed
@@ -32,6 +33,7 @@ from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
 from trading.executor import CLOBExecutor
+from trading.redeemall import run_redeemall
 from trading.balance import BalancePoller
 from calibration.tracker import CalibrationTracker
 from dashboard.state import DashboardState
@@ -242,6 +244,21 @@ async def arb_scan_loop(
             log.info(f"arb scan: {len(violations)} violations from {len(threshold_markets)} threshold markets")
 
 
+async def redeemall_loop(executor, interval: int = 900):
+    """Check for redeemable positions every 15 minutes."""
+    await asyncio.sleep(60)  # wait 60s before first check
+    while True:
+        try:
+            await run_redeemall(
+                wallet=executor.wallet_address,
+                rpc_url=config.RPC_URL,
+                private_key=config.POLY_PRIVATE_KEY,
+            )
+        except Exception as exc:
+            log.error(f"redeemall_loop error: {exc}")
+        await asyncio.sleep(interval)
+
+
 async def main():
     Path(__file__).parent.joinpath("bot.pid").write_text(str(os.getpid()))
     log.info(f"starting v2.1 | paper={PAPER} | bankroll=${BANKROLL_USDC}")
@@ -263,6 +280,7 @@ async def main():
         arb_scan_loop(state, tracker),
         dashboard_loop(state, dash, risk=risk),
         balance_poller.start(),
+        redeemall_loop(executor),
     )
 
 
