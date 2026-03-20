@@ -1,4 +1,5 @@
 import asyncio
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -32,6 +33,18 @@ class FeedState:
     fed_confidence: float = 0.0
     fed_expected_cuts: Optional[float] = None   # Poisson λ for annual cut-count markets
     sofr: Optional[float] = None                # NY Fed SOFR overnight rate
+
+    # === Feed staleness tracking ===
+    last_feed_update: dict = field(default_factory=dict)  # feed_name → unix timestamp (float)
+
+    def is_fresh(self, max_age_seconds: float = 5.0) -> bool:
+        """True only if both 'clob' and 'microstructure' feeds updated within max_age_seconds."""
+        required = ("clob", "microstructure")
+        now = time.time()
+        return all(
+            now - self.last_feed_update.get(k, 0) < max_age_seconds
+            for k in required
+        )
 
     # === Backward-compatible properties (keep until all callers migrated) ===
     @property
@@ -114,3 +127,8 @@ class AppState:
     async def remove_market(self, yes_token_id: str):
         async with self._lock:
             self.markets.pop(yes_token_id, None)
+
+    def stamp_feed(self, name: str) -> None:
+        """Record that a feed produced a live update (call without holding the lock)."""
+        import time
+        self.feeds.last_feed_update[name] = time.time()

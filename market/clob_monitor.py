@@ -61,13 +61,32 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 continue
 
             volume = float(m.get("volumeClob") or m.get("volume") or 0)
+
+            # outcomePrices[0] is the YES probability from the last trade/AMM price
+            # Use it to synthesize a tight spread when the CLOB order book is empty
+            outcome_prices_raw = m.get("outcomePrices") or []
+            if isinstance(outcome_prices_raw, str):
+                try:
+                    outcome_prices_raw = json.loads(outcome_prices_raw)
+                except Exception:
+                    outcome_prices_raw = []
+            yes_price = float(outcome_prices_raw[0]) if outcome_prices_raw else None
+
+            raw_bid = float(m.get("bestBid") or 0)
+            raw_ask = float(m.get("bestAsk") or 1)
+
+            if (raw_ask - raw_bid) > 0.5 and yes_price is not None and 0.03 < yes_price < 0.97:
+                # Empty order book — synthesize ±2c spread from outcome price
+                raw_bid = round(yes_price - 0.02, 4)
+                raw_ask = round(yes_price + 0.02, 4)
+
             token_map[yes_id] = {
                 "question":    question,
                 "category":    parsed.category,
                 "no_token_id": no_id,
                 "volume":      volume,
-                "best_bid":    float(m.get("bestBid") or 0),
-                "best_ask":    float(m.get("bestAsk") or 1),
+                "best_bid":    raw_bid,
+                "best_ask":    raw_ask,
             }
 
         offset += _PAGE_LIMIT
@@ -168,10 +187,19 @@ class CLOBMonitor(BaseFeed):
                 return
         bids = msg.get("bids", [])
         asks = msg.get("asks", [])
-        if bids:
-            cs.best_bid = float(bids[0]["price"])
-        if asks:
-            cs.best_ask = float(asks[0]["price"])
+        new_bid = float(bids[0]["price"]) if bids else None
+        new_ask = float(asks[0]["price"]) if asks else None
+        # Only update if the book update gives a meaningful spread (< 50%)
+        # Ignore near-empty quotes like bid=0.001 ask=0.999
+        if new_bid is not None and new_ask is not None and (new_ask - new_bid) < 0.5:
+            cs.best_bid = new_bid
+            cs.best_ask = new_ask
+        elif new_bid is not None and new_ask is None and new_bid > 0.01:
+            cs.best_bid = new_bid
+        elif new_ask is not None and new_bid is None and new_ask < 0.99:
+            cs.best_ask = new_ask
+        if new_bid is not None or new_ask is not None:
+            self._state.stamp_feed("clob")
 
     async def _handle_price(self, msg: dict):
         yes_token_id = msg.get("asset_id", "")
@@ -186,3 +214,4 @@ class CLOBMonitor(BaseFeed):
                     cs.best_bid = price
                 elif side == "SELL":
                     cs.best_ask = price
+                self._state.stamp_feed("clob")

@@ -31,6 +31,9 @@ from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
 from trading.executor import CLOBExecutor
 from calibration.tracker import CalibrationTracker
+from dashboard.state import DashboardState
+from dashboard.loops import dashboard_loop, update_scan_stats
+from dashboard.server import start_dashboard_server
 from utils.logger import get_logger
 
 log = get_logger("main")
@@ -44,6 +47,7 @@ async def trading_loop(
     risk: RiskManager,
     executor: CLOBExecutor,
     tracker: CalibrationTracker,
+    dash: DashboardState,
 ):
     while True:
         await asyncio.sleep(_SCAN_INTERVAL)
@@ -51,8 +55,12 @@ async def trading_loop(
             markets = dict(state.markets)
             feeds = state.feeds
 
+        if not feeds.is_fresh():
+            log.debug("feeds stale — skipping scan")
+            continue
+
         n_total = len(markets)
-        n_parseable = n_signal = n_liquidity = n_ev = 0
+        n_parseable = n_signal = n_liquidity = n_ev = n_traded = 0
 
         for yes_token_id, contract_state in markets.items():
             try:
@@ -61,6 +69,17 @@ async def trading_loop(
                 if not parsed.parseable:
                     continue
                 n_parseable += 1
+
+                # Dashboard record — filled in as we progress through gates
+                mkt_rec = {
+                    "question": contract_state.question,
+                    "model_prob": None,
+                    "market_mid": contract_state.mid,
+                    "ev": None,
+                    "signal_count": 0,
+                    "traded": False,
+                    "reason": "signal filter",
+                }
 
                 # 2. Build probability — dispatch by category
                 if parsed.category in ("macro", "rates"):
@@ -71,13 +90,18 @@ async def trading_loop(
                     model_prob, signal_count, engine = build_model_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
+                mkt_rec["model_prob"] = model_prob
+                mkt_rec["signal_count"] = signal_count
 
                 # 3. Signal agreement filter — Fix 2: properly wired
                 ok, reason = passes_signal_filter(engine)
                 if not ok:
                     log.debug(f"signal filter: {reason}")
+                    mkt_rec["reason"] = reason
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_signal += 1
+                mkt_rec["reason"] = "illiquid"
 
                 # 4. Determine direction, then estimate slippage on the correct token
                 direction, _ = get_trade_direction(model_prob, contract_state.mid)
@@ -96,8 +120,14 @@ async def trading_loop(
                     volume_usd=contract_state.volume_usd,
                 )
                 if not slippage.tradeable:
+                    log.info(
+                        f"illiquid [{yes_token_id[:8]}]: bid={slip_bid:.3f} ask={slip_ask:.3f} "
+                        f"spread={slip_ask-slip_bid:.3f} vol=${contract_state.volume_usd:.0f}"
+                    )
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_liquidity += 1
+                mkt_rec["reason"] = "low EV"
 
                 # 5. EV gate
                 ev, side = calculate_ev(
@@ -106,11 +136,15 @@ async def trading_loop(
                     slippage=slippage,
                     ev_multiplier=risk.ev_multiplier,
                 )
+                mkt_rec["ev"] = ev
                 enter, enter_reason = should_enter(ev, slippage, risk.ev_multiplier)
                 if not enter:
                     log.info(f"ev gate [{yes_token_id[:8]}]: {enter_reason} model={model_prob:.3f} mid={contract_state.mid:.3f}")
+                    mkt_rec["reason"] = enter_reason
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_ev += 1
+                mkt_rec["reason"] = "risk block"
 
                 # 6. Kelly sizing
                 size = fractional_kelly(
@@ -121,12 +155,16 @@ async def trading_loop(
                     signal_count=signal_count,
                 )
                 if size <= 0:
+                    mkt_rec["reason"] = "kelly=0"
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
 
                 # 7. Risk gate — Fix 3: direction-bucketed group check
                 ok, risk_reason = await risk.can_trade(yes_token_id, parsed, size, feeds)
                 if not ok:
                     log.debug(f"risk block {yes_token_id[:8]}: {risk_reason}")
+                    mkt_rec["reason"] = risk_reason
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
 
                 # 8. Log signal (before execution)
@@ -155,6 +193,10 @@ async def trading_loop(
                 )
                 if result.success:
                     await risk.open_position(yes_token_id, parsed, size, result.filled_price)
+                    n_traded += 1
+                    mkt_rec["traded"] = True
+                    mkt_rec["reason"] = None
+                dash.update({"active_markets_append": mkt_rec})
 
             except Exception as exc:
                 log.exception(f"trading loop error for {yes_token_id[:8]}: {exc}")
@@ -163,6 +205,9 @@ async def trading_loop(
             f"scan: {n_total} markets | {n_parseable} parseable | "
             f"{n_signal} signal ok | {n_liquidity} liquid | {n_ev} ev+"
         )
+        update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
+                          n_signal=n_signal, n_liquidity=n_liquidity,
+                          n_ev=n_ev, n_traded=n_traded)
 
 
 async def arb_scan_loop(
@@ -200,6 +245,8 @@ async def main():
     risk = RiskManager(bankroll=BANKROLL_USDC)
     executor = CLOBExecutor(paper=PAPER)
     tracker = CalibrationTracker()
+    dash = DashboardState()
+    start_dashboard_server(dash, port=5050)
 
     await asyncio.gather(
         DeribitFeed(state).start(),
@@ -207,8 +254,9 @@ async def main():
         OnChainFeed(state).start(),
         MacroFeed(state).start(),
         CLOBMonitor(state).start(),
-        trading_loop(state, risk, executor, tracker),
+        trading_loop(state, risk, executor, tracker, dash),
         arb_scan_loop(state, tracker),
+        dashboard_loop(state, dash, risk=risk),
     )
 
 

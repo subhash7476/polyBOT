@@ -84,3 +84,4 @@ class MicrostructureFeed:
                 await self._state.update_asset_feed(asset, dvol=vol)
 
         log.debug(f"microstructure updated for {len(BINANCE_SYMBOLS)} assets")
+        self._state.stamp_feed("microstructure")
