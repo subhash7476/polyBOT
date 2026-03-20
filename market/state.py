@@ -73,6 +73,17 @@ class FeedState:
 
 
 @dataclass
+class BalanceState:
+    session_start: float = 0.0   # USDC at bot startup
+    current: float = 0.0         # latest fetched balance
+    last_update: float = 0.0     # unix timestamp of last fetch
+
+    @property
+    def session_pnl(self) -> float:
+        return self.current - self.session_start
+
+
+@dataclass
 class ContractState:
     """Live CLOB state for a single Polymarket market."""
     yes_token_id: str
@@ -98,6 +109,7 @@ class AppState:
     def __init__(self):
         self.feeds = FeedState()
         self.markets: dict[str, ContractState] = {}  # keyed by yes_token_id
+        self.balance = BalanceState()
         self._lock = asyncio.Lock()
 
     async def update_feeds(self, **kwargs):

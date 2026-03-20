@@ -13,6 +13,8 @@ v2.1 fixes applied:
 """
 
 import asyncio
+import os
+from pathlib import Path
 from config import BANKROLL_USDC, SIGNAL_WEIGHTS, PAPER
 from market.state import AppState
 from feeds.deribit import DeribitFeed
@@ -30,6 +32,7 @@ from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
 from trading.executor import CLOBExecutor
+from trading.balance import BalancePoller
 from calibration.tracker import CalibrationTracker
 from dashboard.state import DashboardState
 from dashboard.loops import dashboard_loop, update_scan_stats
@@ -240,6 +243,7 @@ async def arb_scan_loop(
 
 
 async def main():
+    Path(__file__).parent.joinpath("bot.pid").write_text(str(os.getpid()))
     log.info(f"starting v2.1 | paper={PAPER} | bankroll=${BANKROLL_USDC}")
     state = AppState()
     risk = RiskManager(bankroll=BANKROLL_USDC)
@@ -247,6 +251,7 @@ async def main():
     tracker = CalibrationTracker()
     dash = DashboardState()
     start_dashboard_server(dash, port=5050)
+    balance_poller = BalancePoller(state, wallet_address=executor.wallet_address)
 
     await asyncio.gather(
         DeribitFeed(state).start(),
@@ -257,6 +262,7 @@ async def main():
         trading_loop(state, risk, executor, tracker, dash),
         arb_scan_loop(state, tracker),
         dashboard_loop(state, dash, risk=risk),
+        balance_poller.start(),
     )
 
 
