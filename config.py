@@ -14,7 +14,7 @@ KELLY_FRACTION = 0.05           # 5% default — conservative until calibrated
 MIN_EV_THRESHOLD = 0.03
 POLYMARKET_FEE = 0.02           # Verify current taker fee
 ADVERSE_SELECTION_PENALTY = 0.005
-MIN_MARKET_LIQUIDITY = 10_000
+MIN_MARKET_LIQUIDITY = 1_000
 
 # Signal agreement
 MIN_SIGNALS_REQUIRED = 2
@@ -55,3 +55,9 @@ POLYMARKET_CLOB_URL = "https://clob.polymarket.com"
 POLY_PRIVATE_KEY = os.getenv("POLY_PRIVATE_KEY", "")
 POLY_API_KEY = os.getenv("POLY_API_KEY", "")
 GLASSNODE_API_KEY = os.getenv("GLASSNODE_API_KEY", "")
+SIGNATURE_TYPE      = int(os.getenv("SIGNATURE_TYPE", "0"))   # 0=EOA, 1=POLY_PROXY, 2=GNOSIS_SAFE
+FUNDER_ADDRESS      = os.getenv("FUNDER_ADDRESS", "")
+RPC_URL             = os.getenv("RPC_URL", "https://polygon-rpc.com")
+TELEGRAM_BOT_TOKEN  = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "")
+MAX_TRADE_SIZE_USDC = float(os.getenv("MAX_TRADE_SIZE_USDC", "50"))

@@ -6,9 +6,11 @@ BUY_NO routes to the NO token — py-clob-client handles YES and NO tokens ident
 Paper mode is the default. Set paper=False only after paper validation checklist passes.
 """
 
+import os
 from dataclasses import dataclass
 from typing import Optional
-from config import POLYMARKET_CLOB_URL, POLY_PRIVATE_KEY
+from eth_account import Account
+from config import POLYMARKET_CLOB_URL, POLY_PRIVATE_KEY, SIGNATURE_TYPE, FUNDER_ADDRESS
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -38,12 +40,26 @@ class CLOBExecutor:
     def __init__(self, private_key: str = POLY_PRIVATE_KEY, paper: bool = True):
         self._paper = paper
         self._private_key = private_key
+
+        # Derive wallet address based on signature type (read at init time so
+        # tests that reload the module and monkeypatch env vars work correctly)
+        sig_type = int(os.getenv("SIGNATURE_TYPE", str(SIGNATURE_TYPE)))
+        funder = os.getenv("FUNDER_ADDRESS", FUNDER_ADDRESS)
+        if not private_key:
+            self.wallet_address = ""
+        elif sig_type in (1, 2):
+            self.wallet_address = funder
+        else:
+            self.wallet_address = Account.from_key(private_key).address
+
         if not paper:
             from py_clob_client.client import ClobClient  # type: ignore
             self._clob = ClobClient(
                 host=POLYMARKET_CLOB_URL,
                 key=private_key,
                 chain_id=137,  # Polygon mainnet
+                signature_type=sig_type,
+                funder=funder or None,
             )
 
     async def place_order(

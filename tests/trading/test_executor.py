@@ -62,3 +62,36 @@ async def test_invalid_size_raises():
 async def test_cancel_paper_returns_true():
     executor = CLOBExecutor(private_key="0x" + "a" * 64, paper=True)
     assert await executor.cancel_order("PAPER_123") is True
+
+
+def test_executor_wallet_address_type0(monkeypatch):
+    """SIGNATURE_TYPE=0: address derived from private key."""
+    from eth_account import Account
+    test_key = "0x" + "a" * 64
+    monkeypatch.setenv("SIGNATURE_TYPE", "0")
+    monkeypatch.setenv("POLY_PRIVATE_KEY", test_key)
+    monkeypatch.setenv("FUNDER_ADDRESS", "")
+    import importlib
+    import config
+    importlib.reload(config)
+    import trading.executor
+    importlib.reload(trading.executor)
+    from trading.executor import CLOBExecutor
+    ex = CLOBExecutor(private_key=test_key, paper=True)
+    expected = Account.from_key(test_key).address
+    assert ex.wallet_address == expected
+
+
+def test_executor_wallet_address_type1(monkeypatch):
+    """SIGNATURE_TYPE=1: address comes from FUNDER_ADDRESS."""
+    monkeypatch.setenv("SIGNATURE_TYPE", "1")
+    monkeypatch.setenv("FUNDER_ADDRESS", "0xFUNDER123")
+    monkeypatch.setenv("POLY_PRIVATE_KEY", "0x" + "b" * 64)
+    import importlib
+    import config
+    importlib.reload(config)
+    import trading.executor
+    importlib.reload(trading.executor)
+    from trading.executor import CLOBExecutor
+    ex = CLOBExecutor(private_key="0x" + "b" * 64, paper=True)
+    assert ex.wallet_address == "0xFUNDER123"
