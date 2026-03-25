@@ -93,6 +93,8 @@ class ContractState:
     best_bid: float = 0.0       # YES bid
     best_ask: float = 1.0       # YES ask
     volume_usd: float = 0.0
+    bid_depth: float = 0.0   # total size on best 5 bid levels (USDC)
+    ask_depth: float = 0.0   # total size on best 5 ask levels (USDC)
 
     @property
     def mid(self) -> float:

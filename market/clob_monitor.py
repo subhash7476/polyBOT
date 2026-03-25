@@ -283,6 +283,11 @@ class CLOBMonitor(BaseFeed):
             cs.best_bid = new_bid
         elif new_ask is not None and new_bid is None and new_ask < 0.99:
             cs.best_ask = new_ask
+        # Compute book depth (sum of best 5 levels each side)
+        if bids:
+            cs.bid_depth = sum(float(b.get("size", 0)) for b in bids[:5])
+        if asks:
+            cs.ask_depth = sum(float(a.get("size", 0)) for a in asks[:5])
         if new_bid is not None or new_ask is not None:
             self._state.stamp_feed("clob")
 
