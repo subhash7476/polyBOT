@@ -23,7 +23,7 @@ from feeds.microstructure import MicrostructureFeed
 from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
 from market.clob_monitor import CLOBMonitor, build_threshold_markets
-from engine.arb_scanner import find_monotonicity_violations
+from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
 from engine.probability import build_model_probability
 from engine.macro_probability import build_macro_probability
 from engine.contract_parser import parse_contract
@@ -276,6 +276,22 @@ async def arb_scan_loop(
 
         if violations:
             log.info(f"arb scan: {len(violations)} violations from {len(threshold_markets)} threshold markets")
+
+        # Cross-temporal arb
+        cross_violations = find_cross_temporal_violations(threshold_markets, min_profit=0.01)
+        for v in cross_violations:
+            log.info(f"CROSS-TEMPORAL ARB: {v.trade_description} | profit={v.profit:.3f}")
+            tracker.log_signal(
+                token_id=f"xarb_{v.earlier_token[:8]}_{v.later_token[:8]}",
+                model_prob=0.99,
+                market_prob=0.50,
+                signal_summary={"type": "cross_temporal_arb", "profit": v.profit},
+                size_usdc=0.0,
+                ev=v.profit,
+                side="ARB",
+            )
+        if cross_violations:
+            log.info(f"cross-temporal arb: {len(cross_violations)} violations")
 
 
 async def redeemall_loop(executor, interval: int = 900):
