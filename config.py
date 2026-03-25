@@ -44,6 +44,7 @@ SIGNAL_WEIGHTS = {
     "macro_dxy":         0.10,
     "fed_cut_prob":      0.10,
     "flatline":          0.20,
+    "orderbook_imbalance": 0.10,
 }
 
 # Flatline detector
@@ -51,6 +52,11 @@ FLATLINE_WINDOW_HOURS = 48.0        # price range computed over this lookback
 FLATLINE_EXPIRY_GATE_HOURS = 72.0   # only fires within this many hours of expiry
 FLATLINE_THRESHOLD = 0.02           # max range (0.02 = 2 cents on a 0-1 scale)
 FLATLINE_MIN_LEADING_PRICE = 0.60   # leading side must be > 60% to fire
+
+# Order book imbalance
+OBI_RATIO_HIGH = 2.5    # bid/ask depth ratio > this -> bullish signal
+OBI_RATIO_LOW = 0.4     # bid/ask depth ratio < this -> bearish signal
+OBI_MIN_READINGS = 3    # must sustain over this many consecutive readings
 
 # Intervals (seconds)
 FEDWATCH_POLL_INTERVAL = 300
