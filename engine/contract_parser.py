@@ -41,6 +41,16 @@ _RATE_RE = re.compile(
     re.IGNORECASE,
 )
 RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]  # kept for reference
+_ELECTION_RE = re.compile(
+    r'\belection\b|\bmidterm\b|\bprimary\b|\bpresidential\b|\bsenate\b|\bhouse\s+race\b|\bballot\b|\bvote\b|\bcandidate\b',
+    re.IGNORECASE,
+)
+_EVENT_RE = re.compile(
+    r'\bby\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?'
+    r'|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|\d{4}|q[1-4])\b'
+    r'|\bby\s+end\s+of\b|\bapproved?\b|\bpassed?\b|\blaunched?\b|\breleased?\b',
+    re.IGNORECASE,
+)
 
 # Questions that look like crypto but aren't price threshold markets
 _SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
@@ -147,6 +157,34 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             contract.parseable = (contract.direction is not None and contract.target_price is not None)
             return contract
 
+    # 2b. Election/political markets
+    if _ELECTION_RE.search(q) and any(w in q for w in ["win", "lose", "elected", "wins"]):
+        contract.category = "election"
+        contract.direction = "yes"
+        contract.expiry = _parse_expiry(question)
+        if not contract.expiry:
+            now = datetime.now(timezone.utc)
+            contract.expiry = now.replace(month=12, day=31, hour=23, minute=59, second=0, microsecond=0)
+        contract.parseable = True
+        log.debug(f"election market: {question[:60]}")
+        return contract
+
+    # 2c. Deadline/event markets ("Will X happen by DATE?")
+    # Approval/launch keywords take priority even if an asset alias is present.
+    # Exclude price-threshold questions (above/below/reach/exceed) without approval keywords,
+    # so unknown-asset price markets remain unparseable.
+    _is_approval_event = re.search(r'\bapproved?\b|\bpassed?\b|\blaunched?\b|\breleased?\b', q, re.IGNORECASE)
+    _has_price_direction = any(w in q for w in DIRECTION_ABOVE + DIRECTION_BELOW)
+    if _EVENT_RE.search(q) and (_is_approval_event or (not any(alias in q for alias in ASSET_ALIASES) and not _has_price_direction)):
+        expiry = _parse_expiry(question)
+        if expiry:
+            contract.category = "event"
+            contract.direction = "yes"
+            contract.expiry = expiry
+            contract.parseable = True
+            log.debug(f"event/deadline market: {question[:60]}")
+            return contract
+
     # 3. Skip non-price-threshold crypto questions (FDV, market cap, token launches)
     if any(pat in q for pat in _SKIP_PATTERNS):
         contract.parseable = False
@@ -213,6 +251,16 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
 def _parse_expiry(question: str) -> Optional[datetime]:
     q = question.lower()
     now = datetime.now(timezone.utc)
+
+    # Quarter patterns: "Q1 2026", "Q2 2025", etc.
+    quarter_match = re.search(r'\bq([1-4])\s+(\d{4})\b', q, re.IGNORECASE)
+    if quarter_match:
+        quarter = int(quarter_match.group(1))
+        year = int(quarter_match.group(2))
+        # Last month of the quarter: Q1→Mar(3), Q2→Jun(6), Q3→Sep(9), Q4→Dec(12)
+        month = quarter * 3
+        last_day = calendar.monthrange(year, month)[1]
+        return datetime(year, month, last_day, 23, 59, tzinfo=timezone.utc)
 
     for month_str, month_num in EXPIRY_MONTHS.items():
         if month_str in q:
