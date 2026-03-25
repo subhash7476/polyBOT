@@ -28,6 +28,9 @@ from engine.probability import build_model_probability
 from engine.macro_probability import build_macro_probability
 from engine.contract_parser import parse_contract
 from engine.signal_filter import passes_signal_filter
+from engine.flatline import compute_flatline_signal, record_price as record_flatline_price
+from engine.orderbook_imbalance import compute_obi_signal, record_obi_reading
+from engine.volume_divergence import compute_vpd_signal, record_volume
 from trading.ev_gate import calculate_ev, should_enter, get_trade_direction
 from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
@@ -101,6 +104,30 @@ async def trading_loop(
                     model_prob, signal_count, engine = build_model_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
+                mkt_rec["model_prob"] = model_prob
+                mkt_rec["signal_count"] = signal_count
+
+                # New microstructure signals — added to existing engine before filter.
+                # Applied to all categories: flatline fires near any resolution,
+                # OBI and VPD are valid for any liquid market regardless of category.
+                record_flatline_price(yes_token_id, contract_state.mid)
+                flatline_sig = compute_flatline_signal(yes_token_id, contract_state, parsed)
+                if flatline_sig:
+                    engine.add_signal(flatline_sig)
+
+                record_obi_reading(yes_token_id, contract_state)
+                obi_sig = compute_obi_signal(yes_token_id)
+                if obi_sig:
+                    engine.add_signal(obi_sig)
+
+                record_volume(yes_token_id, contract_state)
+                vpd_sig = compute_vpd_signal(yes_token_id, contract_state)
+                if vpd_sig:
+                    engine.add_signal(vpd_sig)
+
+                # Re-read updated probability and signal count after new signals
+                model_prob = engine.probability
+                signal_count = engine.signal_count
                 mkt_rec["model_prob"] = model_prob
                 mkt_rec["signal_count"] = signal_count
 
