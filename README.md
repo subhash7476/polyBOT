@@ -1,8 +1,9 @@
 # Polymarket Bot v3.0
 
 Automated prediction market trading bot for [Polymarket](https://polymarket.com).
-Targets crypto price markets, Fed rate cut markets, and macro data-release markets
-using a multi-factor Bayesian signal engine with conservative Kelly sizing.
+Targets crypto price markets, Fed rate cut markets, macro data-release markets,
+election markets, and deadline/event markets using a multi-factor Bayesian signal
+engine with conservative Kelly sizing.
 
 ---
 
@@ -20,27 +21,35 @@ AppState -> trading_loop + arb_scan_loop -> fills.jsonl
 <!-- AUTO-GENERATED -->
 | Path | Purpose |
 |------|---------|
-| `main.py` | Async orchestrator -- all feeds + trading loop + arb scanner |
-| `config.py` | Central constants (Kelly, EV threshold, signal weights, fees) |
-| `market/state.py` | `AppState` + `ContractState` + `FeedState` (per-asset dicts + macro scalars) |
-| `market/clob_monitor.py` | Gamma API discovery (up to 3,000 markets) -> CLOB WebSocket live prices |
-| `engine/contract_parser.py` | Parse question -> asset/direction/target/expiry/cut_count |
-| `engine/bayesian.py` | Logit-additive engine: `log_odds += weight x strength x confidence` |
-| `engine/probability.py` | Lognormal GBM prior per asset; 7 signals; returns `(prob, count, engine)` |
+| `main.py` | Async orchestrator — all feeds + trading loop + arb scanner + alert hooks |
+| `config.py` | Central constants (Kelly, EV threshold, signal weights, fees, flatline/OBI/VPD thresholds) |
+| `market/state.py` | `AppState` + `ContractState` (+ `bid_depth`/`ask_depth`) + `FeedState` |
+| `market/clob_monitor.py` | Gamma API discovery (up to 3,000 markets) → CLOB WebSocket live prices + order-book depth |
+| `market/market_screener.py` | Ranks active markets by edge opportunity (volume, spread, expiry, parseability) |
+| `engine/contract_parser.py` | Parse question → asset/direction/target/expiry/cut_count; categories: crypto/rates/macro/election/event |
+| `engine/bayesian.py` | Logit-additive engine: `log_odds += weight × strength × confidence` |
+| `engine/probability.py` | Lognormal GBM prior per asset; 7 feed signals; returns `(prob, count, engine)` |
 | `engine/macro_probability.py` | Normal forecast-error model (CPI/GDP/NFP); Poisson model (rate cut counts) |
-| `engine/arb_scanner.py` | Monotonicity violation detector for threshold market chains |
-| `engine/signal_filter.py` | >=2 signals + >=60% agreement; OR decisive prior (>=40% confidence) + 1 signal |
-| `feeds/deribit.py` | Deribit WebSocket -- DVOL (BTC/ETH/SOL) + 25-delta vol skew |
-| `feeds/microstructure.py` | Binance FAPI -- spot price + funding rate for 8 assets (60s poll) |
+| `engine/flatline.py` | Pre-resolution price stagnation signal (48h range < 2c within 72h of expiry; weight=0.20) |
+| `engine/orderbook_imbalance.py` | Bid/ask depth ratio signal (>2.5 or <0.4 sustained 3+ readings; weight=0.10) |
+| `engine/volume_divergence.py` | Volume spike without price move signal (volume >2× rolling avg, price <2% drift; weight=0.10) |
+| `engine/arb_scanner.py` | Monotonicity violation + cross-temporal arb detector for threshold market chains |
+| `engine/signal_filter.py` | ≥2 signals + ≥60% agreement; OR decisive prior (≥40% confidence) + 1 signal |
+| `feeds/deribit.py` | Deribit WebSocket — DVOL (BTC/ETH/SOL) + 25-delta vol skew |
+| `feeds/microstructure.py` | Binance FAPI — spot price + funding rate for 8 assets (60s poll) |
 | `feeds/onchain.py` | DeFiLlama stablecoin supply + Blockchain.com hash rate (free, no key) |
-| `feeds/macro.py` | FRED + NY Fed SOFR -- CPI YoY, unemployment, target rate, Poisson lambda |
-| `trading/ev_gate.py` | EV = `(prob x payout) - (price + fee + adverse_selection)`; BUY_YES/BUY_NO |
+| `feeds/macro.py` | FRED + NY Fed SOFR — CPI YoY, unemployment, target rate, Poisson lambda |
+| `trading/ev_gate.py` | EV = `(prob × payout) - (price + fee + adverse_selection)`; BUY_YES/BUY_NO |
 | `trading/kelly.py` | 5% fractional Kelly; hard cap $50/trade |
 | `trading/risk.py` | Daily loss limit; position cap; direction-bucketed group exposure (20%) |
 | `trading/slippage.py` | Rejects volume <$10k or spread >15c; linear market-impact model |
-| `trading/executor.py` | Paper (default) or live CLOB order via `py-clob-client` |
+| `trading/executor.py` | Paper (default) or live CLOB order via `py-clob-client`; stale-order + split helpers |
+| `trading/redeemall.py` | Auto-redeem resolved positions every 15 min; manual `python -m trading.redeemall` |
 | `calibration/tracker.py` | Logs every signal to `fills.jsonl`; records outcome at resolution |
-| `calibration/metrics.py` | Brier score, calibration curve, mean edge |
+| `calibration/metrics.py` | Brier score, calibration curve, mean edge; `--detailed` flag adds per-signal attribution |
+| `calibration/weight_optimizer.py` | Logistic regression on `fills.jsonl` → weight recommendations (never auto-applies) |
+| `monitoring/alerts.py` | Telegram alerts for trades, arb, risk limit, flatline, feed disconnection |
+| `dashboard/` | Live terminal dashboard (P&L, open positions, feed health, scan stats) |
 <!-- END AUTO-GENERATED -->
 
 ---
@@ -51,7 +60,7 @@ AppState -> trading_loop + arb_scan_loop -> fills.jsonl
 git clone <repo>
 cd polymarket-bot
 pip install -r requirements.txt
-cp .env.example .env   # fill in credentials
+cp .env.template .env  # fill in credentials
 python main.py
 ```
 
@@ -59,15 +68,23 @@ python main.py
 
 ## Environment Variables
 
-<!-- AUTO-GENERATED from config.py -->
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `BANKROLL_USDC` | No | Trading bankroll in USDC | `500` |
-| `PAPER` | No | Paper mode -- no real orders sent | `true` |
-| `POLY_PRIVATE_KEY` | Yes (live) | Polygon wallet private key (`0x...`) | -- |
-| `POLY_API_KEY` | Yes (live) | Polymarket CLOB API key | -- |
-| `FRED_API_KEY` | No | FRED API key for macro consensus forecasts (CPI/GDP/NFP/unemployment). Basic rate/CPI data fetched without key via free CSV endpoints; full consensus detail requires key | -- |
-| `GLASSNODE_API_KEY` | No | Glassnode API key (paid). If absent, on-chain feed uses free DeFiLlama + Blockchain.com sources | -- |
+<!-- AUTO-GENERATED from .env.template + config.py -->
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `POLY_PRIVATE_KEY` | Yes (live) | — | `0x`-prefixed EOA private key |
+| `SIGNATURE_TYPE` | No | `0` | `0`=EOA, `1`=POLY_PROXY (Magic Link), `2`=GNOSIS_SAFE (MetaMask) |
+| `FUNDER_ADDRESS` | If type 1/2 | — | Proxy wallet address |
+| `RPC_URL` | No | `https://polygon-rpc.com` | Polygon RPC (Alchemy/Ankr recommended) |
+| `BANKROLL_USDC` | No | `500` | Total bankroll for Kelly sizing |
+| `PAPER` | No | `true` | Set `false` only after paper validation checklist passes |
+| `MAX_TRADE_SIZE_USDC` | No | `50` | Hard cap per trade |
+| `POLY_API_KEY` | Yes (live) | — | Polymarket CLOB API key |
+| `POLY_API_SECRET` | Yes (live) | — | Polymarket CLOB API secret |
+| `POLY_API_PASSPHRASE` | Yes (live) | — | Polymarket CLOB API passphrase |
+| `TELEGRAM_BOT_TOKEN` | No | — | Bot token from @BotFather — enables alerts + remote control |
+| `TELEGRAM_CHAT_ID` | No | — | Your Telegram user/chat ID |
+| `FRED_API_KEY` | No | — | Adds consensus CPI/GDP/unemployment detail; basic data works without it |
+| `GLASSNODE_API_KEY` | No | — | On-chain netflow; falls back to DeFiLlama + Blockchain.com if absent |
 <!-- END AUTO-GENERATED -->
 
 ---
@@ -75,7 +92,7 @@ python main.py
 ## Running
 
 ```bash
-# Paper mode (default -- safe, no real money)
+# Paper mode (default — safe, no real money)
 python main.py
 
 # Live mode (only after paper validation checklist passes)
@@ -90,8 +107,24 @@ pytest tests/feeds/
 pytest tests/trading/
 pytest tests/test_integration_multi_asset.py
 
-# Verbose
-pytest -v
+# Calibration report
+python -m calibration.metrics
+python -m calibration.metrics --detailed   # per-signal attribution, category breakdown, edge decay
+
+# Signal weight optimizer (requires 100+ resolved fills)
+python -m calibration.weight_optimizer
+
+# Market screener (ranked watchlist)
+python -m market.market_screener
+
+# Redeem resolved positions manually
+python -m trading.redeemall
+
+# Set on-chain allowances (run once before live trading)
+python -m setup.allowances
+
+# Telegram remote control (separate process)
+python telegram_bot.py
 ```
 
 ---
@@ -104,13 +137,16 @@ Lognormal GBM prior anchors the model; signals adjust via logit addition:
 
 | Signal | Weight | Source | Notes |
 |--------|--------|--------|-------|
-| Lognormal prior | -- | Deribit DVOL | `P(S_T > target)` under GBM; falls back to 0.5 if DVOL unavailable |
+| Lognormal prior | — | Deribit DVOL | `P(S_T > target)` under GBM; falls back to 0.5 if DVOL unavailable |
 | `vol_skew` | 0.15 | Deribit options | 25-delta put IV minus call IV |
 | `funding_rate` | 0.15 | Binance FAPI | Positive = crowded longs = mean-revert pressure |
 | `onchain_netflow` | 0.10 | Glassnode (paid) | Exchange outflow = bullish |
 | `macro_dxy` | 0.10 | Yahoo Finance | DXY inverse correlation to crypto |
 | `stablecoin_supply` | 0.05 | DeFiLlama (free) | Rising supply = new money entering |
 | `btc_hashrate` | 0.05 | Blockchain.com (free) | BTC only; rising hash rate = miner confidence |
+| `flatline` | 0.20 | CLOB price history | 48h price range <2c within 72h of expiry → signals to leading side (all categories) |
+| `orderbook_imbalance` | 0.10 | CLOB order book | Bid/ask depth ratio >2.5 or <0.4 sustained 3+ readings (all categories) |
+| `volume_divergence` | 0.10 | CLOB trade data | Volume >2× rolling avg without proportional price move (all categories) |
 
 ### Rate cut count markets ("Will N Fed rate cuts happen in 2026?")
 
@@ -138,10 +174,14 @@ Signal filter: **>=2 signals + >=60% directional agreement**, OR **decisive prio
 
 | Category | Examples | Model |
 |----------|---------|-------|
-| `crypto` | "Will BTC hit $150k by Dec 31?" | Lognormal GBM |
+| `crypto` | "Will BTC hit $150k by Dec 31?" | Lognormal GBM + microstructure signals |
 | `rates` (count) | "Will 2 Fed rate cuts happen in 2026?" | Poisson(lambda) |
 | `rates` (meeting) | "Will the Fed cut 25 bps at the April meeting?" | `fed_may_cut_prob` signal |
 | `macro` | "Will CPI exceed 3.5% in Q1?" | Normal forecast-error |
+| `election` | "Will Democrats win the 2026 midterm?" | Flatline signal near resolution |
+| `event` | "Will the ETH ETF be approved by Q2?" | Flatline signal + time-decay |
+
+All categories receive flatline, order-book imbalance, and volume-divergence signals.
 
 Skipped: FDV/market-cap questions, token launch markets, sports, entertainment.
 
@@ -163,8 +203,11 @@ parse_contract -> build_model_probability (or build_macro_probability)
 
 ### Arbitrage Scanner
 
-Every 30 seconds, `arb_scan_loop` checks monotonicity across threshold chains:
-`P(BTC > $80k) >= P(BTC > $85k) >= P(BTC > $90k)`. Violations logged to `fills.jsonl`.
+Every 30 seconds, `arb_scan_loop` checks:
+1. **Monotonicity violations** — `P(BTC > $80k) ≥ P(BTC > $85k) ≥ P(BTC > $90k)` within a single expiry
+2. **Cross-temporal violations** — `P(BTC > $100k by Mar) ≤ P(BTC > $100k by Jun)` across expiry dates
+
+Violations with sufficient spread (>1% net of fees) logged to `fills.jsonl` and sent as Telegram alerts (spread >5%).
 
 ---
 
@@ -186,13 +229,16 @@ Do **not** set `PAPER=false` until:
 
 ## Tests
 
-222 tests across 15 modules. All passing.
+401 tests across 23 modules. All passing.
 
 ```bash
 pytest                                         # run all
-pytest tests/engine/                           # engine tests
+pytest tests/engine/                           # engine tests (parser, Bayesian, arb, signals)
 pytest tests/feeds/                            # feed tests
 pytest tests/trading/                          # trading tests
+pytest tests/calibration/                      # calibration + weight optimizer
+pytest tests/market/                           # screener + depth tracking
+pytest tests/monitoring/                       # alert system
 pytest tests/test_integration_multi_asset.py   # end-to-end integration
 pytest -v                                      # verbose
 ```
