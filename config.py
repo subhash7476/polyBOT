@@ -45,6 +45,7 @@ SIGNAL_WEIGHTS = {
     "fed_cut_prob":      0.10,
     "flatline":          0.20,
     "orderbook_imbalance": 0.10,
+    "volume_divergence": 0.10,
 }
 
 # Flatline detector
@@ -57,6 +58,11 @@ FLATLINE_MIN_LEADING_PRICE = 0.60   # leading side must be > 60% to fire
 OBI_RATIO_HIGH = 2.5    # bid/ask depth ratio > this -> bullish signal
 OBI_RATIO_LOW = 0.4     # bid/ask depth ratio < this -> bearish signal
 OBI_MIN_READINGS = 3    # must sustain over this many consecutive readings
+
+# Volume-price divergence
+VPD_VOLUME_MULTIPLE = 2.0    # current volume must exceed rolling_avg × this
+VPD_PRICE_MOVE_MAX = 0.02    # price must NOT have moved more than this (2%)
+VPD_LOOKBACK_HOURS = 24      # rolling average window
 
 # Intervals (seconds)
 FEDWATCH_POLL_INTERVAL = 300
