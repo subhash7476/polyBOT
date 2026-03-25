@@ -255,6 +255,10 @@ class CLOBMonitor(BaseFeed):
                             await self._handle(msg)
             except Exception as exc:
                 self.log.warning(f"WS error: {exc} — reconnecting in 10s")
+                # HEARTBEAT SAFETY: if disconnect > 60s, consider cancelling open orders.
+                # Currently handled by reconnect loop + paper mode position TTL.
+                # TODO (Phase 4D): on live mode, call executor.cancel_all_open_orders()
+                # if time since last stamp_feed("clob") > 60 seconds.
                 await asyncio.sleep(10)
 
     async def _handle(self, msg: dict):

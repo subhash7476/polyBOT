@@ -17,7 +17,37 @@ from utils.logger import get_logger
 _MAX_RETRIES = 3
 _RETRY_DELAY = 1.0  # seconds between attempts
 
+_ORDER_STALE_MINUTES = 30      # cancel open orders older than this
+_PRICE_MOVE_CANCEL_PCT = 0.02  # cancel if price moved > 2% since order placed
+_ORDER_SPLIT_THRESHOLD = 30.0  # split orders above this USDC amount
+
 log = get_logger(__name__)
+
+
+def should_cancel_stale_order(
+    order_age_minutes: float,
+    price_at_order: float,
+    current_price: float,
+) -> bool:
+    """Return True if a stale open order should be cancelled and re-priced."""
+    if order_age_minutes < _ORDER_STALE_MINUTES:
+        return False
+    price_change = abs(current_price - price_at_order) / max(price_at_order, 0.001)
+    return price_change > _PRICE_MOVE_CANCEL_PCT
+
+
+def split_order_sizes(total_size: float, n_splits: int = 2) -> list[float]:
+    """
+    For orders above _ORDER_SPLIT_THRESHOLD, split into n_splits pieces.
+    Each piece gets a slightly different price (caller offsets by 0.5-1c).
+    Returns list of sizes summing to total_size.
+    """
+    if total_size <= _ORDER_SPLIT_THRESHOLD:
+        return [total_size]
+    piece = round(total_size / n_splits, 2)
+    sizes = [piece] * (n_splits - 1)
+    sizes.append(round(total_size - sum(sizes), 2))
+    return sizes
 
 
 @dataclass
