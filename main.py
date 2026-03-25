@@ -42,6 +42,7 @@ from calibration.tracker import CalibrationTracker
 from dashboard.state import DashboardState
 from dashboard.loops import dashboard_loop, update_scan_stats
 from dashboard.server import start_dashboard_server
+from monitoring.alerts import get_alert_manager, AlertType
 from utils.logger import get_logger
 
 log = get_logger("main")
@@ -235,6 +236,14 @@ async def trading_loop(
                     n_traded += 1
                     mkt_rec["traded"] = True
                     mkt_rec["reason"] = None
+                    asyncio.create_task(get_alert_manager().send(
+                        AlertType.TRADE_EXECUTED,
+                        get_alert_manager().format_trade(
+                            side=side, question=contract_state.question,
+                            size=size, model_prob=model_prob,
+                            market_mid=contract_state.mid, ev=ev,
+                        )
+                    ))
                 dash.update({"active_markets_append": mkt_rec})
 
             except Exception as exc:
@@ -263,6 +272,11 @@ async def arb_scan_loop(
         violations = find_monotonicity_violations(threshold_markets, min_spread=0.03)
 
         for v in violations:
+            if v.spread > 0.05:
+                asyncio.create_task(get_alert_manager().send(
+                    AlertType.ARB_DETECTED,
+                    get_alert_manager().format_arb(v.trade_description, v.spread)
+                ))
             log.info(f"ARB: {v.trade_description} | spread={v.spread:.3f}")
             tracker.log_signal(
                 token_id=f"arb_{v.low_strike_token[:8]}_{v.high_strike_token[:8]}",
