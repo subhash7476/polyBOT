@@ -2,6 +2,7 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, patch
 from market.state import AppState, BalanceState
+from trading.balance import _extract_balance_value
 
 def test_balance_state_session_pnl():
     bs = BalanceState(session_start=100.0, current=95.0)
@@ -19,6 +20,18 @@ def test_appstate_has_balance():
     state = AppState()
     assert hasattr(state, "balance")
     assert isinstance(state.balance, BalanceState)
+
+def test_extract_balance_value_from_list_shape():
+    data = [{"user": "0xabc", "value": 12.5}]
+    assert _extract_balance_value(data) == pytest.approx(12.5)
+
+def test_extract_balance_value_from_portfolio_shape():
+    data = {"portfolioValue": 42.0}
+    assert _extract_balance_value(data) == pytest.approx(42.0)
+
+def test_extract_balance_value_from_dict_value_shape():
+    data = {"user": "0xabc", "value": 7.25}
+    assert _extract_balance_value(data) == pytest.approx(7.25)
 
 @pytest.mark.asyncio
 async def test_balance_poller_sets_session_start_on_first_fetch():

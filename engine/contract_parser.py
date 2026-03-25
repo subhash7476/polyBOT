@@ -34,7 +34,13 @@ ASSET_ALIASES: dict = {
 }
 DIRECTION_ABOVE = ["above", "over", "exceed", "higher than", "hit", "reach", ">"]
 DIRECTION_BELOW = ["below", "under", "drop", "fall below", "<"]
-RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]
+# Use word-boundary regex to avoid false positives: "rate" in "operate",
+# "fed" in "federal"/"fedotov", "hike" in valid non-rate contexts.
+_RATE_RE = re.compile(
+    r'\bfed\b|\brates?\b|\bfomc\b|\bbps\b|\bbasis\s+points\b|\bcut\s+rates\b|\bhike\b',
+    re.IGNORECASE,
+)
+RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]  # kept for reference
 
 # Questions that look like crypto but aren't price threshold markets
 _SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
@@ -58,7 +64,7 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
     contract = ParsedContract(token_id=token_id, question=question)
 
     # 1. Rate contracts — detect early, extract direction/target/expiry
-    if any(kw in q for kw in RATE_KEYWORDS):
+    if _RATE_RE.search(q):
         contract.category = "rates"
         contract.asset = None
 
@@ -85,7 +91,7 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
                 contract.direction = "below"
             elif any(w in q for w in ["hike", "raise", "increase", "tighten"]):
                 contract.direction = "above"
-            elif any(w in q for w in ["hold", "steady", "unchanged"]):
+            elif any(w in q for w in ["hold", "steady", "unchanged", "no change", "no rate change", "pause", "maintain"]):
                 contract.direction = "hold"
             elif "above" in q:
                 contract.direction = "above"

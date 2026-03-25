@@ -64,6 +64,12 @@ async def trading_loop(
             log.debug("feeds stale — skipping scan")
             continue
 
+        # In paper mode, expire stale positions so the bot keeps exploring
+        if PAPER:
+            expired = risk.expire_paper_positions(config.PAPER_POSITION_TTL_HOURS)
+            if expired:
+                log.info(f"expired {expired} paper position(s) — slots reopened")
+
         n_total = len(markets)
         n_parseable = n_signal = n_liquidity = n_ev = n_traded = 0
 
@@ -160,6 +166,7 @@ async def trading_loop(
                     signal_count=signal_count,
                 )
                 if size <= 0:
+                    log.info(f"kelly=0 [{yes_token_id[:8]}]: model={model_prob:.3f} mid={contract_state.mid:.3f}")
                     mkt_rec["reason"] = "kelly=0"
                     dash.update({"active_markets_append": mkt_rec})
                     continue
@@ -167,7 +174,7 @@ async def trading_loop(
                 # 7. Risk gate — Fix 3: direction-bucketed group check
                 ok, risk_reason = await risk.can_trade(yes_token_id, parsed, size, feeds)
                 if not ok:
-                    log.debug(f"risk block {yes_token_id[:8]}: {risk_reason}")
+                    log.info(f"risk block [{yes_token_id[:8]}]: {risk_reason}")
                     mkt_rec["reason"] = risk_reason
                     dash.update({"active_markets_append": mkt_rec})
                     continue

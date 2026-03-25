@@ -3,7 +3,7 @@ from trading.slippage import estimate_slippage, SlippageEstimate
 
 
 def test_thin_market_not_tradeable():
-    est = estimate_slippage("BUY", 50.0, best_bid=0.48, best_ask=0.52, volume_usd=5_000)
+    est = estimate_slippage("BUY", 50.0, best_bid=0.48, best_ask=0.52, volume_usd=500)
     assert est.tradeable is False
 
 

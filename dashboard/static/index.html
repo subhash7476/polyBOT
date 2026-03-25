@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polymarket Bot Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #c9d1d9; --muted: #8b949e; --green: #3fb950;
+    --red: #f85149; --amber: #d29922; --blue: #58a6ff;
+    --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; }
+
+  /* Status bar */
+  #status-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px; padding: 8px 16px; flex-wrap: wrap;
+  }
+  .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid var(--green); }
+  .badge-red   { background: rgba(248,81,73,.15);  color: var(--red);   border: 1px solid var(--red); }
+  .badge-amber { background: rgba(210,153,34,.15); color: var(--amber); border: 1px solid var(--amber); }
+  .badge-blue  { background: rgba(88,166,255,.15); color: var(--blue);  border: 1px solid var(--blue); }
+  #conn-status.connected::before { content: '● '; color: var(--green); }
+  #conn-status.disconnected::before { content: '● '; color: var(--red); }
+
+  /* Layout */
+  .grid { display: grid; gap: 12px; padding: 12px; grid-template-columns: 1fr 1fr; }
+  .grid-3 { display: grid; gap: 12px; padding: 12px 12px 0; grid-template-columns: 1fr 1fr 1fr; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .panel-header { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; display: flex; justify-content: space-between; }
+  .panel-body { padding: 0; overflow-x: auto; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 6px 12px; text-align: right; color: var(--muted); font-size: 11px; font-weight: 400; border-bottom: 1px solid var(--border); }
+  th:first-child { text-align: left; }
+  td { padding: 5px 12px; text-align: right; border-bottom: 1px solid rgba(48,54,61,.5); }
+  td:first-child { text-align: left; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(48,54,61,.4); }
+  .num { font-variant-numeric: tabular-nums; }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .muted { color: var(--muted); }
+
+  /* Flash animation */
+  @keyframes flash-green { 0%,100%{background:transparent} 30%{background:rgba(63,185,80,.25)} }
+  @keyframes flash-red   { 0%,100%{background:transparent} 30%{background:rgba(248,81,73,.25)} }
+  .flash-green { animation: flash-green .6s ease; }
+  .flash-red   { animation: flash-red   .6s ease; }
+
+  /* Funnel */
+  .funnel { display: flex; align-items: stretch; gap: 0; }
+  .funnel-step { flex: 1; padding: 12px 8px; text-align: center; border-right: 1px solid var(--border); }
+  .funnel-step:last-child { border-right: none; }
+  .funnel-num { font-size: 24px; font-weight: 700; color: var(--blue); }
+  .funnel-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-transform: uppercase; }
+  .funnel-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; }
+  .funnel-bar-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .5s ease; }
+
+  /* Market rows */
+  .pass { color: var(--green); }
+  .fail { color: var(--muted); }
+  .question-cell { max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Responsive */
+  @media (max-width: 900px) { .grid, .grid-3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- Status Bar -->
+<div id="status-bar">
+  <span id="conn-status" class="disconnected">Connecting…</span>
+  <span id="bot-mode" class="badge badge-amber">PAPER</span>
+  <span id="uptime" class="muted">uptime —</span>
+  <span style="flex:1"></span>
+  <span class="muted" style="font-size:11px">Feed ages:</span>
+  <span id="feed-binance" class="badge badge-amber" title="Binance spot+funding">Binance —</span>
+  <span id="feed-deribit" class="badge badge-amber" title="Deribit DVOL+skew">Deribit —</span>
+  <span id="feed-macro"   class="badge badge-amber" title="FRED+SOFR+Yahoo">Macro —</span>
+</div>
+
+<!-- Row 1: Spot+Vol table | Macro panel -->
+<div class="grid">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Spot Prices &amp; Volatility</span>
+      <span id="hdr-binance" class="muted" style="font-size:10px">Binance —</span>
+    </div>
+    <div class="panel-body">
+      <table id="spot-table">
+        <thead><tr>
+          <th>Asset</th>
+          <th>Price</th>
+          <th>DVOL</th>
+          <th>Funding</th>
+          <th>Skew</th>
+        </tr></thead>
+        <tbody id="spot-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Macro</span>
+      <span id="hdr-macro" class="muted" style="font-size:10px">FRED —</span>
+    </div>
+    <div class="panel-body">
+      <table id="macro-table">
+        <tbody>
+          <tr><td>DXY</td><td id="m-dxy" class="num">—</td></tr>
+          <tr><td>10Y Yield</td><td id="m-yield" class="num">—</td></tr>
+          <tr><td>SOFR</td><td id="m-sofr" class="num">—</td></tr>
+          <tr><td>Fed Cut Prob (May)</td><td id="m-cut-prob" class="num">—</td></tr>
+          <tr><td>Expected Cuts (λ)</td><td id="m-cuts" class="num">—</td></tr>
+          <tr><td>CPI YoY</td><td id="m-cpi" class="num">—</td></tr>
+          <tr><td>Unemployment</td><td id="m-unrate" class="num">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: Scan funnel | Open positions -->
+<div class="grid">
+  <div class="panel">
+    <div class="panel-header">Scan Funnel</div>
+    <div class="panel-body">
+      <div class="funnel" id="funnel"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Open Positions</div>
+    <div class="panel-body">
+      <table>
+        <thead><tr>
+          <th>Market</th><th>Side</th><th>Size</th><th>Entry</th><th>Mid</th><th>P&amp;L</th>
+        </tr></thead>
+        <tbody id="pos-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: Active markets (full width) -->
+<div style="padding: 0 12px 12px">
+  <div class="panel">
+    <div class="panel-header">Active Markets (last 50 evaluated)</div>
+    <div class="panel-body">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Question</th>
+          <th>Model</th><th>Market</th><th>EV</th><th>Signals</th><th>Result</th>
+        </tr></thead>
+        <tbody id="markets-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── helpers ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt = (v, dec=2, suffix='') => v == null ? '—' : (+v).toFixed(dec) + suffix;
+const pct  = v => v == null ? '—' : (+v * 100).toFixed(1) + '%';
+
+let prev = {};
+
+function ageClass(ageStr) {
+  if (!ageStr || ageStr === '—') return 'badge-amber';
+  const n = parseInt(ageStr);
+  if (ageStr.endsWith('s ago') && n < 120) return 'badge-green';
+  if (ageStr.endsWith('m ago') && n < 10)  return 'badge-green';
+  if (ageStr.endsWith('m ago') && n < 30)  return 'badge-amber';
+  return 'badge-red';
+}
+
+function flashCell(el, newVal, oldVal) {
+  if (oldVal == null || newVal === oldVal) return;
+  el.classList.remove('flash-green', 'flash-red');
+  void el.offsetWidth; // reflow
+  el.classList.add(newVal > oldVal ? 'flash-green' : 'flash-red');
+}
+
+// ── spot table ─────────────────────────────────────────────────────────────
+const ASSETS = ['BTC','ETH','SOL','XRP','BNB','DOGE','ADA','AVAX'];
+
+function buildSpotTable(d) {
+  const tbody = $('spot-tbody');
+  tbody.innerHTML = '';
+  for (const a of ASSETS) {
+    const price = d.spot_prices?.[a];
+    const dvol  = d.dvol?.[a];
+    const fund  = d.funding_rates?.[a];
+    const skew  = d.vol_skew?.[a];
+    const row = tbody.insertRow();
+    row.insertCell().textContent = a;
+    const priceCell = row.insertCell();
+    priceCell.className = 'num';
+    priceCell.textContent = price ? '$' + price.toLocaleString('en', {maximumFractionDigits: 2}) : '—';
+    flashCell(priceCell, price, prev.spot_prices?.[a]);
+    row.insertCell().textContent = dvol ? dvol.toFixed(1) : '—';
+    const fCell = row.insertCell();
+    fCell.className = 'num ' + (fund > 0 ? 'pos' : fund < 0 ? 'neg' : '');
+    fCell.textContent = fund != null ? (fund * 100).toFixed(4) + '%' : '—';
+    row.insertCell().textContent = skew != null ? skew.toFixed(3) : '—';
+  }
+}
+
+// ── macro ──────────────────────────────────────────────────────────────────
+function updateMacro(d) {
+  $('m-dxy').textContent       = fmt(d.dxy, 2);
+  $('m-yield').textContent     = fmt(d.yield_10y, 2, '%');
+  $('m-sofr').textContent      = fmt(d.sofr, 2, '%');
+  $('m-cut-prob').textContent  = pct(d.fed_may_cut_prob);
+  $('m-cuts').textContent      = fmt(d.fed_expected_cuts, 2);
+  $('m-cpi').textContent       = fmt(d.cpi, 1, '%');
+  $('m-unrate').textContent    = fmt(d.unrate, 1, '%');
+}
+
+// ── funnel ─────────────────────────────────────────────────────────────────
+const FUNNEL_STEPS = [
+  ['n_total','Total'],['n_parseable','Parseable'],['n_signal','Signal OK'],
+  ['n_liquidity','Liquid'],['n_ev','EV+'],['n_traded','Traded']
+];
+
+function updateFunnel(stats) {
+  const el = $('funnel');
+  el.innerHTML = '';
+  const total = stats.n_total || 1;
+  for (const [key, label] of FUNNEL_STEPS) {
+    const n = stats[key] ?? 0;
+    const pct = Math.min(100, Math.round(n / total * 100));
+    el.innerHTML += `
+      <div class="funnel-step">
+        <div class="funnel-num">${n}</div>
+        <div class="funnel-label">${label}</div>
+        <div class="funnel-bar"><div class="funnel-bar-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }
+}
+
+// ── positions ──────────────────────────────────────────────────────────────
+function updatePositions(positions) {
+  const tbody = $('pos-tbody');
+  tbody.innerHTML = '';
+  if (!positions.length) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 6; cell.className = 'muted'; cell.style.textAlign = 'center';
+    cell.textContent = 'No open positions';
+    return;
+  }
+  for (const p of positions) {
+    const row = tbody.insertRow();
+    const q = row.insertCell(); q.className = 'question-cell'; q.title = p.question;
+    q.textContent = p.question;
+    row.insertCell().textContent = p.side === 'BUY_YES' ? 'YES' : 'NO';
+    row.insertCell().textContent = '$' + (p.size_usdc || 0).toFixed(0);
+    row.insertCell().textContent = pct(p.entry_price);
+    row.insertCell().textContent = pct(p.current_mid);
+    const pnl = row.insertCell();
+    pnl.className = 'num ' + (p.pnl_usdc >= 0 ? 'pos' : 'neg');
+    pnl.textContent = (p.pnl_usdc >= 0 ? '+' : '') + '$' + (p.pnl_usdc || 0).toFixed(2);
+  }
+}
+
+// ── active markets ─────────────────────────────────────────────────────────
+function updateMarkets(markets) {
+  const tbody = $('markets-tbody');
+  tbody.innerHTML = '';
+  const sorted = [...markets].reverse(); // newest first
+  for (const m of sorted.slice(0, 50)) {
+    const row = tbody.insertRow();
+    const q = row.insertCell(); q.className = 'question-cell'; q.title = m.question || '';
+    q.textContent = m.question || '—';
+    row.insertCell().textContent = pct(m.model_prob);
+    row.insertCell().textContent = pct(m.market_mid);
+    const evCell = row.insertCell();
+    evCell.className = 'num ' + ((m.ev || 0) > 0 ? 'pos' : 'neg');
+    evCell.textContent = m.ev != null ? (m.ev * 100).toFixed(1) + '%' : '—';
+    row.insertCell().textContent = m.signal_count ?? '—';
+    const res = row.insertCell();
+    res.className = m.traded ? 'pass' : (m.reason ? 'fail' : 'muted');
+    res.textContent = m.traded ? '✓ TRADED' : (m.reason || '—');
+  }
+}
+
+// ── status bar ─────────────────────────────────────────────────────────────
+function updateStatus(d) {
+  const uptime = d.uptime_seconds || 0;
+  const h = Math.floor(uptime / 3600), m = Math.floor((uptime % 3600) / 60), s = Math.floor(uptime % 60);
+  $('uptime').textContent = `uptime ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+  const ages = d.feed_ages || {};
+  for (const [feed, elId] of [['binance','feed-binance'],['deribit','feed-deribit'],['macro','feed-macro']]) {
+    const el = $(elId);
+    const age = ages[feed];
+    el.textContent = feed.charAt(0).toUpperCase() + feed.slice(1) + ' ' + (age || '—');
+    el.className = 'badge ' + ageClass(age);
+  }
+  $('hdr-binance').textContent = ages.binance || '—';
+  $('hdr-macro').textContent   = ages.macro || '—';
+}
+
+// ── SSE connection ─────────────────────────────────────────────────────────
+function connect() {
+  const es = new EventSource('/stream');
+
+  es.onopen = () => {
+    $('conn-status').textContent = 'Connected';
+    $('conn-status').className = 'connected';
+  };
+
+  es.onmessage = e => {
+    let d;
+    try { d = JSON.parse(e.data); } catch { return; }
+
+    buildSpotTable(d);
+    updateMacro(d);
+    updateFunnel(d.scan_stats || {});
+    updatePositions(d.positions || []);
+    updateMarkets(d.active_markets || []);
+    updateStatus(d);
+
+    prev = d;
+  };
+
+  es.onerror = () => {
+    $('conn-status').textContent = 'Disconnected — reconnecting…';
+    $('conn-status').className = 'disconnected';
+    es.close();
+    setTimeout(connect, 3000);
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

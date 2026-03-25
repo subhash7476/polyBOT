@@ -5,6 +5,7 @@ log = get_logger(__name__)
 
 _IMPACT_FACTOR = 0.10   # our order consumes ~10% of available liquidity (conservative)
 _MAX_SLIPPAGE  = 0.10   # hard cap at 10%
+_MAX_SPREAD    = 0.15   # reject markets where bid-ask spread > 15 cents
 
 
 @dataclass
@@ -27,7 +28,17 @@ def estimate_slippage(
     Slippage ≈ (size / volume) × IMPACT_FACTOR, capped at 10%.
     Rejects any market below $10k volume as untradeable regardless of size.
     """
-    if volume_usd < 10_000:
+    if volume_usd < 1_000:
+        log.info(f"illiquid: vol=${volume_usd:.0f} bid={best_bid:.3f} ask={best_ask:.3f}")
+        return SlippageEstimate(
+            adjusted_price=best_ask if side == "BUY" else best_bid,
+            slippage_pct=1.0,
+            tradeable=False,
+        )
+
+    spread = best_ask - best_bid
+    if spread > _MAX_SPREAD:
+        log.info(f"wide spread: bid={best_bid:.3f} ask={best_ask:.3f} spread={spread:.3f} vol=${volume_usd:.0f}")
         return SlippageEstimate(
             adjusted_price=best_ask if side == "BUY" else best_bid,
             slippage_pct=1.0,

@@ -1,8 +1,16 @@
 import json
 import asyncio
+from datetime import datetime, timezone
 import httpx
 import websockets
-from config import POLYMARKET_WS_URL, MIN_MARKET_LIQUIDITY
+from config import (
+    POLYMARKET_WS_URL,
+    MIN_MARKET_LIQUIDITY,
+    MARKET_CATEGORY_FILTER,
+    MARKET_SORT_MODE,
+    MAX_SUBSCRIBED_MARKETS,
+    PARSEABLE_MARKET_RESERVE,
+)
 from feeds.base import BaseFeed
 from market.state import AppState, ContractState
 from market.contract_filter import meets_liquidity_threshold
@@ -17,10 +25,61 @@ _PAGE_LIMIT = 100
 _MAX_PAGES = 30  # scan up to 3,000 markets
 
 
+def _allowed_categories() -> set[str]:
+    raw = (MARKET_CATEGORY_FILTER or "").strip()
+    if not raw:
+        return set()
+    return {part.strip().lower() for part in raw.split(",") if part.strip()}
+
+
+def _sort_key(meta: dict) -> tuple:
+    volume = float(meta.get("volume") or 0.0)
+    volume_24h = float(meta.get("volume_24h") or 0.0)
+    liquidity = float(meta.get("liquidity") or 0.0)
+    expiry = meta.get("expiry")
+    expiry_ts = expiry.timestamp() if expiry else float("inf")
+    now_ts = datetime.now(timezone.utc).timestamp()
+    time_left = max(expiry_ts - now_ts, 0.0) if expiry else float("inf")
+
+    if MARKET_SORT_MODE == "volume24h_desc":
+        return (-volume_24h, -volume, time_left, meta["question"])
+    if MARKET_SORT_MODE == "liquidity_desc":
+        return (-liquidity, -volume_24h, -volume, time_left, meta["question"])
+    if MARKET_SORT_MODE == "expiry_asc":
+        return (time_left, -volume_24h, -volume, meta["question"])
+    if MARKET_SORT_MODE == "hybrid":
+        return (-volume_24h, -liquidity, time_left, -volume, meta["question"])
+    return (-volume, -volume_24h, time_left, meta["question"])
+
+
+def select_markets(token_map: dict) -> dict:
+    allowed_categories = _allowed_categories()
+    candidates = [
+        (yes_id, meta)
+        for yes_id, meta in token_map.items()
+        if not allowed_categories or meta["category"] in allowed_categories
+    ]
+    candidates.sort(key=lambda item: _sort_key(item[1]))
+    if MAX_SUBSCRIBED_MARKETS <= 0:
+        return dict(candidates)
+
+    parseable = [item for item in candidates if item[1].get("parseable")]
+    others = [item for item in candidates if not item[1].get("parseable")]
+
+    reserve = min(PARSEABLE_MARKET_RESERVE, MAX_SUBSCRIBED_MARKETS)
+    selected = parseable[:reserve]
+
+    remaining = MAX_SUBSCRIBED_MARKETS - len(selected)
+    if remaining > 0:
+        remaining_pool = others + parseable[len(selected):]
+        selected.extend(remaining_pool[:remaining])
+    return dict(selected)
+
+
 async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
     """
     Fetch active order-book markets from Gamma API.
-    Returns: {yes_token_id: {question, category, no_token_id, volume, best_bid, best_ask}}
+    Returns: {yes_token_id: market metadata for subscription + trading}
     """
     token_map = {}
     offset = 0
@@ -57,10 +116,10 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
             yes_id, no_id = token_ids[0], token_ids[1]
             question = m.get("question", "")
             parsed = parse_contract(yes_id, question)
-            if not parsed.parseable:
-                continue
 
             volume = float(m.get("volumeClob") or m.get("volume") or 0)
+            volume_24h = float(m.get("volume24hrClob") or m.get("volume24hr") or 0)
+            liquidity = float(m.get("liquidityClob") or m.get("liquidity") or 0)
 
             # outcomePrices[0] is the YES probability from the last trade/AMM price
             # Use it to synthesize a tight spread when the CLOB order book is empty
@@ -82,17 +141,34 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
 
             token_map[yes_id] = {
                 "question":    question,
-                "category":    parsed.category,
+                "category":    parsed.category if parsed.parseable else "unknown",
+                "expiry":      parsed.expiry or _parse_datetime(m.get("endDateIso") or m.get("endDate")),
+                "parseable":   parsed.parseable,
                 "no_token_id": no_id,
                 "volume":      volume,
+                "volume_24h":  volume_24h,
+                "liquidity":   liquidity,
                 "best_bid":    raw_bid,
                 "best_ask":    raw_ask,
             }
 
         offset += _PAGE_LIMIT
 
-    log.info(f"found {len(token_map)} parseable crypto/price markets from Gamma API")
+    parseable_count = sum(1 for meta in token_map.values() if meta["parseable"])
+    log.info(
+        f"found {len(token_map)} active order-book markets from Gamma API "
+        f"({parseable_count} parseable by strategy)"
+    )
     return token_map
+
+
+def _parse_datetime(value: str | None):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
 
 
 def build_threshold_markets(markets: dict) -> list:
@@ -128,9 +204,10 @@ class CLOBMonitor(BaseFeed):
         # Fetch markets once — persists across WebSocket reconnects
         async with httpx.AsyncClient() as client:
             token_map = await fetch_active_markets(client)
+        token_map = select_markets(token_map)
 
         if not token_map:
-            log.warning("no parseable crypto price markets found — sleeping 5 min")
+            log.warning("no active order-book markets selected; sleeping 5 min")
             await asyncio.sleep(300)
             return
 
@@ -148,7 +225,15 @@ class CLOBMonitor(BaseFeed):
             if meets_liquidity_threshold(cs, MIN_MARKET_LIQUIDITY):
                 await self._state.upsert_market(cs)
 
-        log.info(f"seeded {len(self._state.markets)} liquid markets into state")
+        parseable_seeded = sum(
+            1
+            for yes_id in self._state.markets
+            if token_map.get(yes_id, {}).get("parseable")
+        )
+        log.info(
+            f"seeded {len(self._state.markets)} liquid markets into state "
+            f"({parseable_seeded} parseable by strategy)"
+        )
 
         token_ids = list(token_map.keys())
         subscribe_msg = {

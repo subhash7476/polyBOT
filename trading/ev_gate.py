@@ -43,16 +43,14 @@ def calculate_ev(
     EV with slippage-adjusted entry price + spread penalty + adverse selection penalty.
     Returns (ev, side).
     """
-    side, mid_price = get_trade_direction(model_prob, market_price)
+    side, _ = get_trade_direction(model_prob, market_price)
     effective_prob = model_prob if side == "BUY_YES" else (1 - model_prob)
 
-    # Spread penalty: half the distance from mid to adjusted entry (crossing the spread)
-    spread_penalty = abs(slippage.adjusted_price - mid_price) / 2
-
+    # adjusted_price is already best_ask (BUY_YES) or best_no_ask (BUY_NO),
+    # so spread is already captured — no additional spread_penalty needed.
+    # Fee is a percentage of notional (price × fee_pct), not a flat per-share add.
     cost = (
-        slippage.adjusted_price
-        + POLYMARKET_FEE
-        + spread_penalty
+        slippage.adjusted_price * (1 + POLYMARKET_FEE)
         + ADVERSE_SELECTION_PENALTY
     )
     ev = (effective_prob * payout) - cost

@@ -8,7 +8,8 @@ preventing silent 2× BTC exposure.
 """
 
 import asyncio
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from market.state import FeedState
 from engine.contract_parser import ParsedContract
 from utils.logger import get_logger
@@ -23,6 +24,7 @@ class Position:
     group_key: str
     size_usdc: float
     entry_price: float
+    opened_at: float = field(default_factory=time.time)
 
 
 class RiskManager:
@@ -123,6 +125,24 @@ class RiskManager:
                 else:
                     self.consecutive_losses = 0
                 log.info(f"closed {token_id[:8]} pnl=${pnl:.2f} daily_pnl=${self.daily_pnl:.2f}")
+
+    def expire_paper_positions(self, ttl_hours: float) -> int:
+        """
+        Remove paper positions older than ttl_hours.
+        Called each scan cycle in paper mode so the bot keeps exploring.
+        Returns number of positions expired.
+        """
+        now = time.time()
+        cutoff = now - ttl_hours * 3600
+        expired = [
+            tid for tid, pos in self.open_positions.items()
+            if pos.opened_at < cutoff
+        ]
+        for tid in expired:
+            held_h = (now - self.open_positions[tid].opened_at) / 3600
+            log.info(f"paper position expired: {tid[:8]} (held {held_h:.1f}h)")
+            del self.open_positions[tid]
+        return len(expired)
 
     def reset_daily(self):
         self.daily_pnl = 0.0

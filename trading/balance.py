@@ -16,6 +16,22 @@ _DATA_API = "https://data-api.polymarket.com"
 _DEFAULT_POLL_INTERVAL = 60.0
 
 
+def _extract_balance_value(data) -> float:
+    """Handle both legacy object and current list response shapes."""
+    if isinstance(data, list):
+        if not data:
+            return 0.0
+        first = data[0]
+        if not isinstance(first, dict):
+            raise TypeError(f"unexpected balance list item type: {type(first).__name__}")
+        return float(first.get("value", 0))
+    if isinstance(data, dict):
+        if "portfolioValue" in data:
+            return float(data.get("portfolioValue", 0))
+        return float(data.get("value", 0))
+    raise TypeError(f"unexpected balance response type: {type(data).__name__}")
+
+
 class BalancePoller:
     def __init__(self, state: AppState, wallet_address: str, poll_interval: float = _DEFAULT_POLL_INTERVAL):
         self._state = state
@@ -52,4 +68,4 @@ class BalancePoller:
             )
             resp.raise_for_status()
             data = resp.json()
-            return float(data.get("portfolioValue", 0))
+            return _extract_balance_value(data)

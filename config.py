@@ -11,10 +11,13 @@ MAX_OPEN_POSITIONS = 5
 KELLY_FRACTION = 0.05           # 5% default — conservative until calibrated
 
 # EV
-MIN_EV_THRESHOLD = 0.03
-POLYMARKET_FEE = 0.02           # Verify current taker fee
+MIN_EV_THRESHOLD = float(os.getenv("MIN_EV_THRESHOLD", "0.02"))
+POLYMARKET_FEE = float(os.getenv("POLYMARKET_FEE", "0.02"))   # fraction of notional; verify current taker fee
 ADVERSE_SELECTION_PENALTY = 0.005
 MIN_MARKET_LIQUIDITY = 1_000
+
+# Paper mode position management
+PAPER_POSITION_TTL_HOURS = float(os.getenv("PAPER_POSITION_TTL_HOURS", "6"))
 
 # Signal agreement
 MIN_SIGNALS_REQUIRED = 2
@@ -50,6 +53,13 @@ ONCHAIN_POLL_INTERVAL = 300
 DERIBIT_WS_URL = "wss://www.deribit.com/ws/api/v2"
 POLYMARKET_WS_URL = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
 POLYMARKET_CLOB_URL = "https://clob.polymarket.com"
+
+# Market discovery / subscription selection
+# Empty category filter means "all categories".
+MARKET_CATEGORY_FILTER = os.getenv("MARKET_CATEGORY_FILTER", "")
+MARKET_SORT_MODE = os.getenv("MARKET_SORT_MODE", "hybrid")
+MAX_SUBSCRIBED_MARKETS = int(os.getenv("MAX_SUBSCRIBED_MARKETS", "250"))
+PARSEABLE_MARKET_RESERVE = int(os.getenv("PARSEABLE_MARKET_RESERVE", "50"))
 
 # Credentials
 POLY_PRIVATE_KEY = os.getenv("POLY_PRIVATE_KEY", "")
