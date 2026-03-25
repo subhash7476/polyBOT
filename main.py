@@ -185,10 +185,13 @@ async def trading_loop(
                 n_ev += 1
                 mkt_rec["reason"] = "risk block"
 
-                # 6. Kelly sizing
+                # 6. Kelly sizing — use NO perspective for BUY_NO trades
+                # Kelly formula assumes BUY_YES; flip to (1-prob, 1-price) for BUY_NO
+                kelly_model_prob = (1.0 - model_prob) if side == "BUY_NO" else model_prob
+                kelly_market_price = (1.0 - contract_state.mid) if side == "BUY_NO" else contract_state.mid
                 size = fractional_kelly(
-                    model_prob=model_prob,
-                    market_price=contract_state.mid,
+                    model_prob=kelly_model_prob,
+                    market_price=kelly_market_price,
                     bankroll=BANKROLL_USDC,
                     ev=ev,
                     signal_count=signal_count,
