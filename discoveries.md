@@ -107,5 +107,32 @@ Markets are priced at 0.5-3.3% (extreme discount) and 94.8% (premium) — system
 3. When will crypto markets start generating signals? (need DVOL feed to stabilize)
 4. Is the arb pair (46866868/10526756) with 48c spread a real opportunity or stale data?
 
+## Funnel Unblock — 2026-03-27 (commit ad222ab)
+
+**Problem diagnosed:** Out of ~3,000 markets discovered, only 4 tokens ever traded (all Fed rate cut markets). Zero resolved outcomes. Zero learning. Funnel was clogged at parse, signal, and filter stages.
+
+**Root causes fixed:**
+1. **FIX 1 (already done):** Realized vol fallback in `feeds/microstructure.py` — XRP/BNB/DOGE/ADA/AVAX now get proper lognormal priors instead of 0.5 dead prior
+2. **FIX 2:** Short-dated crypto parser — "Will BTC go up in next 5 min?" now parseable; also fixed pre-existing "sol" false positive from word "resolution"
+3. **FIX 3:** Microstructure probability path — election/event/unknown now routed to `build_microstructure_probability()` (market mid as prior) instead of dying in the crypto engine with no inputs
+4. **FIX 4:** Relaxed signal filter — 2+ agreeing microstructure signals can carry a trade; high-confidence flatline (≥0.70) can act alone
+5. **FIX 5:** Periodic market re-discovery every 15 min + `PARSEABLE_MARKET_RESERVE` raised 50→150 + short-dated (<24h: +3, 24-72h: +2) sort priority boost
+6. **FIX 6:** WS handlers now record price history for ALL subscribed markets (not just parseable ones) — flatline can accumulate 48h of history before the 72h expiry gate fires
+7. **FIX 7:** Generic binary catch-all — "Will X happen?" → `category=event`, parseable=True → routes through microstructure path
+
+**Expected impact:**
+- Parseable markets: 50 → 500-1000+
+- Markets with active signals: 4 → 50-100+
+- Unique token IDs traded per day: 4 → 30+
+- First resolved outcome: April 29 → hours (short-dated crypto)
+
+**FUNNEL log added:** Each scan now emits `FUNNEL: N discovered | N parsed | N signal_ok | N liquid | N ev+ | N traded | categories: {...}`
+
+**Open questions (to resolve as data accumulates):**
+1. Are the 4 rate-cut market prices (0.5-3.3%) genuine mispricings or illiquid/stale?
+2. When will short-dated crypto markets start appearing in FUNNEL log?
+3. Is the arb pair (46866868/10526756) with 48c spread a real opportunity or stale data?
+4. Will flatline accumulate enough history to fire within 48h of bot restart?
+
 ## Backtest Results
 <!-- Populated as fills.jsonl accumulates resolved markets -->
