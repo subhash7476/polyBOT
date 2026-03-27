@@ -1,10 +1,12 @@
 import pytest
 from datetime import datetime, timezone, timedelta
+from unittest.mock import MagicMock
 from market.state import FeedState
 from engine.contract_parser import ParsedContract
 from engine.probability import (
     days_to_expiry, lognormal_prob_above,
     build_model_probability,
+    build_microstructure_probability,
 )
 
 
@@ -157,3 +159,42 @@ def test_macro_signal_uses_dxy_confidence():
     prob_no_conf, _, _ = build_model_probability(contract, feeds, weights)
     prob_full, _, _ = build_model_probability(contract, feeds_full, weights)
     assert prob_no_conf != prob_full
+
+
+# --- build_microstructure_probability ---
+
+def test_microstructure_probability_uses_market_mid_as_prior():
+    """Mid=0.65 → prior=0.65, no signals added → prob≈0.65, signal_count=0."""
+    from engine.bayesian import BayesianEngine
+    contract = make_contract(category="election")
+    contract_state = MagicMock()
+    contract_state.mid = 0.65
+
+    prob, count, engine = build_microstructure_probability(contract, contract_state, {})
+
+    assert isinstance(engine, BayesianEngine)
+    assert count == 0
+    assert abs(prob - 0.65) < 0.01
+
+
+def test_microstructure_probability_clips_extreme_mid():
+    """mid=0.0 clips to 0.05; mid=1.0 clips to 0.95."""
+    contract = make_contract(category="event")
+
+    cs_low = MagicMock()
+    cs_low.mid = 0.0
+    prob_low, _, _ = build_microstructure_probability(contract, cs_low, {})
+    assert abs(prob_low - 0.05) < 0.01
+
+    cs_high = MagicMock()
+    cs_high.mid = 1.0
+    prob_high, _, _ = build_microstructure_probability(contract, cs_high, {})
+    assert abs(prob_high - 0.95) < 0.01
+
+
+def test_microstructure_probability_returns_three_tuple():
+    contract = make_contract(category="unknown")
+    contract_state = MagicMock()
+    contract_state.mid = 0.50
+    result = build_microstructure_probability(contract, contract_state, {})
+    assert isinstance(result, tuple) and len(result) == 3

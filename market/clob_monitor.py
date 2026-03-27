@@ -16,6 +16,9 @@ from market.state import AppState, ContractState
 from market.contract_filter import meets_liquidity_threshold
 from engine.contract_parser import parse_contract
 from engine.arb_scanner import ThresholdMarket
+from engine.flatline import record_price as record_flatline_price
+from engine.orderbook_imbalance import record_obi_reading
+from engine.volume_divergence import record_volume
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -41,15 +44,25 @@ def _sort_key(meta: dict) -> tuple:
     now_ts = datetime.now(timezone.utc).timestamp()
     time_left = max(expiry_ts - now_ts, 0.0) if expiry else float("inf")
 
+    # Boost priority for markets expiring within 72h — flatline needs pre-resolution data.
+    # Markets in [0, 24h) get a higher bonus (+3) than those in [24h, 72h) (+2).
+    hours_left = time_left / 3600
+    if 0 < hours_left < 24:
+        short_dated_bonus = -3  # negative so lower sort value = higher priority
+    elif 24 <= hours_left < 72:
+        short_dated_bonus = -2
+    else:
+        short_dated_bonus = 0
+
     if MARKET_SORT_MODE == "volume24h_desc":
-        return (-volume_24h, -volume, time_left, meta["question"])
+        return (short_dated_bonus, -volume_24h, -volume, time_left, meta["question"])
     if MARKET_SORT_MODE == "liquidity_desc":
-        return (-liquidity, -volume_24h, -volume, time_left, meta["question"])
+        return (short_dated_bonus, -liquidity, -volume_24h, -volume, time_left, meta["question"])
     if MARKET_SORT_MODE == "expiry_asc":
-        return (time_left, -volume_24h, -volume, meta["question"])
+        return (time_left, short_dated_bonus, -volume_24h, -volume, meta["question"])
     if MARKET_SORT_MODE == "hybrid":
-        return (-volume_24h, -liquidity, time_left, -volume, meta["question"])
-    return (-volume, -volume_24h, time_left, meta["question"])
+        return (short_dated_bonus, -volume_24h, -liquidity, time_left, -volume, meta["question"])
+    return (short_dated_bonus, -volume, -volume_24h, time_left, meta["question"])
 
 
 def select_markets(token_map: dict) -> dict:
@@ -200,66 +213,86 @@ class CLOBMonitor(BaseFeed):
         super().__init__("clob_monitor")
         self._state = state
 
+    _REDISCOVERY_INTERVAL = 15 * 60  # seconds between market re-discovery runs
+
     async def _run(self):
-        # Fetch markets once — persists across WebSocket reconnects
-        async with httpx.AsyncClient() as client:
-            token_map = await fetch_active_markets(client)
-        token_map = select_markets(token_map)
-
-        if not token_map:
-            log.warning("no active order-book markets selected; sleeping 5 min")
-            await asyncio.sleep(300)
-            return
-
-        # Seed state from Gamma snapshot so trading loop has data immediately
-        for yes_id, meta in token_map.items():
-            cs = ContractState(
-                yes_token_id=yes_id,
-                no_token_id=meta["no_token_id"],
-                question=meta["question"],
-                category=meta["category"],
-                best_bid=meta["best_bid"],
-                best_ask=meta["best_ask"],
-                volume_usd=meta["volume"],
-            )
-            if meets_liquidity_threshold(cs, MIN_MARKET_LIQUIDITY):
-                await self._state.upsert_market(cs)
-
-        parseable_seeded = sum(
-            1
-            for yes_id in self._state.markets
-            if token_map.get(yes_id, {}).get("parseable")
-        )
-        log.info(
-            f"seeded {len(self._state.markets)} liquid markets into state "
-            f"({parseable_seeded} parseable by strategy)"
-        )
-
-        token_ids = list(token_map.keys())
-        subscribe_msg = {
-            "assets_ids": token_ids,
-            "type": "Market",
-            "id": "1",
-        }
-
-        # Reconnect loop — token_map and state seed are NOT repeated on reconnect
+        # Outer loop: re-discover markets every 15 minutes, then re-subscribe.
         while True:
-            try:
-                async with websockets.connect(POLYMARKET_WS_URL, ping_interval=20) as ws:
-                    await ws.send(json.dumps(subscribe_msg))
-                    self.log.info(f"subscribed to {len(token_ids)} markets on Polymarket CLOB WebSocket")
-                    async for raw in ws:
-                        payload = json.loads(raw)
-                        events = payload if isinstance(payload, list) else [payload]
-                        for msg in events:
-                            await self._handle(msg)
-            except Exception as exc:
-                self.log.warning(f"WS error: {exc} — reconnecting in 10s")
-                # HEARTBEAT SAFETY: if disconnect > 60s, consider cancelling open orders.
-                # Currently handled by reconnect loop + paper mode position TTL.
-                # TODO (Phase 4D): on live mode, call executor.cancel_all_open_orders()
-                # if time since last stamp_feed("clob") > 60 seconds.
-                await asyncio.sleep(10)
+            async with httpx.AsyncClient() as client:
+                token_map = await fetch_active_markets(client)
+            token_map = select_markets(token_map)
+
+            if not token_map:
+                log.warning("no active order-book markets selected; sleeping 5 min")
+                await asyncio.sleep(300)
+                continue
+
+            # Seed state from Gamma snapshot — skip markets already in state to
+            # preserve live price data accumulated since bot started.
+            async with self._state._lock:
+                existing_ids = set(self._state.markets.keys())
+
+            new_count = 0
+            for yes_id, meta in token_map.items():
+                if yes_id in existing_ids:
+                    continue  # preserve existing ContractState (live WS prices)
+                cs = ContractState(
+                    yes_token_id=yes_id,
+                    no_token_id=meta["no_token_id"],
+                    question=meta["question"],
+                    category=meta["category"],
+                    best_bid=meta["best_bid"],
+                    best_ask=meta["best_ask"],
+                    volume_usd=meta["volume"],
+                )
+                if meets_liquidity_threshold(cs, MIN_MARKET_LIQUIDITY):
+                    await self._state.upsert_market(cs)
+                    new_count += 1
+
+            parseable_seeded = sum(
+                1
+                for yes_id in self._state.markets
+                if token_map.get(yes_id, {}).get("parseable")
+            )
+            log.info(
+                f"seeded {new_count} new liquid markets into state "
+                f"(total {len(self._state.markets)}, {parseable_seeded} parseable by strategy)"
+            )
+
+            token_ids = list(token_map.keys())
+            subscribe_msg = {
+                "assets_ids": token_ids,
+                "type": "Market",
+                "id": "1",
+            }
+
+            # Inner loop: handle WS messages until 15-minute re-discovery window elapses
+            # or a connection error forces a reconnect (which stays in the inner loop).
+            discovery_deadline = asyncio.get_event_loop().time() + self._REDISCOVERY_INTERVAL
+            while asyncio.get_event_loop().time() < discovery_deadline:
+                try:
+                    time_remaining = discovery_deadline - asyncio.get_event_loop().time()
+                    async with websockets.connect(POLYMARKET_WS_URL, ping_interval=20) as ws:
+                        await ws.send(json.dumps(subscribe_msg))
+                        self.log.info(
+                            f"subscribed to {len(token_ids)} markets on Polymarket CLOB WebSocket "
+                            f"(re-discovery in {time_remaining/60:.0f}m)"
+                        )
+                        async for raw in ws:
+                            payload = json.loads(raw)
+                            events = payload if isinstance(payload, list) else [payload]
+                            for msg in events:
+                                await self._handle(msg)
+                            # Check if re-discovery window has elapsed
+                            if asyncio.get_event_loop().time() >= discovery_deadline:
+                                break
+                except Exception as exc:
+                    self.log.warning(f"WS error: {exc} — reconnecting in 10s")
+                    # HEARTBEAT SAFETY: if disconnect > 60s, consider cancelling open orders.
+                    # Currently handled by reconnect loop + paper mode position TTL.
+                    # TODO (Phase 4D): on live mode, call executor.cancel_all_open_orders()
+                    # if time since last stamp_feed("clob") > 60 seconds.
+                    await asyncio.sleep(10)
 
     async def _handle(self, msg: dict):
         event_type = msg.get("event_type", "")
@@ -294,11 +327,15 @@ class CLOBMonitor(BaseFeed):
             cs.ask_depth = sum(float(a.get("size", 0)) for a in asks[:5])
         if new_bid is not None or new_ask is not None:
             self._state.stamp_feed("clob")
+        # Record OBI and volume for all subscribed markets (feeds flatline + signals)
+        record_obi_reading(yes_token_id, cs)
+        record_volume(yes_token_id, cs)
 
     async def _handle_price(self, msg: dict):
         yes_token_id = msg.get("asset_id", "")
         if not yes_token_id:
             return
+        new_mid = None
         async with self._state._lock:
             cs = self._state.markets.get(yes_token_id)
             if cs:
@@ -309,3 +346,7 @@ class CLOBMonitor(BaseFeed):
                 elif side == "SELL":
                     cs.best_ask = price
                 self._state.stamp_feed("clob")
+                new_mid = cs.mid
+        # Record price for all subscribed markets so flatline has history before trading
+        if new_mid is not None:
+            record_flatline_price(yes_token_id, new_mid)

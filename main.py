@@ -24,7 +24,7 @@ from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
 from market.clob_monitor import CLOBMonitor, build_threshold_markets
 from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
-from engine.probability import build_model_probability
+from engine.probability import build_model_probability, build_microstructure_probability
 from engine.macro_probability import build_macro_probability
 from engine.contract_parser import parse_contract
 from engine.signal_filter import passes_signal_filter
@@ -76,6 +76,7 @@ async def trading_loop(
 
         n_total = len(markets)
         n_parseable = n_signal = n_liquidity = n_ev = n_traded = 0
+        category_counts: dict[str, int] = {}
 
         for yes_token_id, contract_state in markets.items():
             try:
@@ -84,6 +85,7 @@ async def trading_loop(
                 if not parsed.parseable:
                     continue
                 n_parseable += 1
+                category_counts[parsed.category] = category_counts.get(parsed.category, 0) + 1
 
                 # Dashboard record — filled in as we progress through gates
                 mkt_rec = {
@@ -101,9 +103,14 @@ async def trading_loop(
                     model_prob, signal_count, engine = build_macro_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
-                else:
+                elif parsed.category == "crypto":
                     model_prob, signal_count, engine = build_model_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                else:
+                    # election, event, unknown — market-price prior + microstructure signals only
+                    model_prob, signal_count, engine = build_microstructure_probability(
+                        parsed, contract_state, SIGNAL_WEIGHTS
                     )
                 mkt_rec["model_prob"] = model_prob
                 mkt_rec["signal_count"] = signal_count
@@ -253,8 +260,9 @@ async def trading_loop(
                 log.exception(f"trading loop error for {yes_token_id[:8]}: {exc}")
 
         log.info(
-            f"scan: {n_total} markets | {n_parseable} parseable | "
-            f"{n_signal} signal ok | {n_liquidity} liquid | {n_ev} ev+"
+            f"FUNNEL: {n_total} discovered | {n_parseable} parsed | "
+            f"{n_signal} signal_ok | {n_liquidity} liquid | {n_ev} ev+ | "
+            f"{n_traded} traded | categories: {category_counts}"
         )
         update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
                           n_signal=n_signal, n_liquidity=n_liquidity,

@@ -114,9 +114,12 @@ def test_fomc_contract_detected():
 
 # --- Unparseable contracts ---
 
-def test_no_asset_not_parseable():
+def test_no_asset_generic_binary():
+    # Non-crypto "Will X?" markets now route to the generic binary catch-all
     c = parse_contract("t1", "Will the Lakers win the championship?")
-    assert c.parseable is False
+    assert c.parseable is True
+    assert c.category == "event"
+    assert c.direction == "yes"
 
 
 def test_no_direction_not_parseable():
@@ -140,3 +143,74 @@ def test_question_preserved():
     q = "Will BTC be above $85,000 by end of March?"
     c = parse_contract("t1", q)
     assert c.question == q
+
+
+# --- Short-dated crypto direction markets ---
+
+def test_short_dated_btc_up_minutes():
+    c = parse_contract("t1", "Will BTC go up in the next 5 minutes?")
+    assert c.asset == "BTC"
+    assert c.direction == "above"
+    assert c.category == "crypto"
+    assert c.parseable is True
+    assert c.T_days is not None
+    assert abs(c.T_days - 5 / 1440) < 1e-9
+
+
+def test_short_dated_eth_decrease_hour():
+    c = parse_contract("t1", "Will ETH price decrease in the next hour?")
+    assert c.asset == "ETH"
+    assert c.direction == "below"
+    assert c.category == "crypto"
+    assert c.parseable is True
+    assert c.T_days is not None
+    assert abs(c.T_days - 1 / 24) < 1e-9
+
+
+def test_short_dated_bitcoin_up_15_minutes():
+    c = parse_contract("t1", "Will Bitcoin price go up in the next 15 minutes?")
+    assert c.asset == "BTC"
+    assert c.direction == "above"
+    assert c.parseable is True
+    assert abs(c.T_days - 15 / 1440) < 1e-9
+
+
+def test_short_dated_sol_rise_next_hour():
+    c = parse_contract("t1", "Will SOL rise in the next 2 hours?")
+    assert c.asset == "SOL"
+    assert c.direction == "above"
+    assert c.parseable is True
+    assert abs(c.T_days - 2 / 24) < 1e-9
+
+
+def test_short_dated_target_price_is_none():
+    c = parse_contract("t1", "Will BTC go up in the next 5 minutes?")
+    assert c.target_price is None
+
+
+# --- Generic binary catch-all ---
+
+def test_generic_binary_un_resolution():
+    c = parse_contract("t1", "Will the UN pass a resolution on AI?")
+    assert c.category == "event"
+    assert c.direction == "yes"
+    assert c.parseable is True
+
+
+def test_generic_binary_spacex_launch():
+    c = parse_contract("t1", "Will SpaceX launch Starship next month?")
+    assert c.category == "event"
+    assert c.direction == "yes"
+    assert c.parseable is True
+
+
+def test_generic_binary_does_not_catch_non_will():
+    c = parse_contract("t1", "Lakers win the championship?")
+    assert c.parseable is False
+
+
+def test_generic_binary_does_not_catch_crypto_with_asset():
+    # A crypto question with a known asset should NOT fall through to generic binary
+    c = parse_contract("t1", "Will BTC be above its ATH by March?")
+    # has asset but no price → parseable=False (not rerouted to event)
+    assert c.parseable is False

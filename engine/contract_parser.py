@@ -55,6 +55,14 @@ _EVENT_RE = re.compile(
 # Questions that look like crypto but aren't price threshold markets
 _SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
 
+# Short-dated crypto direction markets: "Will BTC go up in the next 5 minutes?"
+_SHORT_DATED_RE = re.compile(
+    r'(?:will\s+)?(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax)'
+    r'\s+(?:price\s+)?(?:go\s+)?(up|down|increase|decrease|rise|fall).*?'
+    r'(?:next|in(?:\s+the\s+next)?)\s+(\d+)?\s*(min(?:ute)?s?|hour|hours?)',
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class ParsedContract:
@@ -67,6 +75,7 @@ class ParsedContract:
     category: str = "crypto"            # "crypto" | "rates" | "macro" | "unknown"
     parseable: bool = True
     cut_count: Optional[int] = None     # for "exactly N cuts" rate markets
+    T_days: Optional[float] = None      # for short-dated markets; overrides expiry-derived T
 
 
 def parse_contract(token_id: str, question: str) -> ParsedContract:
@@ -185,6 +194,24 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             log.debug(f"event/deadline market: {question[:60]}")
             return contract
 
+    # 2d. Short-dated crypto direction markets ("Will BTC go up in the next 5 minutes?")
+    sd_match = _SHORT_DATED_RE.search(q)
+    if sd_match:
+        raw_asset, raw_direction, raw_count, raw_unit = sd_match.group(1), sd_match.group(2), sd_match.group(3), sd_match.group(4)
+        contract.asset = ASSET_ALIASES.get(raw_asset.lower(), raw_asset.upper())
+        contract.direction = "above" if raw_direction.lower() in ("up", "increase", "rise") else "below"
+        contract.category = "crypto"
+        contract.target_price = None
+        count = int(raw_count) if raw_count else 1
+        unit = raw_unit.lower()
+        if unit.startswith("min"):
+            contract.T_days = count / 1440
+        else:  # hour(s)
+            contract.T_days = count / 24
+        contract.parseable = True
+        log.debug(f"short-dated crypto direction market: {question[:60]}")
+        return contract
+
     # 3. Skip non-price-threshold crypto questions (FDV, market cap, token launches)
     if any(pat in q for pat in _SKIP_PATTERNS):
         contract.parseable = False
@@ -192,12 +219,20 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         return contract
 
     # 4. Detect asset — try multi-word aliases first (longer first to avoid partial matches)
+    # Use word-boundary matching to avoid false positives like "sol" in "resolution"
     for alias in sorted(ASSET_ALIASES, key=len, reverse=True):
-        if alias in q:
+        if re.search(r'\b' + re.escape(alias) + r'\b', q, re.IGNORECASE):
             contract.asset = ASSET_ALIASES[alias]
             break
 
     if not contract.asset:
+        # Generic binary catch-all — "Will X happen?" → route through microstructure path
+        if re.search(r'\bwill\b.*\?', q, re.IGNORECASE):
+            contract.category = "event"
+            contract.direction = "yes"
+            contract.parseable = True
+            log.debug(f"generic binary market: {question[:60]}")
+            return contract
         contract.parseable = False
         log.debug(f"skip (no asset): {question[:60]}")
         return contract

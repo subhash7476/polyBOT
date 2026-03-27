@@ -17,12 +17,17 @@ def _meta(question: str, category: str, volume: float, hours: int) -> dict:
 
 
 def test_select_markets_volume_desc(monkeypatch):
+    # "c" is filtered out (macro not in "crypto,rates").
+    # "d" expires in 2h  -> short_dated_bonus=-3 (wins over higher-volume peers)
+    # "b" expires in 48h -> short_dated_bonus=-2, volume=900
+    # "a" expires in 96h -> short_dated_bonus=0,  volume=500
+    # Top 2 by sort: "d" first (tightest bonus), then "b" (bonus -2 beats 0)
     monkeypatch.setattr(cm, "MARKET_CATEGORY_FILTER", "crypto,rates")
     monkeypatch.setattr(cm, "MARKET_SORT_MODE", "volume_desc")
     monkeypatch.setattr(cm, "MAX_SUBSCRIBED_MARKETS", 2)
     monkeypatch.setattr(cm, "PARSEABLE_MARKET_RESERVE", 0)
     token_map = {
-        "a": _meta("A", "crypto", 500, 24),
+        "a": _meta("A", "crypto", 500, 96),
         "b": _meta("B", "rates", 900, 48),
         "c": _meta("C", "macro", 2000, 1),
         "d": _meta("D", "crypto", 700, 2),
@@ -30,7 +35,7 @@ def test_select_markets_volume_desc(monkeypatch):
 
     selected = cm.select_markets(token_map)
 
-    assert list(selected) == ["b", "d"]
+    assert list(selected) == ["d", "b"]
 
 
 def test_select_markets_expiry_asc(monkeypatch):
@@ -75,6 +80,70 @@ def test_select_markets_empty_filter_keeps_unknown(monkeypatch):
     selected = cm.select_markets(token_map)
 
     assert list(selected) == ["c", "a"]
+
+
+def test_select_markets_parseable_reserve_150(monkeypatch):
+    """PARSEABLE_MARKET_RESERVE=150 should allow up to 150 parseable slots."""
+    monkeypatch.setattr(cm, "MARKET_CATEGORY_FILTER", "")
+    monkeypatch.setattr(cm, "MARKET_SORT_MODE", "volume_desc")
+    monkeypatch.setattr(cm, "MAX_SUBSCRIBED_MARKETS", 200)
+    monkeypatch.setattr(cm, "PARSEABLE_MARKET_RESERVE", 150)
+
+    # Build 200 parseable + 50 non-parseable markets
+    token_map = {}
+    for i in range(200):
+        token_map[f"parseable_{i}"] = {
+            **_meta(f"Parseable {i}", "crypto", float(200 - i), 100),
+            "parseable": True,
+            "volume_24h": float(200 - i),
+            "liquidity": float(200 - i),
+        }
+    for i in range(50):
+        token_map[f"other_{i}"] = {
+            **_meta(f"Other {i}", "unknown", float(1000 + i), 100),
+            "parseable": False,
+            "volume_24h": float(1000 + i),
+            "liquidity": float(1000 + i),
+        }
+
+    selected = cm.select_markets(token_map)
+
+    # Total is capped at MAX_SUBSCRIBED_MARKETS=200
+    assert len(selected) == 200
+    # At least 150 parseable slots should be filled
+    parseable_selected = [k for k in selected if k.startswith("parseable_")]
+    assert len(parseable_selected) >= 150
+
+
+def test_sort_key_short_dated_bonus(monkeypatch):
+    """Markets expiring in 48h should sort above markets expiring in 90 days."""
+    monkeypatch.setattr(cm, "MARKET_SORT_MODE", "volume_desc")
+
+    meta_short = _meta("Short expiry", "crypto", 100.0, 48)
+    meta_long = _meta("Long expiry", "crypto", 5000.0, 2160)  # 90 days
+
+    key_short = cm._sort_key(meta_short)
+    key_long = cm._sort_key(meta_long)
+
+    # Short-dated gets bonus (lower first element) so it sorts before long-dated
+    assert key_short < key_long, (
+        f"Short-dated key {key_short} should be less than long-dated key {key_long}"
+    )
+
+
+def test_sort_key_under_24h_beats_48h(monkeypatch):
+    """Markets expiring in <24h should sort above markets expiring in 48h."""
+    monkeypatch.setattr(cm, "MARKET_SORT_MODE", "volume_desc")
+
+    meta_24h = _meta("Under 24h", "crypto", 100.0, 12)
+    meta_48h = _meta("Around 48h", "crypto", 100.0, 48)
+
+    key_24h = cm._sort_key(meta_24h)
+    key_48h = cm._sort_key(meta_48h)
+
+    assert key_24h < key_48h, (
+        f"<24h key {key_24h} should be less than 48h key {key_48h}"
+    )
 
 
 def test_select_markets_reserves_parseable_slots(monkeypatch):

@@ -145,3 +145,20 @@ def build_model_probability(
         ))
 
     return engine.probability, engine.signal_count, engine
+
+
+def build_microstructure_probability(
+    contract: ParsedContract,
+    contract_state,  # ContractState — use market mid as prior
+    weights: dict,
+) -> tuple[float, int, BayesianEngine]:
+    """
+    For markets without feed-based models (election, event, generic binary).
+    Uses current market mid-price as the prior (crowd's estimate),
+    then lets microstructure signals (flatline/OBI/VPD) adjust it.
+    Signal filter will require microstructure signals to disagree with market
+    before generating trades.
+    """
+    prior = float(np.clip(contract_state.mid, 0.05, 0.95))
+    engine = BayesianEngine(prior=prior)
+    return engine.probability, engine.signal_count, engine
