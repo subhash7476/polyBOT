@@ -26,6 +26,7 @@ from utils.logger import get_logger
 log = get_logger(__name__)
 
 _GAMMA_URL = "https://gamma-api.polymarket.com/markets"
+_GAMMA_EVENTS_URL = "https://gamma-api.polymarket.com/events"
 _PAGE_LIMIT = 100
 _MAX_PAGES = 30  # scan up to 3,000 markets
 
@@ -206,11 +207,89 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
 
         offset += _PAGE_LIMIT
 
+    # Supplement with daily temperature bucket markets from the weather events endpoint.
+    # These are negRisk markets that don't appear in the standard /markets pagination
+    # (they sit beyond offset 13,000+ and would require 130+ pages to reach).
+    weather_markets = await _fetch_weather_event_markets(client)
+    new_weather = {k: v for k, v in weather_markets.items() if k not in token_map}
+    token_map.update(new_weather)
+
     parseable_count = sum(1 for meta in token_map.values() if meta["parseable"])
     log.info(
         f"found {len(token_map)} active order-book markets from Gamma API "
-        f"({parseable_count} parseable by strategy)"
+        f"({parseable_count} parseable by strategy, {len(new_weather)} weather buckets added)"
     )
+    return token_map
+
+
+async def _fetch_weather_event_markets(client: httpx.AsyncClient) -> dict:
+    """
+    Fetch daily temperature bucket markets from the weather events endpoint.
+    These are negRisk markets grouped by city+date event; each event has 11 buckets.
+    The standard /markets pagination does not surface these within the first 13k results.
+    """
+    token_map = {}
+    try:
+        resp = await client.get(_GAMMA_EVENTS_URL, params={
+            "tag_slug": "weather", "active": "true", "closed": "false", "limit": 100,
+        }, timeout=20.0)
+        resp.raise_for_status()
+        events = resp.json()
+        if isinstance(events, dict):
+            events = events.get("data", [])
+    except Exception as exc:
+        log.warning(f"weather events fetch error: {exc}")
+        return token_map
+
+    for event in events:
+        if "Highest temperature" not in event.get("title", ""):
+            continue
+        for m in event.get("markets", []):
+            if not m.get("acceptingOrders") or not m.get("enableOrderBook"):
+                continue
+            token_ids_raw = m.get("clobTokenIds", "[]")
+            try:
+                token_ids = json.loads(token_ids_raw) if isinstance(token_ids_raw, str) else token_ids_raw
+            except Exception:
+                continue
+            if len(token_ids) < 2:
+                continue
+
+            yes_id, no_id = token_ids[0], token_ids[1]
+            question = m.get("question", "")
+            parsed = parse_contract(yes_id, question)
+
+            outcome_prices_raw = m.get("outcomePrices") or []
+            if isinstance(outcome_prices_raw, str):
+                try:
+                    outcome_prices_raw = json.loads(outcome_prices_raw)
+                except Exception:
+                    outcome_prices_raw = []
+            yes_price = float(outcome_prices_raw[0]) if outcome_prices_raw else None
+
+            # negRisk markets: bestBid/bestAsk from the AMM are reliable; CLOB book is near-empty
+            raw_bid = float(m.get("bestBid") or 0)
+            raw_ask = float(m.get("bestAsk") or 1)
+            if (raw_ask - raw_bid) > 0.5 and yes_price is not None and 0.03 < yes_price < 0.97:
+                raw_bid = round(yes_price - 0.02, 4)
+                raw_ask = round(yes_price + 0.02, 4)
+
+            token_map[yes_id] = {
+                "question":    question,
+                "category":    "weather",  # forced — all events here are temp markets
+                "expiry":      parsed.expiry or _parse_datetime(m.get("endDateIso") or m.get("endDate")),
+                "parseable":   parsed.parseable,
+                "no_token_id": no_id,
+                "volume":      float(m.get("volumeClob") or m.get("volume") or 0),
+                "volume_24h":  float(m.get("volume24hrClob") or m.get("volume24hr") or 0),
+                "liquidity":   float(m.get("liquidityClob") or m.get("liquidity") or 0),
+                "best_bid":    raw_bid,
+                "best_ask":    raw_ask,
+                "neg_risk":    True,
+                "fees_enabled": False,  # weather markets have no taker fee
+            }
+
+    log.debug(f"weather events: found {len(token_map)} temperature bucket markets")
     return token_map
 
 

@@ -130,4 +130,18 @@ LOCATIONS: dict = {
     "sao-paulo":    {"lat": -23.4356, "lon":  -46.4731, "name": "Sao Paulo",      "station": "SBGR", "unit": "C", "region": "sa"},
     "buenos-aires": {"lat": -34.8222, "lon":  -58.5358, "name": "Buenos Aires",   "station": "SAEZ", "unit": "C", "region": "sa"},
     "wellington":   {"lat": -41.3272, "lon":  174.8052, "name": "Wellington",     "station": "NZWN", "unit": "C", "region": "oc"},
+    # Additional cities active on Polymarket weather markets
+    "hong-kong":     {"lat":  22.3080, "lon":  113.9185, "name": "Hong Kong",      "station": "VHHH", "unit": "C", "region": "asia"},
+    "beijing":       {"lat":  40.0799, "lon":  116.5838, "name": "Beijing",        "station": "ZBAA", "unit": "C", "region": "asia"},
+    "shenzhen":      {"lat":  22.6393, "lon":  113.8107, "name": "Shenzhen",       "station": "ZGSZ", "unit": "C", "region": "asia"},
+    "chongqing":     {"lat":  29.7192, "lon":  106.6420, "name": "Chongqing",      "station": "ZUCK", "unit": "C", "region": "asia"},
+    "taipei":        {"lat":  25.0777, "lon":  121.2330, "name": "Taipei",         "station": "RCTP", "unit": "C", "region": "asia"},
+    "milan":         {"lat":  45.6306, "lon":    8.7281, "name": "Milan",          "station": "LIMC", "unit": "C", "region": "eu"},
+    "madrid":        {"lat":  40.4719, "lon":   -3.5626, "name": "Madrid",         "station": "LEMD", "unit": "C", "region": "eu"},
+    "warsaw":        {"lat":  52.1657, "lon":   20.9671, "name": "Warsaw",         "station": "EPWA", "unit": "C", "region": "eu"},
+    "austin":        {"lat":  30.1975, "lon":  -97.6664, "name": "Austin",         "station": "KAUS", "unit": "F", "region": "us"},
+    "denver":        {"lat":  39.8561, "lon": -104.6737, "name": "Denver",         "station": "KDEN", "unit": "F", "region": "us"},
+    "houston":       {"lat":  29.9844, "lon":  -95.3414, "name": "Houston",        "station": "KIAH", "unit": "F", "region": "us"},
+    "los-angeles":   {"lat":  33.9425, "lon": -118.4081, "name": "Los Angeles",    "station": "KLAX", "unit": "F", "region": "us"},
+    "san-francisco": {"lat":  37.6213, "lon": -122.3790, "name": "San Francisco",  "station": "KSFO", "unit": "F", "region": "us"},
 }

@@ -40,6 +40,20 @@ _WEATHER_CITY_MAP: dict = {
     "são paulo":     "sao-paulo",
     "buenos aires":  "buenos-aires",
     "wellington":    "wellington",
+    # Additional cities active on Polymarket weather markets
+    "hong kong":     "hong-kong",
+    "beijing":       "beijing",
+    "shenzhen":      "shenzhen",
+    "chongqing":     "chongqing",
+    "taipei":        "taipei",
+    "milan":         "milan",
+    "madrid":        "madrid",
+    "warsaw":        "warsaw",
+    "austin":        "austin",
+    "denver":        "denver",
+    "houston":       "houston",
+    "los angeles":   "los-angeles",
+    "san francisco": "san-francisco",
 }
 
 
