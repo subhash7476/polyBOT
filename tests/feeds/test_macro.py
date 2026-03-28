@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from feeds.macro import CachedValue
+from feeds.macro import MacroFeed
 
 
 def test_cached_value_fresh_is_not_stale():
@@ -29,3 +30,34 @@ def test_cached_value_confidence_half_age():
     half_age = datetime.now(timezone.utc) - timedelta(seconds=300)
     cv = CachedValue(value=104.0, fetched_at=half_age, max_age_seconds=600)
     assert abs(cv.confidence - 0.5) < 0.05
+
+
+def test_macro_feed_fred_csv_fallback_uses_urllib(monkeypatch):
+    class DummyClient:
+        async def get(self, *args, **kwargs):
+            raise RuntimeError("httpx blocked")
+
+    class DummyState:
+        async def update_feeds(self, **kwargs):
+            return None
+
+    feed = MacroFeed(DummyState())
+
+    def fake_urlopen(req, timeout=15.0):
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self):
+                return b"DATE,VALUE\n2026-01-01,4.25\n"
+
+        return _Resp()
+
+    monkeypatch.setattr("feeds.macro.urlopen", fake_urlopen)
+
+    import asyncio
+    result = asyncio.run(feed._fetch_fred_csv(DummyClient(), "DFEDTARL"))
+    assert "2026-01-01,4.25" in result

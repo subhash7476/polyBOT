@@ -9,33 +9,33 @@ preventing silent 2× BTC exposure.
 
 import asyncio
 import time
-from dataclasses import dataclass, field
 from market.state import FeedState
 from engine.contract_parser import ParsedContract
+from trading.positions import (
+    CLOSED_PAPER,
+    OPEN,
+    REDEEMED,
+    RESOLVED_PENDING_REDEEM,
+    PositionLedger,
+    TrackedPosition,
+)
 from utils.logger import get_logger
 import config
 
 log = get_logger(__name__)
 
 
-@dataclass
-class Position:
-    token_id: str
-    group_key: str
-    size_usdc: float
-    entry_price: float
-    opened_at: float = field(default_factory=time.time)
-
-
 class RiskManager:
-    def __init__(self, bankroll: float):
+    def __init__(self, bankroll: float, ledger: PositionLedger | None = None):
         self.bankroll = bankroll
         self.max_daily_loss = bankroll * config.MAX_DAILY_LOSS_PCT
         self.max_position = bankroll * config.MAX_POSITION_PCT
         self.max_group_exposure = bankroll * config.MAX_GROUP_EXPOSURE_PCT
         self.daily_pnl = 0.0
         self.consecutive_losses = 0
-        self.open_positions: dict[str, Position] = {}
+        self.ledger = ledger or PositionLedger(config.TRACKED_POSITIONS_FILE)
+        self.open_positions, self.pending_redemptions = self.ledger.load_active()
+        self.closed_positions: dict[str, TrackedPosition] = {}
         self._lock = asyncio.Lock()
 
     _CRYPTO_ASSETS = {"BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX"}
@@ -52,6 +52,8 @@ class RiskManager:
             return "macro_rates"
         if parsed.category == "macro":
             return "macro_econ"
+        if parsed.category == "weather":
+            return f"weather_{parsed.asset}"
         return "other"
 
     @property
@@ -104,27 +106,121 @@ class RiskManager:
             return True, "ok"
 
     async def open_position(
-        self, token_id: str, parsed: ParsedContract, size: float, price: float
+        self,
+        token_id: str,
+        parsed: ParsedContract,
+        size: float,
+        price: float,
+        side: str = "BUY_YES",
+        *,
+        no_token_id: str = "",
+        condition_id: str = "",
+        question: str = "",
+        category: str | None = None,
+        market_price_at_open: float | None = None,
+        strategy_type: str = "directional",
+        opened_at: float | None = None,
     ):
         async with self._lock:
-            self.open_positions[token_id] = Position(
+            position = TrackedPosition(
                 token_id=token_id,
+                no_token_id=no_token_id,
+                condition_id=condition_id,
+                question=question or parsed.question,
+                category=category or parsed.category,
                 group_key=self._contract_group_key(parsed),
+                side=side,
                 size_usdc=size,
                 entry_price=price,
+                market_price_at_open=market_price_at_open if market_price_at_open is not None else price,
+                strategy_type=strategy_type,
+                status=OPEN,
+                opened_at=opened_at or time.time(),
             )
+            self.open_positions[token_id] = position
+            self.ledger.append(position)
 
     async def close_position(self, token_id: str, exit_price: float):
         async with self._lock:
             pos = self.open_positions.pop(token_id, None)
             if pos:
-                pnl = (exit_price - pos.entry_price) * pos.size_usdc
+                pnl = (exit_price - pos.entry_price) * pos.shares
                 self.daily_pnl += pnl
                 if pnl < 0:
                     self.consecutive_losses += 1
                 else:
                     self.consecutive_losses = 0
                 log.info(f"closed {token_id[:8]} pnl=${pnl:.2f} daily_pnl=${self.daily_pnl:.2f}")
+
+    async def resolve_position(
+        self,
+        token_id: str,
+        resolved_yes: bool,
+        *,
+        paper: bool,
+        resolved_at: float | None = None,
+    ) -> TrackedPosition | None:
+        async with self._lock:
+            pos = self.open_positions.pop(token_id, None)
+            if not pos:
+                return None
+            payout = 1.0 if ((pos.side == "BUY_YES" and resolved_yes) or (pos.side == "BUY_NO" and not resolved_yes)) else 0.0
+            pnl = (payout - pos.entry_price) * pos.shares
+            self.daily_pnl += pnl
+            if pnl < 0:
+                self.consecutive_losses += 1
+            else:
+                self.consecutive_losses = 0
+
+            pos.resolved_yes = resolved_yes
+            pos.resolved_at = resolved_at or time.time()
+            pos.status = CLOSED_PAPER if paper else RESOLVED_PENDING_REDEEM
+
+            if paper:
+                self.closed_positions[token_id] = pos
+            else:
+                self.pending_redemptions[token_id] = pos
+
+            self.ledger.append(pos)
+            log.info(
+                f"resolved {token_id[:8]} side={pos.side} outcome={'YES' if resolved_yes else 'NO'} "
+                f"status={pos.status} pnl=${pnl:.2f} daily_pnl=${self.daily_pnl:.2f}"
+            )
+            return pos
+
+    async def mark_redeemed(
+        self,
+        token_id: str,
+        *,
+        redeemed_at: float | None = None,
+    ) -> TrackedPosition | None:
+        async with self._lock:
+            pos = self.pending_redemptions.pop(token_id, None)
+            if not pos:
+                return None
+            pos.status = REDEEMED
+            pos.redeemed_at = redeemed_at or time.time()
+            self.closed_positions[token_id] = pos
+            self.ledger.append(pos)
+            return pos
+
+    async def update_wallet_metadata(
+        self,
+        token_id: str,
+        *,
+        condition_id: str = "",
+    ) -> TrackedPosition | None:
+        async with self._lock:
+            pos = self.open_positions.get(token_id) or self.pending_redemptions.get(token_id)
+            if not pos:
+                return None
+            changed = False
+            if condition_id and pos.condition_id != condition_id:
+                pos.condition_id = condition_id
+                changed = True
+            if changed:
+                self.ledger.append(pos)
+            return pos
 
     def expire_paper_positions(self, ttl_hours: float) -> int:
         """

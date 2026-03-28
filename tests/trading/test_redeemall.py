@@ -1,8 +1,10 @@
-"""Tests for trading/redeemall.py — classify_positions + run_redeemall mocked."""
+"""Tests for trading/redeemall.py — classify_positions + tracked redemption mocked."""
 import asyncio
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from trading.redeemall import classify_positions, run_redeemall
+from unittest.mock import AsyncMock, patch
+
+from trading.positions import TrackedPosition
+from trading.redeemall import classify_positions, redeem_tracked_positions, run_redeemall
 import trading.redeem_lock as rl
 
 
@@ -71,3 +73,37 @@ async def test_run_redeemall_counts_only_successful():
         result = await run_redeemall("0xWALLET", "http://rpc", "0xKEY")
 
     assert result == 1
+
+
+def test_extract_and_redeem_tracked_positions_sync():
+    tracked = {
+        "tok1": TrackedPosition(
+            token_id="tok1",
+            no_token_id="tok1_no",
+            question="q1",
+            category="crypto",
+            group_key="btc_above",
+            side="BUY_YES",
+            size_usdc=50.0,
+            entry_price=0.5,
+            market_price_at_open=0.5,
+            condition_id="0x" + "a" * 64,
+            status="resolved_pending_redeem",
+        )
+    }
+    positions = [
+        {
+            "asset": "tok1",
+            "conditionId": "0x" + "a" * 64,
+            "market": {"closed": True, "resolved": True},
+        }
+    ]
+
+    async def _run():
+        with patch("trading.redeemall.fetch_positions", new=AsyncMock(return_value=positions)), \
+             patch("trading.redeemall.redeem_position", return_value=True), \
+             patch("trading.redeemall.asyncio.sleep", new=AsyncMock()):
+            return await redeem_tracked_positions("0xWALLET", "http://rpc", "0xKEY", tracked)
+
+    redeemed = asyncio.run(_run())
+    assert redeemed == ["tok1"]

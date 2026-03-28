@@ -36,11 +36,13 @@ def test_initial_funding_rates_empty():
 def test_initial_positions_empty():
     ds = DashboardState()
     assert list(ds.active_markets) == []
+    assert ds.position_counts["open"] == 0
+    assert ds.realized_pnl == 0.0
 
 
 def test_initial_scan_stats_has_zero_keys():
     ds = DashboardState()
-    for key in ("n_total", "n_parseable", "n_signal", "n_liquidity", "n_ev", "n_traded"):
+    for key in ("n_total", "n_parseable", "n_signal", "n_liquidity", "n_ev", "n_traded", "lifetime_trades"):
         assert ds.scan_stats.get(key, 0) == 0
 
 
@@ -93,6 +95,19 @@ def test_update_positions_list():
     assert ds.positions[0]["side"] == "BUY_YES"
 
 
+def test_update_position_counts_and_realized_pnl():
+    ds = DashboardState()
+    ds.update({
+        "position_counts": {"open": 2, "resolved_pending_redeem": 1, "closed": 3},
+        "realized_pnl": 12.5,
+        "consecutive_losses": 2,
+    })
+    assert ds.position_counts["open"] == 2
+    assert ds.position_counts["resolved_pending_redeem"] == 1
+    assert ds.realized_pnl == 12.5
+    assert ds.consecutive_losses == 2
+
+
 def test_update_active_markets_appends_to_deque():
     ds = DashboardState()
     for i in range(3):
@@ -112,9 +127,10 @@ def test_active_markets_deque_maxlen_50():
 
 def test_update_scan_stats():
     ds = DashboardState()
-    ds.update({"scan_stats": {"n_total": 24, "n_parseable": 20, "n_signal": 4, "n_liquidity": 4, "n_ev": 2, "n_traded": 1}})
+    ds.update({"scan_stats": {"n_total": 24, "n_parseable": 20, "n_signal": 4, "n_liquidity": 4, "n_ev": 2, "n_traded": 1, "lifetime_trades": 7}})
     assert ds.scan_stats["n_total"] == 24
     assert ds.scan_stats["n_traded"] == 1
+    assert ds.scan_stats["lifetime_trades"] == 7
 
 
 def test_update_feed_timestamp():
@@ -159,6 +175,26 @@ def test_to_json_active_markets_is_list():
     ds.update({"active_markets_append": {"question": "q1"}})
     parsed = json.loads(ds.to_json())
     assert isinstance(parsed["active_markets"], list)
+
+
+def test_to_json_includes_lifecycle_fields():
+    ds = DashboardState()
+    ds.update({
+        "position_counts": {"open": 1, "resolved_pending_redeem": 2, "closed": 3},
+        "realized_pnl": 5.5,
+        "consecutive_losses": 1,
+    })
+    parsed = json.loads(ds.to_json())
+    assert parsed["position_counts"]["resolved_pending_redeem"] == 2
+    assert parsed["realized_pnl"] == 5.5
+    assert parsed["consecutive_losses"] == 1
+
+
+def test_to_json_includes_lifetime_trades():
+    ds = DashboardState()
+    ds.update({"scan_stats": {"lifetime_trades": 5}})
+    parsed = json.loads(ds.to_json())
+    assert parsed["lifetime_trades"] == 5
 
 
 def test_to_json_feed_ages_are_strings():

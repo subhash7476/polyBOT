@@ -86,8 +86,8 @@ async def test_high_vol_throttles_large_position(rm, feeds):
 async def test_close_position_records_pnl(rm, feeds):
     await rm.open_position("t1", make_parsed(), 50.0, 0.5)
     await rm.close_position("t1", exit_price=0.8)
-    # pnl = (0.8 - 0.5) * 50 = 15
-    assert rm.daily_pnl == pytest.approx(15.0)
+    # $50 at 0.50 buys 100 shares; 30c move => $30 pnl
+    assert rm.daily_pnl == pytest.approx(30.0)
 
 
 @pytest.mark.asyncio
@@ -103,3 +103,9 @@ async def test_winning_trade_resets_consecutive_losses(rm, feeds):
     rm.consecutive_losses = 3
     await rm.close_position("t1", exit_price=0.8)  # win
     assert rm.consecutive_losses == 0
+
+
+@pytest.mark.asyncio
+async def test_open_position_stores_side(rm, feeds):
+    await rm.open_position("t1", make_parsed(), 50.0, 0.5, side="BUY_NO")
+    assert rm.open_positions["t1"].side == "BUY_NO"

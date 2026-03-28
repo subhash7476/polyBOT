@@ -17,6 +17,8 @@ def test_log_signal_writes_jsonl(tracker, tmp_path):
     record = json.loads(lines[0])
     assert record["token_id"] == "t1"
     assert record["outcome"] is None
+    assert record["strategy_type"] == "directional"
+    assert record["resolved_at"] is None
     assert "ts" in record
 
 
@@ -30,12 +32,23 @@ def test_multiple_signals_append(tracker, tmp_path):
 def test_record_outcome_updates_correct_record(tracker, tmp_path):
     tracker.log_signal("t1", 0.65, 0.50, {}, 50.0, 0.05)
     tracker.log_signal("t2", 0.40, 0.50, {}, 50.0, 0.04)
-    tracker.record_outcome("t1", resolved_yes=True)
+    wrote = tracker.record_outcome("t1", resolved_yes=True)
     lines = (tmp_path / "fills.jsonl").read_text().strip().split("\n")
     t1 = json.loads(lines[0])
     t2 = json.loads(lines[1])
+    assert wrote is True
     assert t1["outcome"] == 1
+    assert t1["resolved_at"] is not None
     assert t2["outcome"] is None
+
+
+def test_record_outcome_is_idempotent(tracker, tmp_path):
+    tracker.log_signal("t1", 0.65, 0.50, {}, 50.0, 0.05)
+    assert tracker.record_outcome("t1", resolved_yes=True) is True
+    assert tracker.record_outcome("t1", resolved_yes=False) is False
+    line = (tmp_path / "fills.jsonl").read_text().strip()
+    record = json.loads(line)
+    assert record["outcome"] == 1
 
 
 def test_brier_score_perfect():

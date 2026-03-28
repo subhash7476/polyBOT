@@ -11,6 +11,7 @@ import httpx
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.request import Request, urlopen
 from config import FEDWATCH_POLL_INTERVAL
 from market.state import AppState
 from utils.logger import get_logger
@@ -157,7 +158,8 @@ class MacroFeed:
     async def _fetch_fred_csv(self, client: httpx.AsyncClient, series_id: str) -> str:
         """
         Fetch a single FRED CSV series.
-        FRED blocks httpx (TLS fingerprint); use curl subprocess as fallback.
+        FRED can be unreliable with httpx in some environments; use urllib in a
+        worker thread as the fallback instead of spawning curl.
         """
         url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
         # Try httpx first
@@ -168,14 +170,13 @@ class MacroFeed:
                 return r.text
         except Exception:
             pass
-        # Fallback: curl (always available on Windows via Git Bash / system curl)
-        import asyncio as _aio
-        proc = await _aio.create_subprocess_exec(
-            "curl", "-s", "--max-time", "15", url,
-            stdout=_aio.subprocess.PIPE, stderr=_aio.subprocess.DEVNULL,
-        )
-        stdout, _ = await _aio.wait_for(proc.communicate(), timeout=20.0)
-        return stdout.decode(errors="replace")
+        # Fallback: standard-library HTTP fetch in a worker thread.
+        def _fetch() -> str:
+            req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urlopen(req, timeout=15.0) as resp:
+                return resp.read().decode("utf-8", errors="replace")
+
+        return await asyncio.to_thread(_fetch)
 
     async def _fetch_fedwatch(self, client: httpx.AsyncClient) -> float:
         """

@@ -9,6 +9,7 @@ import functools
 import os
 import sys
 import httpx
+from trading.positions import TrackedPosition
 from trading.redeem import redeem_position
 from trading.redeem_lock import RedeemLock
 from utils.logger import get_logger
@@ -51,6 +52,17 @@ async def fetch_positions(wallet: str) -> list[dict]:
         return data if isinstance(data, list) else []
 
 
+def extract_wallet_token_id(position: dict) -> str:
+    return (
+        position.get("asset")
+        or position.get("asset_id")
+        or position.get("clobTokenId")
+        or position.get("tokenId")
+        or position.get("token_id")
+        or ""
+    )
+
+
 async def run_redeemall(wallet: str, rpc_url: str, private_key: str) -> int:
     """
     Fetch and redeem all eligible positions.
@@ -91,6 +103,53 @@ async def run_redeemall(wallet: str, rpc_url: str, private_key: str) -> int:
 
     log.info(f"redeemall complete: {redeemed} redeemed")
     return redeemed
+
+
+async def redeem_tracked_positions(
+    wallet: str,
+    rpc_url: str,
+    private_key: str,
+    tracked_positions: dict[str, TrackedPosition],
+) -> list[str]:
+    """
+    Redeem only tracked positions that are both wallet-visible and resolved.
+    Returns the tracked token_ids that were successfully redeemed.
+    """
+    if not tracked_positions:
+        return []
+    if not _lock.acquire():
+        log.warning("redeemall already running — skipping tracked redemption")
+        return []
+
+    redeemed_token_ids: list[str] = []
+    try:
+        positions = await fetch_positions(wallet)
+        redeemable, _pending, _active = classify_positions(positions)
+        tracked_by_token = tracked_positions
+
+        for pos in redeemable:
+            token_id = extract_wallet_token_id(pos)
+            tracked = tracked_by_token.get(token_id)
+            if not tracked:
+                continue
+            condition_id = pos.get("conditionId") or pos.get("condition_id", "") or tracked.condition_id
+            if not condition_id:
+                log.warning(f"tracked position {token_id[:12]} missing conditionId; cannot redeem")
+                continue
+            loop = asyncio.get_event_loop()
+            success = await loop.run_in_executor(
+                None,
+                functools.partial(redeem_position, condition_id, rpc_url, private_key)
+            )
+            if success:
+                redeemed_token_ids.append(token_id)
+            await asyncio.sleep(2)
+    except Exception as exc:
+        log.error(f"tracked redemption failed: {exc}")
+    finally:
+        _lock.release()
+
+    return redeemed_token_ids
 
 
 if __name__ == "__main__":

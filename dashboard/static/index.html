@@ -37,6 +37,11 @@
 
   /* Tables */
   table { width: 100%; border-collapse: collapse; }
+  #spot-table { table-layout: fixed; }
+  #spot-table th:first-child,
+  #spot-table td:first-child { width: 72px; }
+  #spot-table th:not(:first-child),
+  #spot-table td:not(:first-child) { width: 96px; }
   th { padding: 6px 12px; text-align: right; color: var(--muted); font-size: 11px; font-weight: 400; border-bottom: 1px solid var(--border); }
   th:first-child { text-align: left; }
   td { padding: 5px 12px; text-align: right; border-bottom: 1px solid rgba(48,54,61,.5); }
@@ -79,6 +84,10 @@
   <span id="conn-status" class="disconnected">Connecting…</span>
   <span id="bot-mode" class="badge badge-amber">PAPER</span>
   <span id="uptime" class="muted">uptime —</span>
+  <span id="lifetime-trades" class="muted">lifetime trades —</span>
+  <span id="open-positions" class="muted">open —</span>
+  <span id="pending-positions" class="muted">pending —</span>
+  <span id="realized-pnl" class="muted">realized —</span>
   <span style="flex:1"></span>
   <span class="muted" style="font-size:11px">Feed ages:</span>
   <span id="feed-binance" class="badge badge-amber" title="Binance spot+funding">Binance —</span>
@@ -207,11 +216,15 @@ function buildSpotTable(d) {
     priceCell.className = 'num';
     priceCell.textContent = price ? '$' + price.toLocaleString('en', {maximumFractionDigits: 2}) : '—';
     flashCell(priceCell, price, prev.spot_prices?.[a]);
-    row.insertCell().textContent = dvol ? dvol.toFixed(1) : '—';
+    const dvolCell = row.insertCell();
+    dvolCell.className = 'num';
+    dvolCell.textContent = dvol ? dvol.toFixed(1) : '—';
     const fCell = row.insertCell();
     fCell.className = 'num ' + (fund > 0 ? 'pos' : fund < 0 ? 'neg' : '');
     fCell.textContent = fund != null ? (fund * 100).toFixed(4) + '%' : '—';
-    row.insertCell().textContent = skew != null ? skew.toFixed(3) : '—';
+    const skewCell = row.insertCell();
+    skewCell.className = 'num ' + (skew > 0 ? 'pos' : skew < 0 ? 'neg' : '');
+    skewCell.textContent = skew != null ? skew.toFixed(3) : '—';
   }
 }
 
@@ -299,6 +312,12 @@ function updateStatus(d) {
   const uptime = d.uptime_seconds || 0;
   const h = Math.floor(uptime / 3600), m = Math.floor((uptime % 3600) / 60), s = Math.floor(uptime % 60);
   $('uptime').textContent = `uptime ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  $('lifetime-trades').textContent = `lifetime trades ${d.lifetime_trades ?? d.scan_stats?.lifetime_trades ?? 0}`;
+  const counts = d.position_counts || {};
+  const realized = d.realized_pnl || 0;
+  $('open-positions').textContent = `open ${counts.open ?? 0}`;
+  $('pending-positions').textContent = `pending ${counts.resolved_pending_redeem ?? 0}`;
+  $('realized-pnl').textContent = `realized ${(realized >= 0 ? '+' : '')}$${(+realized).toFixed(2)}`;
 
   const ages = d.feed_ages || {};
   for (const [feed, elId] of [['binance','feed-binance'],['deribit','feed-deribit'],['macro','feed-macro']]) {

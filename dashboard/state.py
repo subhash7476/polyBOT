@@ -35,10 +35,18 @@ class DashboardState:
 
         # Trading activity
         self.positions: list = []
+        self.position_counts: dict = {
+            "open": 0,
+            "resolved_pending_redeem": 0,
+            "closed": 0,
+        }
+        self.realized_pnl: float = 0.0
+        self.consecutive_losses: int = 0
         self.active_markets: deque = deque(maxlen=50)
         self.scan_stats: dict = {
             "n_total": 0, "n_parseable": 0, "n_signal": 0,
             "n_liquidity": 0, "n_ev": 0, "n_traded": 0,
+            "lifetime_trades": 0,
         }
 
         # Per-source update timestamps (epoch float)
@@ -85,7 +93,11 @@ class DashboardState:
                 "cpi": self.cpi,
                 "unrate": self.unrate,
                 "positions": self.positions,
+                "position_counts": self.position_counts,
+                "realized_pnl": self.realized_pnl,
+                "consecutive_losses": self.consecutive_losses,
                 "active_markets": list(self.active_markets),
                 "scan_stats": self.scan_stats,
+                "lifetime_trades": self.scan_stats.get("lifetime_trades", 0),
                 "feed_ages": feed_ages,
             })

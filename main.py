@@ -22,10 +22,12 @@ from feeds.deribit import DeribitFeed
 from feeds.microstructure import MicrostructureFeed
 from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
+from feeds.weather import WeatherFeed
 from market.clob_monitor import CLOBMonitor, build_threshold_markets
 from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
 from engine.probability import build_model_probability, build_microstructure_probability
 from engine.macro_probability import build_macro_probability
+from engine.weather_probability import build_weather_probability
 from engine.contract_parser import parse_contract
 from engine.signal_filter import passes_signal_filter
 from engine.flatline import compute_flatline_signal, record_price as record_flatline_price
@@ -35,8 +37,10 @@ from trading.ev_gate import calculate_ev, should_enter, get_trade_direction
 from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
+from trading.positions import PositionLedger
 from trading.executor import CLOBExecutor
-from trading.redeemall import run_redeemall
+from trading.redeemall import redeem_tracked_positions, run_redeemall
+from trading.resolution import resolution_loop
 from trading.balance import BalancePoller
 from calibration.tracker import CalibrationTracker
 from dashboard.state import DashboardState
@@ -68,8 +72,9 @@ async def trading_loop(
             log.debug("feeds stale — skipping scan")
             continue
 
-        # In paper mode, expire stale positions so the bot keeps exploring
-        if PAPER:
+        # Optional paper-mode TTL for debugging; disabled by default now that
+        # resolution tracking exists.
+        if PAPER and config.PAPER_USE_POSITION_TTL:
             expired = risk.expire_paper_positions(config.PAPER_POSITION_TTL_HOURS)
             if expired:
                 log.info(f"expired {expired} paper position(s) — slots reopened")
@@ -105,6 +110,10 @@ async def trading_loop(
                     )
                 elif parsed.category == "crypto":
                     model_prob, signal_count, engine = build_model_probability(
+                        parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                elif parsed.category == "weather":
+                    model_prob, signal_count, engine = build_weather_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
                 else:
@@ -226,6 +235,8 @@ async def trading_loop(
                     size_usdc=size,
                     ev=ev,
                     side=side,
+                    question=contract_state.question,
+                    strategy_type="directional",
                 )
 
                 # 9. Execute
@@ -242,7 +253,18 @@ async def trading_loop(
                     price=contract_state.best_ask if side == "BUY_YES" else contract_state.no_best_ask,
                 )
                 if result.success:
-                    await risk.open_position(yes_token_id, parsed, size, result.filled_price)
+                    await risk.open_position(
+                        yes_token_id,
+                        parsed,
+                        size,
+                        result.filled_price,
+                        side=side,
+                        no_token_id=contract_state.no_token_id,
+                        question=contract_state.question,
+                        category=parsed.category,
+                        market_price_at_open=contract_state.mid,
+                        strategy_type="directional",
+                    )
                     n_traded += 1
                     mkt_rec["traded"] = True
                     mkt_rec["reason"] = None
@@ -297,6 +319,7 @@ async def arb_scan_loop(
                 size_usdc=0.0,
                 ev=v.spread,
                 side="ARB",
+                strategy_type="arb_monotonicity",
             )
 
         if violations:
@@ -314,21 +337,30 @@ async def arb_scan_loop(
                 size_usdc=0.0,
                 ev=v.profit,
                 side="ARB",
+                strategy_type="arb_cross_temporal",
             )
         if cross_violations:
             log.info(f"cross-temporal arb: {len(cross_violations)} violations")
 
 
-async def redeemall_loop(executor, interval: int = 900):
+async def redeemall_loop(executor, risk: RiskManager, interval: int = 900):
     """Check for redeemable positions every 15 minutes."""
     await asyncio.sleep(60)  # wait 60s before first check
     while True:
         try:
-            await run_redeemall(
+            if PAPER:
+                await asyncio.sleep(interval)
+                continue
+            async with risk._lock:
+                pending_positions = dict(risk.pending_redemptions)
+            redeemed_ids = await redeem_tracked_positions(
                 wallet=executor.wallet_address,
                 rpc_url=config.RPC_URL,
                 private_key=config.POLY_PRIVATE_KEY,
+                tracked_positions=pending_positions,
             )
+            for token_id in redeemed_ids:
+                await risk.mark_redeemed(token_id)
         except Exception as exc:
             log.error(f"redeemall_loop error: {exc}")
         await asyncio.sleep(interval)
@@ -338,7 +370,13 @@ async def main():
     Path(__file__).parent.joinpath("bot.pid").write_text(str(os.getpid()))
     log.info(f"starting v2.1 | paper={PAPER} | bankroll=${BANKROLL_USDC}")
     state = AppState()
-    risk = RiskManager(bankroll=BANKROLL_USDC)
+    ledger = PositionLedger(config.TRACKED_POSITIONS_FILE)
+    risk = RiskManager(bankroll=BANKROLL_USDC, ledger=ledger)
+    if risk.open_positions or risk.pending_redemptions:
+        log.info(
+            f"restored {len(risk.open_positions)} open and "
+            f"{len(risk.pending_redemptions)} resolved-pending position(s) from ledger"
+        )
     executor = CLOBExecutor(paper=PAPER)
     tracker = CalibrationTracker()
     dash = DashboardState()
@@ -350,12 +388,19 @@ async def main():
         MicrostructureFeed(state).start(),
         OnChainFeed(state).start(),
         MacroFeed(state).start(),
+        WeatherFeed(state).start(),
         CLOBMonitor(state).start(),
         trading_loop(state, risk, executor, tracker, dash),
+        resolution_loop(
+            risk,
+            tracker,
+            paper=PAPER,
+            wallet_address=executor.wallet_address,
+        ),
         arb_scan_loop(state, tracker),
         dashboard_loop(state, dash, risk=risk),
         balance_poller.start(),
-        redeemall_loop(executor),
+        redeemall_loop(executor, risk),
     )
 
 

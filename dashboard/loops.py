@@ -16,17 +16,28 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
 
         # Read positions from RiskManager (separate lock, outside state._lock)
         positions = []
+        position_counts = {"open": 0, "resolved_pending_redeem": 0, "closed": 0}
+        realized_pnl = consecutive_losses = 0.0
         if risk is not None:
             async with risk._lock:
+                position_counts["open"] = len(risk.open_positions)
+                position_counts["resolved_pending_redeem"] = len(getattr(risk, "pending_redemptions", {}))
+                position_counts["closed"] = len(getattr(risk, "closed_positions", {}))
+                realized_pnl = risk.daily_pnl
+                consecutive_losses = risk.consecutive_losses
                 for token_id, pos in risk.open_positions.items():
                     cs = markets_snapshot.get(token_id)
                     current_mid = cs.mid if cs else pos.entry_price
-                    pnl = (current_mid - pos.entry_price) * (pos.size_usdc / pos.entry_price)
+                    if pos.side == "BUY_NO":
+                        payout_mid = 1.0 - current_mid
+                    else:
+                        payout_mid = current_mid
+                    pnl = (payout_mid - pos.entry_price) * (pos.size_usdc / pos.entry_price)
                     question = cs.question if cs else token_id[:16]
                     positions.append({
                         "token_id": token_id,
                         "question": question,
-                        "side": "BUY_YES",
+                        "side": pos.side,
                         "size_usdc": pos.size_usdc,
                         "entry_price": pos.entry_price,
                         "current_mid": current_mid,
@@ -49,6 +60,9 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
             "cpi": getattr(feeds, "cpi", None),
             "unrate": getattr(feeds, "unrate", None),
             "positions": positions,
+            "position_counts": position_counts,
+            "realized_pnl": realized_pnl,
+            "consecutive_losses": int(consecutive_losses),
         }
 
         # Per-source feed timestamps: only update when data is freshly non-empty
@@ -70,8 +84,9 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
 
 def update_scan_stats(dash: DashboardState, **kwargs) -> None:
     current = dict(dash.scan_stats)
-    # n_traded is cumulative lifetime total — add to existing, don't replace
+    # n_traded is per-scan; lifetime_trades is cumulative across the process lifetime.
     if "n_traded" in kwargs:
-        current["n_traded"] = current.get("n_traded", 0) + kwargs.pop("n_traded")
+        traded = kwargs["n_traded"]
+        current["lifetime_trades"] = current.get("lifetime_trades", 0) + traded
     current.update(kwargs)
     dash.update({"scan_stats": current})

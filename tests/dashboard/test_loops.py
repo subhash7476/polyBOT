@@ -40,6 +40,7 @@ def test_update_scan_stats_writes_all_keys():
     assert ds.scan_stats["n_liquidity"] == 4
     assert ds.scan_stats["n_ev"] == 2
     assert ds.scan_stats["n_traded"] == 1
+    assert ds.scan_stats["lifetime_trades"] == 1
 
 
 def test_update_scan_stats_partial_kwargs():
@@ -47,14 +48,16 @@ def test_update_scan_stats_partial_kwargs():
     update_scan_stats(ds, n_total=10, n_traded=0)
     assert ds.scan_stats["n_total"] == 10
     assert ds.scan_stats["n_traded"] == 0
+    assert ds.scan_stats["lifetime_trades"] == 0
 
 
 def test_update_scan_stats_n_traded_is_cumulative():
     ds = DashboardState()
     update_scan_stats(ds, n_total=10, n_traded=1)
     update_scan_stats(ds, n_total=30, n_traded=2)
-    assert ds.scan_stats["n_total"] == 30   # per-scan: replaced
-    assert ds.scan_stats["n_traded"] == 3   # cumulative: 1 + 2
+    assert ds.scan_stats["n_total"] == 30
+    assert ds.scan_stats["n_traded"] == 2
+    assert ds.scan_stats["lifetime_trades"] == 3
 
 
 # ---------------------------------------------------------------------------
@@ -180,13 +183,14 @@ async def test_dashboard_loop_copies_positions():
     class FakePos:
         token_id: str
         group_key: str
+        side: str
         size_usdc: float
         entry_price: float
 
     state = _make_app_state_with_feeds()
     risk = MagicMock()
     risk._lock = asyncio.Lock()
-    risk.open_positions = {"tok1": FakePos("tok1", "btc_above", 50.0, 0.30)}
+    risk.open_positions = {"tok1": FakePos("tok1", "btc_above", "BUY_YES", 50.0, 0.30)}
 
     ds = DashboardState()
     task = asyncio.create_task(dashboard_loop(state, ds, risk=risk, interval=0.05))
@@ -198,3 +202,44 @@ async def test_dashboard_loop_copies_positions():
     assert len(ds.positions) == 1
     assert ds.positions[0]["size_usdc"] == 50.0
     assert ds.positions[0]["entry_price"] == 0.30
+    assert ds.positions[0]["side"] == "BUY_YES"
+
+
+@pytest.mark.asyncio
+async def test_dashboard_loop_copies_buy_no_positions_with_correct_pnl():
+    from unittest.mock import MagicMock
+    from dataclasses import dataclass
+
+    @dataclass
+    class FakePos:
+        token_id: str
+        group_key: str
+        side: str
+        size_usdc: float
+        entry_price: float
+
+    state = _make_app_state_with_feeds()
+    state.markets["tok1"] = ContractState(
+        yes_token_id="tok1",
+        no_token_id="tok1_no",
+        question="Will BTC stay below $80k?",
+        category="crypto",
+        best_bid=0.38,
+        best_ask=0.42,
+        volume_usd=10000.0,
+    )
+    risk = MagicMock()
+    risk._lock = asyncio.Lock()
+    risk.open_positions = {"tok1": FakePos("tok1", "btc_below", "BUY_NO", 50.0, 0.60)}
+
+    ds = DashboardState()
+    task = asyncio.create_task(dashboard_loop(state, ds, risk=risk, interval=0.05))
+    await asyncio.sleep(0.15)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert len(ds.positions) == 1
+    assert ds.positions[0]["side"] == "BUY_NO"
+    assert ds.positions[0]["current_mid"] == pytest.approx(0.40)
+    assert ds.positions[0]["pnl_usdc"] == pytest.approx(0.0)
