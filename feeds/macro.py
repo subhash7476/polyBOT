@@ -158,22 +158,27 @@ class MacroFeed:
     async def _fetch_fred_csv(self, client: httpx.AsyncClient, series_id: str) -> str:
         """
         Fetch a single FRED CSV series.
-        FRED can be unreliable with httpx in some environments; use urllib in a
-        worker thread as the fallback instead of spawning curl.
+        FRED throttles persistent sessions (shared with Yahoo/NY-Fed requests).
+        Always use a fresh httpx client so FRED doesn't see reused connections.
+        Falls back to urllib in a worker thread if httpx still fails.
         """
         url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
-        # Try httpx first
+        # Use a fresh client — FRED blocks session-reused connections from shared clients
         try:
-            r = await client.get(url, timeout=15.0)
-            r.raise_for_status()
-            if r.text.strip():
-                return r.text
+            async with httpx.AsyncClient(
+                headers={"User-Agent": "Mozilla/5.0 (compatible; bot/1.0)"},
+                timeout=10.0,
+            ) as fresh_client:
+                r = await fresh_client.get(url, timeout=10.0)
+                r.raise_for_status()
+                if r.text.strip():
+                    return r.text
         except Exception:
             pass
         # Fallback: standard-library HTTP fetch in a worker thread.
         def _fetch() -> str:
-            req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urlopen(req, timeout=15.0) as resp:
+            req = Request(url, headers={"User-Agent": "curl/7.88"})
+            with urlopen(req, timeout=10.0) as resp:
                 return resp.read().decode("utf-8", errors="replace")
 
         return await asyncio.to_thread(_fetch)

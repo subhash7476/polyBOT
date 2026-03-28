@@ -37,6 +37,12 @@ def test_macro_feed_fred_csv_fallback_uses_urllib(monkeypatch):
         async def get(self, *args, **kwargs):
             raise RuntimeError("httpx blocked")
 
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
     class DummyState:
         async def update_feeds(self, **kwargs):
             return None
@@ -57,6 +63,9 @@ def test_macro_feed_fred_csv_fallback_uses_urllib(monkeypatch):
         return _Resp()
 
     monkeypatch.setattr("feeds.macro.urlopen", fake_urlopen)
+    # Also patch httpx.AsyncClient so the fresh client created inside _fetch_fred_csv fails
+    import feeds.macro as macro_module
+    monkeypatch.setattr(macro_module.httpx, "AsyncClient", lambda **kwargs: DummyClient())
 
     import asyncio
     result = asyncio.run(feed._fetch_fred_csv(DummyClient(), "DFEDTARL"))
