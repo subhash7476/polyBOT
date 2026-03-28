@@ -66,19 +66,39 @@ def build_model_probability(
     spot = feeds.spot_prices.get(asset)
     asset_dvol = feeds.dvol.get(asset)
 
-    # Use lognormal as the analytical prior — anchors the model at the
-    # correct baseline before any signal adjustments. Falls back to 0.5
-    # if spot/dvol not yet available.
-    if spot and asset_dvol and contract.target_price:
-        lnorm_prob = lognormal_prob_above(spot, contract.target_price, asset_dvol / 100, T)
+    # Use lognormal as the analytical prior.  Works with spot alone — falls back
+    # to an 80% annualised vol when DVOL feed is unavailable (Deribit cold start,
+    # Binance futures geo-block, etc.).  Without this, a missing DVOL collapses
+    # every crypto market to prior=0.5 and produces zero tradeable signals.
+    _SIGMA_FALLBACK = 0.80   # conservative annual vol when DVOL not yet available
+    dvol_live = asset_dvol is not None
+    sigma_annual = asset_dvol / 100 if dvol_live else _SIGMA_FALLBACK
+    dvol_confidence = 1.0 if dvol_live else 0.5
+
+    if spot and contract.target_price:
+        lnorm_prob = lognormal_prob_above(spot, contract.target_price, sigma_annual, T)
         prior = lnorm_prob if up else (1.0 - lnorm_prob)
         # Clamp away from 0/1 so log-odds remain finite
         prior = float(np.clip(prior, 0.01, 0.99))
-        log.debug(f"lognormal prior={prior:.4f} spot={spot:.4g} target={contract.target_price} T={T:.1f}d dvol={asset_dvol:.1f}")
+        log.debug(
+            f"lognormal prior={prior:.4f} spot={spot:.4g} target={contract.target_price} "
+            f"T={T:.1f}d sigma={'live' if dvol_live else 'fallback'}={sigma_annual*100:.0f}%"
+        )
     else:
         prior = 0.5
 
     engine = BayesianEngine(prior=prior)
+
+    # Signal 0: Lognormal model signal — always present when a real lognormal prior
+    # was computed (i.e. spot is available).  Encodes how far the model is from 50%.
+    # Confidence is 1.0 with live DVOL, 0.5 with fallback sigma.
+    if spot and contract.target_price:
+        engine.add_signal(Signal(
+            name="dvol_lognormal",
+            strength=float(np.clip((prior - 0.5) * 2, -1.0, 1.0)),
+            weight=weights.get("dvol_lognormal", 0.30),
+            confidence=dvol_confidence,
+        ))
 
     # Signal 1: Volatility skew (per-asset)
     asset_skew = feeds.vol_skew.get(asset)

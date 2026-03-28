@@ -53,6 +53,8 @@ log = get_logger("main")
 
 _SCAN_INTERVAL = 5   # seconds between opportunity scans
 _ARB_INTERVAL = 30   # seconds between arb scans
+_FEED_HEALTH_INTERVAL = 120  # seconds between feed health log lines
+_feed_health_last: float = 0.0
 
 
 async def trading_loop(
@@ -320,6 +322,24 @@ async def trading_loop(
                 key=lambda x: -x[2]
             )[:8]
             log.debug("skip reasons: " + ", ".join(f"{cat}/{reason}={n}" for cat, reason, n in top))
+        # Feed health log — emitted every 2 minutes so you can see what's populated
+        global _feed_health_last
+        import time as _time
+        if _time.time() - _feed_health_last >= _FEED_HEALTH_INTERVAL:
+            _feed_health_last = _time.time()
+            spot_keys = list(feeds.spot_prices.keys()) or ["none"]
+            dvol_keys = list(feeds.dvol.keys()) or ["none"]
+            fr_keys = list(feeds.funding_rates.keys()) or ["none"]
+            btc_spot = feeds.spot_prices.get("BTC")
+            btc_dvol = feeds.dvol.get("BTC")
+            log.info(
+                f"FEED HEALTH — spot:{spot_keys} dvol:{dvol_keys} funding:{fr_keys} | "
+                f"btc_spot={'${:,.0f}'.format(btc_spot) if btc_spot else 'MISSING'} "
+                f"btc_dvol={f'{btc_dvol:.1f}' if btc_dvol else 'MISSING'} "
+                f"dxy={feeds.dxy or 'MISSING'} "
+                f"weather_cities={len(feeds.weather_forecasts)}"
+            )
+
         update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
                           n_signal=n_signal, n_liquidity=n_liquidity,
                           n_ev=n_ev, n_traded=n_traded)

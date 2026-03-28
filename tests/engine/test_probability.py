@@ -126,17 +126,30 @@ def test_missing_target_returns_prior():
     assert count == 0
 
 
-def test_dvol_lognormal_sets_prior_not_signal():
-    """dvol_lognormal is now the Bayesian prior, not a signal — count stays 0
-    but the prior is no longer flat 0.5."""
+def test_dvol_lognormal_always_added_as_signal():
+    """dvol_lognormal is added as a signal whenever spot is available,
+    so extreme markets can pass the strong-prior + 1 signal filter exception."""
     feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = make_contract(target=90000.0, expiry_days=30)
     prob, count, engine = build_model_probability(
         contract, feeds, {"dvol_lognormal": 0.30}
     )
-    assert count == 0
+    assert count >= 1
     assert prob != 0.5
     assert 0 < prob < 1
+    assert any(s.name == "dvol_lognormal" for s in engine.active_signals)
+
+
+def test_dvol_lognormal_fires_with_fallback_sigma_when_dvol_missing():
+    """Without live DVOL, dvol_lognormal still fires at 0.5 confidence using 80% fallback."""
+    feeds = make_feeds(btc_dvol=None, btc_price=84000.0)
+    contract = make_contract(target=90000.0, expiry_days=30)
+    prob, count, engine = build_model_probability(
+        contract, feeds, {"dvol_lognormal": 0.30}
+    )
+    assert count >= 1
+    sig = next(s for s in engine.active_signals if s.name == "dvol_lognormal")
+    assert sig.confidence == 0.5  # reduced confidence for fallback
 
 
 def test_funding_signal_fires_with_funding_rate():
