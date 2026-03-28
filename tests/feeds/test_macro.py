@@ -32,7 +32,7 @@ def test_cached_value_confidence_half_age():
     assert abs(cv.confidence - 0.5) < 0.05
 
 
-def test_macro_feed_fred_csv_fallback_uses_urllib(monkeypatch):
+def test_macro_feed_fred_csv_fallback_uses_curl(monkeypatch):
     class DummyClient:
         async def get(self, *args, **kwargs):
             raise RuntimeError("httpx blocked")
@@ -49,20 +49,13 @@ def test_macro_feed_fred_csv_fallback_uses_urllib(monkeypatch):
 
     feed = MacroFeed(DummyState())
 
-    def fake_urlopen(req, timeout=15.0):
-        class _Resp:
-            def __enter__(self):
-                return self
+    import subprocess as _sp
+    from types import SimpleNamespace
 
-            def __exit__(self, exc_type, exc, tb):
-                return False
+    def fake_run(cmd, **kwargs):
+        return SimpleNamespace(returncode=0, stdout="DATE,VALUE\n2026-01-01,4.25\n")
 
-            def read(self):
-                return b"DATE,VALUE\n2026-01-01,4.25\n"
-
-        return _Resp()
-
-    monkeypatch.setattr("feeds.macro.urlopen", fake_urlopen)
+    monkeypatch.setattr("feeds.macro.subprocess.run", fake_run)
     # Also patch httpx.AsyncClient so the fresh client created inside _fetch_fred_csv fails
     import feeds.macro as macro_module
     monkeypatch.setattr(macro_module.httpx, "AsyncClient", lambda **kwargs: DummyClient())

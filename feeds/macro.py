@@ -7,11 +7,11 @@ Signal confidence=0 → BayesianEngine ignores it (no log-odds contribution).
 """
 
 import asyncio
+import subprocess
 import httpx
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
-from urllib.request import Request, urlopen
 from config import FEDWATCH_POLL_INTERVAL
 from market.state import AppState
 from utils.logger import get_logger
@@ -175,13 +175,15 @@ class MacroFeed:
                     return r.text
         except Exception:
             pass
-        # Fallback: standard-library HTTP fetch in a worker thread.
-        def _fetch() -> str:
-            req = Request(url, headers={"User-Agent": "curl/7.88"})
-            with urlopen(req, timeout=10.0) as resp:
-                return resp.read().decode("utf-8", errors="replace")
-
-        return await asyncio.to_thread(_fetch)
+        # Fallback: curl subprocess — bypasses Python TLS fingerprint blocking
+        result = await asyncio.to_thread(
+            subprocess.run,
+            ["curl", "-s", "--max-time", "8", url],
+            capture_output=True, text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout
+        raise RuntimeError(f"FRED fetch failed for {series_id} (curl exit {result.returncode})")
 
     async def _fetch_fedwatch(self, client: httpx.AsyncClient) -> float:
         """
