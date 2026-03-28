@@ -3,6 +3,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
+from feeds.weather_types import WeatherForecast
+
 
 @dataclass
 class FeedState:
@@ -33,6 +35,8 @@ class FeedState:
     fed_confidence: float = 0.0
     fed_expected_cuts: Optional[float] = None   # Poisson λ for annual cut-count markets
     sofr: Optional[float] = None                # NY Fed SOFR overnight rate
+
+    weather_forecasts: dict = field(default_factory=dict)  # city_slug → WeatherForecast
 
     # === Feed staleness tracking ===
     last_feed_update: dict = field(default_factory=dict)  # feed_name → unix timestamp (float)

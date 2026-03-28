@@ -7,6 +7,49 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
+# ── Weather market detection ────────────────────────────────────────────────
+_WEATHER_RE = re.compile(
+    r'\bhighest\s+temperature\b|\blowest\s+temperature\b|\bhigh\s+temp\b'
+    r'|\bdegrees?\s*(?:fahrenheit|celsius|[°]?[fFcC])\b'
+    r'|\btemperature\b.*(?:above|below|between|exceed|reach)\b',
+    re.IGNORECASE,
+)
+
+_WEATHER_CITY_MAP: dict = {
+    "new york city": "nyc",
+    "new york":      "nyc",
+    "nyc":           "nyc",
+    "chicago":       "chicago",
+    "miami":         "miami",
+    "dallas":        "dallas",
+    "seattle":       "seattle",
+    "atlanta":       "atlanta",
+    "london":        "london",
+    "paris":         "paris",
+    "munich":        "munich",
+    "ankara":        "ankara",
+    "seoul":         "seoul",
+    "tokyo":         "tokyo",
+    "shanghai":      "shanghai",
+    "singapore":     "singapore",
+    "lucknow":       "lucknow",
+    "tel aviv":      "tel-aviv",
+    "tel-aviv":      "tel-aviv",
+    "toronto":       "toronto",
+    "sao paulo":     "sao-paulo",
+    "são paulo":     "sao-paulo",
+    "buenos aires":  "buenos-aires",
+    "wellington":    "wellington",
+}
+
+
+def _detect_weather_city(q: str) -> Optional[str]:
+    for name, slug in sorted(_WEATHER_CITY_MAP.items(), key=lambda x: -len(x[0])):
+        if re.search(r'\b' + re.escape(name) + r'\b', q, re.IGNORECASE):
+            return slug
+    return None
+
+
 PRICE_PATTERNS = [
     r"\$([0-9,]+(?:\.[0-9]+)?)[mMkK]?",        # $1m, $85k, $85,000, $3,500.50
     r"([0-9,]+(?:\.[0-9]+)?)[kK]\s*(?:USD|USDT|dollars)?",  # 85k USD
@@ -81,6 +124,17 @@ class ParsedContract:
 def parse_contract(token_id: str, question: str) -> ParsedContract:
     q = question.lower()
     contract = ParsedContract(token_id=token_id, question=question)
+
+    # 0. Weather markets — detect before crypto/macro to avoid misclassification
+    if _WEATHER_RE.search(q):
+        city_slug = _detect_weather_city(q)
+        if city_slug:
+            contract.category = "weather"
+            contract.asset = city_slug
+            contract.direction = "bucket"
+            contract.parseable = True
+            log.debug(f"weather market: {q[:60]}")
+            return contract
 
     # 1. Rate contracts — detect early, extract direction/target/expiry
     if _RATE_RE.search(q):
