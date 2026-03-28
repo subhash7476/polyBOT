@@ -78,6 +78,9 @@ async def fetch_market_resolution(client: httpx.AsyncClient, token_id: str) -> t
     payload: dict | None = None
     for params in candidate_params:
         resp = await client.get(_GAMMA_URL, params=params, timeout=15.0)
+        if resp.status_code == 422:
+            # Gamma rejects the token format — not a real market token, skip entirely
+            return False, None, {}
         resp.raise_for_status()
         data = resp.json()
         items = data if isinstance(data, list) else data.get("data", [])
