@@ -11,6 +11,11 @@ Exit code 1 = one or more checks fail.
 import argparse
 import sys
 import math
+from pathlib import Path
+
+# Ensure project root is on sys.path when run as a script
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from calibration.metrics import load_resolved_fills, paper_validation_report
 
 
