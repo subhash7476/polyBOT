@@ -82,12 +82,18 @@ async def trading_loop(
         n_total = len(markets)
         n_parseable = n_signal = n_liquidity = n_ev = n_traded = 0
         category_counts: dict[str, int] = {}
+        skip_reasons: dict[str, dict[str, int]] = {}
+
+        def _record_skip(category: str, reason: str) -> None:
+            skip_reasons.setdefault(category, {}).setdefault(reason, 0)
+            skip_reasons[category][reason] += 1
 
         for yes_token_id, contract_state in markets.items():
             try:
                 # 1. Parse contract — skip if unparseable
                 parsed = parse_contract(yes_token_id, contract_state.question)
                 if not parsed.parseable:
+                    _record_skip(parsed.category or "unknown", "unparseable")
                     continue
                 n_parseable += 1
                 category_counts[parsed.category] = category_counts.get(parsed.category, 0) + 1
@@ -153,6 +159,7 @@ async def trading_loop(
                 if not ok:
                     log.debug(f"signal filter: {reason}")
                     mkt_rec["reason"] = reason
+                    _record_skip(parsed.category, "signal_filter")
                     dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_signal += 1
@@ -179,6 +186,7 @@ async def trading_loop(
                         f"illiquid [{yes_token_id[:8]}]: bid={slip_bid:.3f} ask={slip_ask:.3f} "
                         f"spread={slip_ask-slip_bid:.3f} vol=${contract_state.volume_usd:.0f}"
                     )
+                    _record_skip(parsed.category, "illiquid")
                     dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_liquidity += 1
@@ -196,6 +204,7 @@ async def trading_loop(
                 if not enter:
                     log.info(f"ev gate [{yes_token_id[:8]}]: {enter_reason} model={model_prob:.3f} mid={contract_state.mid:.3f}")
                     mkt_rec["reason"] = enter_reason
+                    _record_skip(parsed.category, "low_ev")
                     dash.update({"active_markets_append": mkt_rec})
                     continue
                 n_ev += 1
@@ -215,6 +224,7 @@ async def trading_loop(
                 if size <= 0:
                     log.info(f"kelly=0 [{yes_token_id[:8]}]: model={model_prob:.3f} mid={contract_state.mid:.3f}")
                     mkt_rec["reason"] = "kelly=0"
+                    _record_skip(parsed.category, "kelly=0")
                     dash.update({"active_markets_append": mkt_rec})
                     continue
 
@@ -223,6 +233,7 @@ async def trading_loop(
                 if not ok:
                     log.info(f"risk block [{yes_token_id[:8]}]: {risk_reason}")
                     mkt_rec["reason"] = risk_reason
+                    _record_skip(parsed.category, "risk_block")
                     dash.update({"active_markets_append": mkt_rec})
                     continue
 
@@ -253,6 +264,7 @@ async def trading_loop(
                     price=contract_state.best_ask if side == "BUY_YES" else contract_state.no_best_ask,
                 )
                 if result.success:
+                    condition_id = getattr(result, "condition_id", "") or ""
                     await risk.open_position(
                         yes_token_id,
                         parsed,
@@ -260,6 +272,7 @@ async def trading_loop(
                         result.filled_price,
                         side=side,
                         no_token_id=contract_state.no_token_id,
+                        condition_id=condition_id,
                         question=contract_state.question,
                         category=parsed.category,
                         market_price_at_open=contract_state.mid,
@@ -286,6 +299,12 @@ async def trading_loop(
             f"{n_signal} signal_ok | {n_liquidity} liquid | {n_ev} ev+ | "
             f"{n_traded} traded | categories: {category_counts}"
         )
+        if skip_reasons:
+            top = sorted(
+                ((cat, reason, count) for cat, reasons in skip_reasons.items() for reason, count in reasons.items()),
+                key=lambda x: -x[2]
+            )[:5]
+            log.debug("top skip reasons: " + ", ".join(f"{cat}/{reason}={n}" for cat, reason, n in top))
         update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
                           n_signal=n_signal, n_liquidity=n_liquidity,
                           n_ev=n_ev, n_traded=n_traded)

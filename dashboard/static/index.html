@@ -73,8 +73,20 @@
   .fail { color: var(--muted); }
   .question-cell { max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  /* Lifecycle panel */
+  .lifecycle-grid {
+    display: grid; gap: 12px; padding: 12px 12px 0;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .lifecycle-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 14px;
+  }
+  .lifecycle-card .lc-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .lifecycle-card .lc-value { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
   /* Responsive */
-  @media (max-width: 900px) { .grid, .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .grid, .grid-3, .lifecycle-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -93,6 +105,30 @@
   <span id="feed-binance" class="badge badge-amber" title="Binance spot+funding">Binance —</span>
   <span id="feed-deribit" class="badge badge-amber" title="Deribit DVOL+skew">Deribit —</span>
   <span id="feed-macro"   class="badge badge-amber" title="FRED+SOFR+Yahoo">Macro —</span>
+</div>
+
+<!-- Lifecycle panel -->
+<div class="lifecycle-grid">
+  <div class="lifecycle-card">
+    <div class="lc-label">Open Positions</div>
+    <div class="lc-value" id="lc-open">—</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">exposure <span id="lc-exposure">—</span></div>
+  </div>
+  <div class="lifecycle-card">
+    <div class="lc-label">Pending Redeem</div>
+    <div class="lc-value" id="lc-pending">—</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">redeemed lifetime <span id="lc-redeemed">—</span></div>
+  </div>
+  <div class="lifecycle-card">
+    <div class="lc-label">Realized P&amp;L (today)</div>
+    <div class="lc-value" id="lc-pnl-today">—</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">lifetime <span id="lc-pnl-total">—</span></div>
+  </div>
+  <div class="lifecycle-card">
+    <div class="lc-label">Win / Loss</div>
+    <div class="lc-value" id="lc-winloss">—</div>
+    <div class="muted" style="font-size:11px;margin-top:2px">lifetime closed trades</div>
+  </div>
 </div>
 
 <!-- Row 1: Spot+Vol table | Macro panel -->
@@ -282,7 +318,7 @@ function updatePositions(positions) {
     row.insertCell().textContent = pct(p.current_mid);
     const pnl = row.insertCell();
     pnl.className = 'num ' + (p.pnl_usdc >= 0 ? 'pos' : 'neg');
-    pnl.textContent = (p.pnl_usdc >= 0 ? '+' : '') + '$' + (p.pnl_usdc || 0).toFixed(2);
+    pnl.textContent = (p.pnl_usdc >= 0 ? '+$' : '-$') + Math.abs(p.pnl_usdc || 0).toFixed(2);
   }
 }
 
@@ -307,6 +343,32 @@ function updateMarkets(markets) {
   }
 }
 
+// ── lifecycle panel ────────────────────────────────────────────────────────
+function updateLifecycle(d) {
+  const openCount = d.open_count ?? 0;
+  const exposure  = d.open_exposure_usdc ?? 0;
+  const pending   = d.pending_redeem_count ?? 0;
+  const redeemed  = d.redeemed_count ?? 0;
+  const pnlToday  = d.realized_pnl_today ?? 0;
+  const pnlTotal  = d.realized_pnl_total ?? 0;
+  const wins      = d.lifetime_wins ?? 0;
+  const losses    = d.lifetime_losses ?? 0;
+
+  $('lc-open').textContent    = openCount;
+  $('lc-exposure').textContent = '$' + exposure.toFixed(2);
+  $('lc-pending').textContent = pending;
+  $('lc-redeemed').textContent = redeemed;
+
+  const ptEl = $('lc-pnl-today');
+  ptEl.textContent = (pnlToday >= 0 ? '+$' : '-$') + Math.abs(pnlToday).toFixed(2);
+  ptEl.className = 'lc-value ' + (pnlToday >= 0 ? 'pos' : 'neg');
+
+  $('lc-pnl-total').textContent = (pnlTotal >= 0 ? '+$' : '-$') + Math.abs(pnlTotal).toFixed(2);
+
+  const wlEl = $('lc-winloss');
+  wlEl.innerHTML = `<span class="pos">${wins}W</span> / <span class="neg">${losses}L</span>`;
+}
+
 // ── status bar ─────────────────────────────────────────────────────────────
 function updateStatus(d) {
   const uptime = d.uptime_seconds || 0;
@@ -317,7 +379,7 @@ function updateStatus(d) {
   const realized = d.realized_pnl || 0;
   $('open-positions').textContent = `open ${counts.open ?? 0}`;
   $('pending-positions').textContent = `pending ${counts.resolved_pending_redeem ?? 0}`;
-  $('realized-pnl').textContent = `realized ${(realized >= 0 ? '+' : '')}$${(+realized).toFixed(2)}`;
+  $('realized-pnl').textContent = `realized ${realized >= 0 ? '+$' : '-$'}${Math.abs(+realized).toFixed(2)}`;
 
   const ages = d.feed_ages || {};
   for (const [feed, elId] of [['binance','feed-binance'],['deribit','feed-deribit'],['macro','feed-macro']]) {
@@ -348,6 +410,7 @@ function connect() {
     updateFunnel(d.scan_stats || {});
     updatePositions(d.positions || []);
     updateMarkets(d.active_markets || []);
+    updateLifecycle(d);
     updateStatus(d);
 
     prev = d;

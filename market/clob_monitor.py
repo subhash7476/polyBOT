@@ -10,6 +10,7 @@ from config import (
     MARKET_SORT_MODE,
     MAX_SUBSCRIBED_MARKETS,
     PARSEABLE_MARKET_RESERVE,
+    FAST_RESOLVE_PRIORITY,
 )
 from feeds.base import BaseFeed
 from market.state import AppState, ContractState
@@ -26,6 +27,16 @@ log = get_logger(__name__)
 _GAMMA_URL = "https://gamma-api.polymarket.com/markets"
 _PAGE_LIMIT = 100
 _MAX_PAGES = 30  # scan up to 3,000 markets
+
+
+def _is_weather_market(meta: dict) -> bool:
+    q = (meta.get("question") or "").lower()
+    return "highest temperature" in q or "lowest temperature" in q or meta.get("category") == "weather"
+
+
+def _is_ultra_short_crypto(meta: dict) -> bool:
+    q = (meta.get("question") or "").lower()
+    return any(kw in q for kw in ["next 5 minutes", "next 15 minutes", "go up in", "go down in"])
 
 
 def _allowed_categories() -> set[str]:
@@ -53,6 +64,13 @@ def _sort_key(meta: dict) -> tuple:
         short_dated_bonus = -2
     else:
         short_dated_bonus = 0
+
+    # Additional boost for fast-resolving categories
+    if FAST_RESOLVE_PRIORITY:
+        if _is_weather_market(meta):
+            short_dated_bonus -= 1
+        if _is_ultra_short_crypto(meta):
+            short_dated_bonus = min(short_dated_bonus, -3)  # treat as same priority as <24h markets
 
     if MARKET_SORT_MODE == "volume24h_desc":
         return (short_dated_bonus, -volume_24h, -volume, time_left, meta["question"])

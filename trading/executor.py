@@ -57,6 +57,7 @@ class OrderResult:
     filled_price: float
     filled_size: float
     token_used: str = ""
+    condition_id: str = ""
     error: Optional[str] = None
 
     @property
@@ -138,6 +139,7 @@ class CLOBExecutor:
                     )
                 )
                 order_id = resp.get("orderID")
+                condition_id = resp.get("conditionId", "") or ""
                 log.info(f"ORDER | id={order_id} {side} size=${size:.2f} price={price:.4f}")
                 return OrderResult(
                     order_id=order_id,
@@ -145,6 +147,7 @@ class CLOBExecutor:
                     filled_price=float(resp.get("price", price)),
                     filled_size=float(resp.get("size", size)),
                     token_used=actual_token,
+                    condition_id=condition_id,
                 )
             except Exception as exc:
                 last_exc = exc

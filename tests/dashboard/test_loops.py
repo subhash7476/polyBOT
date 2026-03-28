@@ -191,6 +191,10 @@ async def test_dashboard_loop_copies_positions():
     risk = MagicMock()
     risk._lock = asyncio.Lock()
     risk.open_positions = {"tok1": FakePos("tok1", "btc_above", "BUY_YES", 50.0, 0.30)}
+    risk.closed_positions = {}
+    risk.pending_redemptions = {}
+    risk.daily_pnl = 0.0
+    risk.consecutive_losses = 0
 
     ds = DashboardState()
     task = asyncio.create_task(dashboard_loop(state, ds, risk=risk, interval=0.05))
@@ -231,6 +235,10 @@ async def test_dashboard_loop_copies_buy_no_positions_with_correct_pnl():
     risk = MagicMock()
     risk._lock = asyncio.Lock()
     risk.open_positions = {"tok1": FakePos("tok1", "btc_below", "BUY_NO", 50.0, 0.60)}
+    risk.closed_positions = {}
+    risk.pending_redemptions = {}
+    risk.daily_pnl = 0.0
+    risk.consecutive_losses = 0
 
     ds = DashboardState()
     task = asyncio.create_task(dashboard_loop(state, ds, risk=risk, interval=0.05))

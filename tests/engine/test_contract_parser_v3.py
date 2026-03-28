@@ -73,6 +73,12 @@ def test_eth_still_works():
     assert c.target_price == 4000.0
 
 
-def test_unknown_asset_not_parseable():
+def test_unknown_asset_routes_to_generic_event():
+    # LINK is not in SUPPORTED_CRYPTO_ASSETS / ASSET_ALIASES.
+    # The parser falls through to the generic binary catch-all ("Will ... ?")
+    # and classifies the market as a parseable event rather than leaving it
+    # unparseable, because event markets are handled via microstructure probability.
     c = parse_contract("tok12", "Will LINK be above $20 by March?")
-    assert not c.parseable
+    assert c.parseable
+    assert c.category == "event"
+    assert c.direction == "yes"

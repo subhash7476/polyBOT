@@ -97,6 +97,7 @@ TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "")
 MAX_TRADE_SIZE_USDC = float(os.getenv("MAX_TRADE_SIZE_USDC", "50"))
 
 WEATHER_POLL_INTERVAL = int(os.getenv("WEATHER_POLL_INTERVAL", "3600"))
+FAST_RESOLVE_PRIORITY = os.getenv("FAST_RESOLVE_PRIORITY", "true").lower() == "true"
 VC_KEY = os.getenv("VC_KEY", "")
 
 LOCATIONS: dict = {

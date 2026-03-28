@@ -16,8 +16,10 @@ def make_parsed(asset="BTC", direction="above") -> ParsedContract:
 
 
 @pytest.fixture
-def rm():
-    return RiskManager(bankroll=1000.0)
+def rm(tmp_path):
+    from trading.positions import PositionLedger
+    ledger = PositionLedger(str(tmp_path / "test_positions.jsonl"))
+    return RiskManager(bankroll=1000.0, ledger=ledger)
 
 
 @pytest.fixture

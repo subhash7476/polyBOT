@@ -43,6 +43,16 @@ class DashboardState:
         self.realized_pnl: float = 0.0
         self.consecutive_losses: int = 0
         self.active_markets: deque = deque(maxlen=50)
+
+        # Lifecycle panel fields
+        self.open_count: int = 0
+        self.open_exposure_usdc: float = 0.0
+        self.pending_redeem_count: int = 0
+        self.redeemed_count: int = 0
+        self.realized_pnl_total: float = 0.0
+        self.realized_pnl_today: float = 0.0
+        self.lifetime_wins: int = 0
+        self.lifetime_losses: int = 0
         self.scan_stats: dict = {
             "n_total": 0, "n_parseable": 0, "n_signal": 0,
             "n_liquidity": 0, "n_ev": 0, "n_traded": 0,
@@ -100,4 +110,12 @@ class DashboardState:
                 "scan_stats": self.scan_stats,
                 "lifetime_trades": self.scan_stats.get("lifetime_trades", 0),
                 "feed_ages": feed_ages,
+                "open_count": self.open_count,
+                "open_exposure_usdc": self.open_exposure_usdc,
+                "pending_redeem_count": self.pending_redeem_count,
+                "redeemed_count": self.redeemed_count,
+                "realized_pnl_total": self.realized_pnl_total,
+                "realized_pnl_today": self.realized_pnl_today,
+                "lifetime_wins": self.lifetime_wins,
+                "lifetime_losses": self.lifetime_losses,
             })

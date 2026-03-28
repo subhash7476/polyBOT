@@ -4,6 +4,7 @@ import time
 
 from market.state import AppState
 from dashboard.state import DashboardState
+from trading.positions import REDEEMED
 
 _start_time = time.time()
 
@@ -18,6 +19,14 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
         positions = []
         position_counts = {"open": 0, "resolved_pending_redeem": 0, "closed": 0}
         realized_pnl = consecutive_losses = 0.0
+        open_count = 0
+        open_exposure_usdc = 0.0
+        pending_redeem_count = 0
+        redeemed_count = 0
+        realized_pnl_total = 0.0
+        realized_pnl_today = 0.0
+        lifetime_wins = 0
+        lifetime_losses = 0
         if risk is not None:
             async with risk._lock:
                 position_counts["open"] = len(risk.open_positions)
@@ -25,6 +34,31 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
                 position_counts["closed"] = len(getattr(risk, "closed_positions", {}))
                 realized_pnl = risk.daily_pnl
                 consecutive_losses = risk.consecutive_losses
+
+                # Lifecycle panel data
+                open_count = len(risk.open_positions)
+                open_exposure_usdc = sum(p.size_usdc for p in risk.open_positions.values())
+                pending_redeem_count = len(getattr(risk, "pending_redemptions", {}))
+                closed = getattr(risk, "closed_positions", {}) or {}
+                pending = getattr(risk, "pending_redemptions", {}) or {}
+                redeemed_count = sum(
+                    1 for p in closed.values()
+                    if getattr(p, "status", "") == REDEEMED
+                )
+                realized_pnl_today = risk.daily_pnl
+                # Lifetime P&L and win/loss from closed + pending redemption positions
+                for pos in list(closed.values()) + list(pending.values()):
+                    payout = 0.0
+                    if pos.resolved_yes is not None:
+                        won = (pos.side == "BUY_YES" and pos.resolved_yes) or (pos.side == "BUY_NO" and not pos.resolved_yes)
+                        payout = 1.0 if won else 0.0
+                    pnl_pos = (payout - pos.entry_price) * (pos.size_usdc / max(pos.entry_price, 0.0001))
+                    realized_pnl_total += pnl_pos
+                    if pnl_pos > 0:
+                        lifetime_wins += 1
+                    elif pnl_pos < 0:
+                        lifetime_losses += 1
+
                 for token_id, pos in risk.open_positions.items():
                     cs = markets_snapshot.get(token_id)
                     current_mid = cs.mid if cs else pos.entry_price
@@ -63,6 +97,14 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
             "position_counts": position_counts,
             "realized_pnl": realized_pnl,
             "consecutive_losses": int(consecutive_losses),
+            "open_count": open_count,
+            "open_exposure_usdc": open_exposure_usdc,
+            "pending_redeem_count": pending_redeem_count,
+            "redeemed_count": redeemed_count,
+            "realized_pnl_total": realized_pnl_total,
+            "realized_pnl_today": realized_pnl_today,
+            "lifetime_wins": lifetime_wins,
+            "lifetime_losses": lifetime_losses,
         }
 
         # Per-source feed timestamps: only update when data is freshly non-empty
