@@ -307,11 +307,19 @@ async def trading_loop(
             f"{n_traded} traded | categories: {category_counts}"
         )
         if skip_reasons:
+            # Show signal-filter breakdown at INFO so it's visible without debug logging
+            sig_blocked = {
+                cat: reasons.get("signal_filter", 0)
+                for cat, reasons in skip_reasons.items()
+                if reasons.get("signal_filter", 0) > 0
+            }
+            if sig_blocked:
+                log.info(f"  signal_filter blocked: {sig_blocked}")
             top = sorted(
                 ((cat, reason, count) for cat, reasons in skip_reasons.items() for reason, count in reasons.items()),
                 key=lambda x: -x[2]
-            )[:5]
-            log.debug("top skip reasons: " + ", ".join(f"{cat}/{reason}={n}" for cat, reason, n in top))
+            )[:8]
+            log.debug("skip reasons: " + ", ".join(f"{cat}/{reason}={n}" for cat, reason, n in top))
         update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
                           n_signal=n_signal, n_liquidity=n_liquidity,
                           n_ev=n_ev, n_traded=n_traded)

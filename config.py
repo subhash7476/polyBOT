@@ -84,6 +84,9 @@ MARKET_CATEGORY_FILTER = os.getenv("MARKET_CATEGORY_FILTER", "")
 MARKET_SORT_MODE = os.getenv("MARKET_SORT_MODE", "hybrid")
 MAX_SUBSCRIBED_MARKETS = int(os.getenv("MAX_SUBSCRIBED_MARKETS", "250"))
 PARSEABLE_MARKET_RESERVE = int(os.getenv("PARSEABLE_MARKET_RESERVE", "150"))
+# Guaranteed minimum slots for categories with feed-based models (crypto + weather).
+# Prevents election/event markets (huge volume) from crowding out tradeable categories.
+MODEL_CATEGORY_MIN_SLOTS = int(os.getenv("MODEL_CATEGORY_MIN_SLOTS", "80"))
 
 # Credentials
 POLY_PRIVATE_KEY = os.getenv("POLY_PRIVATE_KEY", "")

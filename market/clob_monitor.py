@@ -11,6 +11,7 @@ from config import (
     MAX_SUBSCRIBED_MARKETS,
     PARSEABLE_MARKET_RESERVE,
     FAST_RESOLVE_PRIORITY,
+    MODEL_CATEGORY_MIN_SLOTS,
 )
 from feeds.base import BaseFeed
 from market.state import AppState, ContractState
@@ -83,6 +84,9 @@ def _sort_key(meta: dict) -> tuple:
     return (short_dated_bonus, -volume, -volume_24h, time_left, meta["question"])
 
 
+_MODEL_CATEGORIES = frozenset({"crypto", "weather", "rates", "macro"})
+
+
 def select_markets(token_map: dict) -> dict:
     allowed_categories = _allowed_categories()
     candidates = [
@@ -98,12 +102,29 @@ def select_markets(token_map: dict) -> dict:
     others = [item for item in candidates if not item[1].get("parseable")]
 
     reserve = min(PARSEABLE_MARKET_RESERVE, MAX_SUBSCRIBED_MARKETS)
-    selected = parseable[:reserve]
 
+    # Guarantee minimum slots for categories with feed-based models (crypto, weather,
+    # rates, macro). Without this, high-volume election/event markets crowd them out
+    # entirely, leaving the bot with 0 tradeable signals.
+    model_parseable = [item for item in parseable if item[1]["category"] in _MODEL_CATEGORIES]
+    other_parseable = [item for item in parseable if item[1]["category"] not in _MODEL_CATEGORIES]
+
+    n_model = min(MODEL_CATEGORY_MIN_SLOTS, len(model_parseable), reserve)
+    model_selected = model_parseable[:n_model]
+
+    remaining_reserve = reserve - len(model_selected)
+    other_selected = other_parseable[:remaining_reserve]
+
+    selected = model_selected + other_selected
+
+    # Fill any remaining WS slots with non-parseable markets
     remaining = MAX_SUBSCRIBED_MARKETS - len(selected)
     if remaining > 0:
-        remaining_pool = others + parseable[len(selected):]
+        selected_ids = {yes_id for yes_id, _ in selected}
+        overflow = [item for item in parseable if item[0] not in selected_ids]
+        remaining_pool = others + overflow
         selected.extend(remaining_pool[:remaining])
+
     return dict(selected)
 
 
