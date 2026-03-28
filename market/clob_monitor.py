@@ -16,7 +16,7 @@ from config import (
 from feeds.base import BaseFeed
 from market.state import AppState, ContractState
 from market.contract_filter import meets_liquidity_threshold
-from engine.contract_parser import parse_contract
+from engine.contract_parser import parse_contract, _parse_expiry as _explicit_expiry
 from engine.arb_scanner import ThresholdMarket
 from engine.flatline import record_price as record_flatline_price
 from engine.orderbook_imbalance import record_obi_reading
@@ -231,6 +231,10 @@ def build_threshold_markets(markets: dict) -> list:
         if not parsed.parseable or not parsed.target_price or not parsed.expiry:
             continue
         if parsed.category != "crypto":
+            continue
+        # Skip contracts with no explicit date — default EOM expiry produces false arb groupings
+        # (e.g. "before GTA VI" grouped with "by March 31" contracts)
+        if not _explicit_expiry(cs.question):
             continue
         expiry_key = parsed.expiry.strftime("%b%Y").lower()  # e.g. "mar2026"
         result.append(ThresholdMarket(

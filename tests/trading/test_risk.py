@@ -52,7 +52,8 @@ async def test_rejects_after_daily_loss(rm, feeds):
 
 @pytest.mark.asyncio
 async def test_rejects_at_max_open_positions(rm, feeds):
-    for i in range(5):
+    import config
+    for i in range(config.MAX_OPEN_POSITIONS):
         await rm.open_position(f"t{i}", make_parsed(), 20.0, 0.5)
     ok, msg = await rm.can_trade("t_new", make_parsed(), 20.0, feeds)
     assert ok is False

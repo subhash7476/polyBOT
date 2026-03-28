@@ -7,7 +7,7 @@ load_dotenv()
 BANKROLL_USDC = float(os.getenv("BANKROLL_USDC", "500"))
 MAX_DAILY_LOSS_PCT = 0.05
 MAX_POSITION_PCT = 0.10
-MAX_OPEN_POSITIONS = 5
+MAX_OPEN_POSITIONS = int(os.getenv("MAX_OPEN_POSITIONS", "20"))
 KELLY_FRACTION = 0.05           # 5% default — conservative until calibrated
 
 # EV
