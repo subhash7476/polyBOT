@@ -40,6 +40,8 @@ _OR_BELOW_RE = re.compile(r'(-?\d+(?:\.\d+)?)\s*(?:°[FC])?\s+or\s+below', re.IG
 _OR_HIGHER_RE = re.compile(r'(-?\d+(?:\.\d+)?)\s*(?:°[FC])?\s+or\s+(?:higher|above)', re.IGNORECASE)
 _EXACTLY_RE = re.compile(r'exactly\s+(-?\d+(?:\.\d+)?)', re.IGNORECASE)
 _RANGE_RE = re.compile(r'(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*°?[FC]', re.IGNORECASE)
+# "be 19°C" / "be 19 degrees" — single-value bucket (±0.5° implied by 1° resolution)
+_SINGLE_RE = re.compile(r'\bbe\s+(-?\d+(?:\.\d+)?)\s*(?:degrees?(?:\s+(?:celsius|fahrenheit|[CF]))?|°[FC])', re.IGNORECASE)
 
 
 def parse_temp_range(question: str) -> Optional[tuple]:
@@ -64,6 +66,11 @@ def parse_temp_range(question: str) -> Optional[tuple]:
     m = _RANGE_RE.search(question)
     if m:
         return (float(m.group(1)), float(m.group(2)))
+    m = _SINGLE_RE.search(question)
+    if m:
+        # "be 19°C" — Polymarket uses 1° resolution buckets; treat as [N-0.5, N+0.5)
+        v = float(m.group(1))
+        return (v - 0.5, v + 0.5)
     return None
 
 

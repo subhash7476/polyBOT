@@ -133,6 +133,7 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             contract.asset = city_slug
             contract.direction = "bucket"
             contract.parseable = True
+            contract.expiry = _parse_expiry(question)
             log.debug(f"weather market: {q[:60]}")
             return contract
 
