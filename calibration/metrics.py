@@ -59,7 +59,15 @@ def mean_edge(fills: list[dict]) -> float:
 
 
 def print_calibration_report(log_file: str = "fills.jsonl"):
-    fills = load_resolved_fills(log_file)
+    # Load all fills for total signal count (paper validation needs unresolved too)
+    all_fills = []
+    path = Path(log_file)
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            all_fills.append(json.loads(line))
+    fills = [f for f in all_fills if f.get("outcome") is not None]
     if not fills:
         print("No resolved fills yet.")
         return
@@ -71,6 +79,15 @@ def print_calibration_report(log_file: str = "fills.jsonl"):
     for row in calibration_curve(fills):
         ok = "✓" if abs(row["predicted_mean"] - row["actual_rate"]) < 0.05 else "✗"
         print(f"  {ok} pred={row['predicted_mean']:.2f} actual={row['actual_rate']:.2f} n={row['count']}")
+    print(f"{'=' * 50}")
+
+    # Paper readiness summary
+    report = paper_validation_report(all_fills)
+    ready_str = "READY" if report["ready"] else "NOT READY"
+    print(f"\nPaper Validation: {ready_str}")
+    for key, check in report["checks"].items():
+        status = "PASS" if check["pass"] else "FAIL"
+        print(f"  [{status}] {key}")
     print(f"{'=' * 50}\n")
 
 
@@ -108,7 +125,7 @@ def per_signal_attribution(fills: list[dict]) -> dict:
 
 
 def category_breakdown(fills: list[dict]) -> dict:
-    """Brier score and mean edge per market category."""
+    """Brier score, mean edge, win rate, realized P&L, and resolved count per market category."""
     from collections import defaultdict
     groups: dict = defaultdict(list)
     for f in fills:
@@ -117,14 +134,140 @@ def category_breakdown(fills: list[dict]) -> dict:
 
     result = {}
     for cat, cat_fills in groups.items():
-        bs = brier_score(cat_fills)
-        me = mean_edge(cat_fills)
+        resolved = [f for f in cat_fills if f.get("outcome") is not None]
+        wins = 0
+        total_pnl = 0.0
+        for f in resolved:
+            side = f.get("side", "BUY_YES")
+            outcome = f["outcome"]
+            mp = f.get("market_prob", 0.5)
+            sz = f.get("size_usdc", 0.0)
+            if side == "BUY_NO":
+                won = (outcome == 0)
+                entry = max(1.0 - mp, 0.01)
+                payout = 1.0 - outcome
+            else:
+                won = (outcome == 1)
+                entry = max(mp, 0.01)
+                payout = float(outcome)
+            if won:
+                wins += 1
+            total_pnl += (payout - entry) * (sz / entry)
+        win_rate = wins / len(resolved) if resolved else 0.0
         result[cat] = {
             "count": len(cat_fills),
-            "brier_score": round(bs, 4),
-            "mean_edge": round(me, 4),
+            "resolved_count": len(resolved),
+            "brier_score": round(brier_score(cat_fills), 4),
+            "mean_edge": round(mean_edge(cat_fills), 4),
+            "win_rate": round(win_rate, 4),
+            "realized_pnl": round(total_pnl, 2),
         }
     return result
+
+
+def strategy_type_breakdown(fills: list[dict]) -> dict:
+    """Same structure as category_breakdown but grouped by strategy_type."""
+    from collections import defaultdict
+    groups: dict = defaultdict(list)
+    for f in fills:
+        st = f.get("strategy_type", "directional")
+        groups[st].append(f)
+
+    result = {}
+    for st, st_fills in groups.items():
+        resolved = [f for f in st_fills if f.get("outcome") is not None]
+        wins = 0
+        total_pnl = 0.0
+        for f in resolved:
+            side = f.get("side", "BUY_YES")
+            outcome = f["outcome"]
+            mp = f.get("market_prob", 0.5)
+            sz = f.get("size_usdc", 0.0)
+            if side == "BUY_NO":
+                won = (outcome == 0)
+                entry = max(1.0 - mp, 0.01)
+                payout = 1.0 - outcome
+            else:
+                won = (outcome == 1)
+                entry = max(mp, 0.01)
+                payout = float(outcome)
+            if won:
+                wins += 1
+            total_pnl += (payout - entry) * (sz / entry)
+        win_rate = wins / len(resolved) if resolved else 0.0
+        result[st] = {
+            "count": len(st_fills),
+            "resolved_count": len(resolved),
+            "brier_score": round(brier_score(st_fills), 4),
+            "mean_edge": round(mean_edge(st_fills), 4),
+            "win_rate": round(win_rate, 4),
+            "realized_pnl": round(total_pnl, 2),
+        }
+    return result
+
+
+def paper_validation_report(fills: list[dict], bankroll: float = 500.0) -> dict:
+    """
+    Returns pass/fail for the 5 CLAUDE.md paper-validation criteria:
+    1. 50+ total signals
+    2. 20+ resolved outcomes
+    3. Brier score < 0.20
+    4. Mean edge > 3%
+    5. No single day with realized loss > 5% of bankroll
+
+    Returns:
+        {
+            "ready": bool,          # True only if ALL 5 pass
+            "checks": {
+                "signals_50":       {"pass": bool, "value": int,   "required": 50},
+                "resolved_20":      {"pass": bool, "value": int,   "required": 20},
+                "brier_lt_020":     {"pass": bool, "value": float, "required": 0.20},
+                "mean_edge_gt_003": {"pass": bool, "value": float, "required": 0.03},
+                "no_bad_day":       {"pass": bool, "worst_day_loss": float, "limit": float},
+            }
+        }
+    """
+    import math
+    from collections import defaultdict
+
+    resolved = [f for f in fills if f.get("outcome") is not None]
+    total_signals = len(fills)
+    total_resolved = len(resolved)
+    bs = brier_score(resolved) if resolved else float("nan")
+    me = mean_edge(fills) if fills else 0.0
+
+    # Per-day P&L check — group resolved fills by date
+    daily_pnl: dict = defaultdict(float)
+    for f in resolved:
+        ts = f.get("ts") or f.get("timestamp", "")
+        day = ts[:10] if ts else "unknown"
+        side = f.get("side", "BUY_YES")
+        outcome = f["outcome"]
+        mp = f.get("market_prob", 0.5)
+        sz = f.get("size_usdc", 0.0)
+        if side == "BUY_NO":
+            entry = max(1.0 - mp, 0.01)
+            payout = 1.0 - outcome
+        else:
+            entry = max(mp, 0.01)
+            payout = float(outcome)
+        daily_pnl[day] += (payout - entry) * (sz / entry)
+
+    max_daily_loss_limit = bankroll * 0.05
+    worst_day = min(daily_pnl.values()) if daily_pnl else 0.0
+    no_bad_day = worst_day >= -max_daily_loss_limit
+
+    checks = {
+        "signals_50":       {"pass": total_signals >= 50,  "value": total_signals,  "required": 50},
+        "resolved_20":      {"pass": total_resolved >= 20, "value": total_resolved, "required": 20},
+        "brier_lt_020":     {"pass": (not math.isnan(bs)) and bs < 0.20, "value": round(bs, 4) if not math.isnan(bs) else None, "required": 0.20},
+        "mean_edge_gt_003": {"pass": me > 0.03,            "value": round(me, 4),   "required": 0.03},
+        "no_bad_day":       {"pass": no_bad_day, "worst_day_loss": round(worst_day, 2), "limit": round(-max_daily_loss_limit, 2)},
+    }
+    return {
+        "ready": all(c["pass"] for c in checks.values()),
+        "checks": checks,
+    }
 
 
 def edge_decay_check(
@@ -183,7 +326,15 @@ def time_decay_analysis(fills: list[dict], bins: int = 4) -> list[dict]:
 
 
 def print_detailed_report(log_file: str = "fills.jsonl"):
-    fills = load_resolved_fills(log_file)
+    # Load all fills for total signal count
+    all_fills = []
+    path = Path(log_file)
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            all_fills.append(json.loads(line))
+    fills = [f for f in all_fills if f.get("outcome") is not None]
     print_calibration_report(log_file)
 
     if not fills:
@@ -196,7 +347,19 @@ def print_detailed_report(log_file: str = "fills.jsonl"):
 
     print("\n--- Category Breakdown ---")
     for cat, stats in category_breakdown(fills).items():
-        print(f"  {cat:<12} n={stats['count']} brier={stats['brier_score']} edge={stats['mean_edge']:.3f}")
+        print(
+            f"  {cat:<12} n={stats['count']} resolved={stats['resolved_count']} "
+            f"brier={stats['brier_score']} edge={stats['mean_edge']:.3f} "
+            f"win_rate={stats['win_rate']:.2%} pnl=${stats['realized_pnl']:.2f}"
+        )
+
+    print("\n--- Strategy Type Breakdown ---")
+    for st, stats in strategy_type_breakdown(fills).items():
+        print(
+            f"  {st:<25} n={stats['count']} resolved={stats['resolved_count']} "
+            f"brier={stats['brier_score']} edge={stats['mean_edge']:.3f} "
+            f"win_rate={stats['win_rate']:.2%} pnl=${stats['realized_pnl']:.2f}"
+        )
 
     print("\n--- Edge Decay Check (30-day rolling) ---")
     decay = edge_decay_check(fills)
@@ -205,6 +368,14 @@ def print_detailed_report(log_file: str = "fills.jsonl"):
     print("\n--- Time Decay Analysis ---")
     for row in time_decay_analysis(fills):
         print(f"  {row['label']:<25} n={row['count']} brier={row['brier_score']} edge={row['mean_edge']:.3f}")
+
+    print("\n--- Paper Validation Report ---")
+    report = paper_validation_report(all_fills)
+    ready_str = "READY TO GO LIVE" if report["ready"] else "NOT READY"
+    print(f"  Status: {ready_str}")
+    for key, check in report["checks"].items():
+        status = "PASS" if check["pass"] else "FAIL"
+        print(f"  [{status}] {key}: {check}")
 
 
 if __name__ == "__main__":

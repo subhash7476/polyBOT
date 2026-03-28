@@ -23,6 +23,7 @@ class CalibrationTracker:
         *,
         question: str | None = None,
         strategy_type: str = "directional",
+        category: str = "unknown",
     ):
         """Log every evaluated signal, whether or not it becomes a completed trade."""
         record = {
@@ -36,6 +37,7 @@ class CalibrationTracker:
             "size_usdc": round(size_usdc, 2),
             "side": side,
             "strategy_type": strategy_type,
+            "category": category,
             "signals": signal_summary,
             "outcome": None,
             "resolved_at": None,

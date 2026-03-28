@@ -100,6 +100,12 @@ WEATHER_POLL_INTERVAL = int(os.getenv("WEATHER_POLL_INTERVAL", "3600"))
 FAST_RESOLVE_PRIORITY = os.getenv("FAST_RESOLVE_PRIORITY", "true").lower() == "true"
 VC_KEY = os.getenv("VC_KEY", "")
 
+# Live pilot controls (Step 19)
+# Comma-separated list of categories to trade in live mode (empty = all)
+LIVE_PILOT_CATEGORIES: list[str] = [c.strip() for c in os.getenv("LIVE_PILOT_CATEGORIES", "").split(",") if c.strip()]
+LIVE_PILOT_MAX_TRADE_SIZE_USDC = float(os.getenv("LIVE_PILOT_MAX_TRADE_SIZE_USDC", "25"))
+LIVE_PILOT_MAX_EXPOSURE_PCT = float(os.getenv("LIVE_PILOT_MAX_EXPOSURE_PCT", "0.05"))
+
 LOCATIONS: dict = {
     "nyc":          {"lat": 40.7772,  "lon":  -73.8726, "name": "New York City",  "station": "KLGA", "unit": "F", "region": "us"},
     "chicago":      {"lat": 41.9742,  "lon":  -87.9073, "name": "Chicago",        "station": "KORD", "unit": "F", "region": "us"},

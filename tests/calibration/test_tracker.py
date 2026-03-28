@@ -80,3 +80,9 @@ def test_calibration_curve_groups_correctly():
     assert len(curve) >= 1
     assert "predicted_mean" in curve[0]
     assert "actual_rate" in curve[0]
+
+
+def test_log_signal_stores_category(tracker, tmp_path):
+    tracker.log_signal("t1", 0.65, 0.50, {}, 50.0, 0.05, category="weather")
+    record = json.loads((tmp_path / "fills.jsonl").read_text().strip())
+    assert record["category"] == "weather"

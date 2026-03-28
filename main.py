@@ -154,6 +154,12 @@ async def trading_loop(
                 mkt_rec["model_prob"] = model_prob
                 mkt_rec["signal_count"] = signal_count
 
+                # Live pilot filter: restrict categories in live mode
+                if not PAPER and config.LIVE_PILOT_CATEGORIES:
+                    if parsed.category not in config.LIVE_PILOT_CATEGORIES:
+                        _record_skip(parsed.category, "live_pilot_filter")
+                        continue
+
                 # 3. Signal agreement filter — Fix 2: properly wired
                 ok, reason = passes_signal_filter(engine)
                 if not ok:
@@ -248,6 +254,7 @@ async def trading_loop(
                     side=side,
                     question=contract_state.question,
                     strategy_type="directional",
+                    category=parsed.category,
                 )
 
                 # 9. Execute
@@ -339,6 +346,7 @@ async def arb_scan_loop(
                 ev=v.spread,
                 side="ARB",
                 strategy_type="arb_monotonicity",
+                category="arb",
             )
 
         if violations:
@@ -357,6 +365,7 @@ async def arb_scan_loop(
                 ev=v.profit,
                 side="ARB",
                 strategy_type="arb_cross_temporal",
+                category="arb",
             )
         if cross_violations:
             log.info(f"cross-temporal arb: {len(cross_violations)} violations")
@@ -396,6 +405,12 @@ async def main():
             f"restored {len(risk.open_positions)} open and "
             f"{len(risk.pending_redemptions)} resolved-pending position(s) from ledger"
         )
+    if not PAPER:
+        pending_count = len(risk.pending_redemptions)
+        open_count = len(risk.open_positions)
+        log.info(f"[LIVE] Startup state: {open_count} open, {pending_count} pending redemption")
+        if pending_count > 0:
+            log.warning(f"[LIVE] {pending_count} positions awaiting redemption — run 'python -m trading.redeemall' to clear")
     executor = CLOBExecutor(paper=PAPER)
     tracker = CalibrationTracker()
     dash = DashboardState()
