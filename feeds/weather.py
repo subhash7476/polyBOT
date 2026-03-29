@@ -42,60 +42,71 @@ TIMEZONES = {
 }
 
 
-def _fetch_ecmwf(city_slug: str, loc: dict) -> Optional[float]:
-    """ECMWF IFS 0.25° with bias correction via Open-Meteo. Returns today's forecast high."""
+def _fetch_ecmwf(city_slug: str, loc: dict) -> tuple[Optional[float], dict]:
+    """
+    ECMWF IFS 0.25° with bias correction via Open-Meteo.
+    Returns (today_temp, {date: temp}) using the city's local timezone.
+    """
     unit = loc.get("unit", "F")
     temp_unit = "fahrenheit" if unit == "F" else "celsius"
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    tz_name = TIMEZONES.get(city_slug, "UTC")
     url = (
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={loc['lat']}&longitude={loc['lon']}"
         f"&daily=temperature_2m_max&temperature_unit={temp_unit}"
-        f"&forecast_days=3&timezone={TIMEZONES.get(city_slug, 'UTC')}"
+        f"&forecast_days=3&timezone={tz_name}"
         f"&models=ecmwf_ifs025&bias_correction=true"
     )
     for attempt in range(3):
         try:
             data = requests.get(url, timeout=(5, 10)).json()
             if "error" not in data and "daily" in data:
+                by_date: dict = {}
                 for date, temp in zip(data["daily"]["time"], data["daily"]["temperature_2m_max"]):
-                    if date == today and temp is not None:
-                        return round(float(temp), 1) if unit == "C" else round(float(temp))
+                    if temp is not None:
+                        v = round(float(temp), 1) if unit == "C" else round(float(temp))
+                        by_date[date] = v
+                # "Today" for this city = first date in the local-timezone response
+                today_temp = next(iter(by_date.values())) if by_date else None
+                return today_temp, by_date
             break
         except Exception as e:
             if attempt < 2:
                 import time; time.sleep(2)
             else:
                 log.debug(f"[WeatherFeed] ECMWF {city_slug}: {e}")
-    return None
+    return None, {}
 
 
-def _fetch_hrrr(city_slug: str, loc: dict) -> Optional[float]:
-    """GFS seamless (HRRR+GFS) via Open-Meteo. US cities only, today's forecast high."""
+def _fetch_hrrr(city_slug: str, loc: dict) -> tuple[Optional[float], dict]:
+    """GFS seamless (HRRR+GFS) via Open-Meteo. US cities only, returns (today, {date: temp})."""
     if loc.get("region") != "us":
-        return None
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return None, {}
+    tz_name = TIMEZONES.get(city_slug, "UTC")
     url = (
         f"https://api.open-meteo.com/v1/forecast"
         f"?latitude={loc['lat']}&longitude={loc['lon']}"
         f"&daily=temperature_2m_max&temperature_unit=fahrenheit"
-        f"&forecast_days=3&timezone={TIMEZONES.get(city_slug, 'UTC')}"
+        f"&forecast_days=3&timezone={tz_name}"
         f"&models=gfs_seamless"
     )
     for attempt in range(3):
         try:
             data = requests.get(url, timeout=(5, 10)).json()
             if "error" not in data and "daily" in data:
+                by_date: dict = {}
                 for date, temp in zip(data["daily"]["time"], data["daily"]["temperature_2m_max"]):
-                    if date == today and temp is not None:
-                        return round(float(temp))
+                    if temp is not None:
+                        by_date[date] = round(float(temp))
+                today_temp = next(iter(by_date.values())) if by_date else None
+                return today_temp, by_date
             break
         except Exception as e:
             if attempt < 2:
                 import time; time.sleep(2)
             else:
                 log.debug(f"[WeatherFeed] HRRR {city_slug}: {e}")
-    return None
+    return None, {}
 
 
 def _fetch_metar(station: str, unit: str) -> Optional[float]:
@@ -130,31 +141,35 @@ class WeatherFeed(BaseFeed):
     async def _refresh_all(self):
         loop = asyncio.get_event_loop()
         cal = await loop.run_in_executor(None, WeatherCalibration.load)
+
+        async def _refresh_city(city_slug: str, loc: dict):
+            ecmwf_today, ecmwf_by_date = await loop.run_in_executor(None, _fetch_ecmwf, city_slug, loc)
+            hrrr_today,  hrrr_by_date  = await loop.run_in_executor(None, _fetch_hrrr,  city_slug, loc)
+            metar = await loop.run_in_executor(None, _fetch_metar, loc.get("station", ""), loc.get("unit", "F"))
+            return city_slug, WeatherForecast(
+                city_slug=city_slug,
+                ecmwf_temp=ecmwf_today,
+                hrrr_temp=hrrr_today,
+                metar_temp=metar,
+                sigma_ecmwf=cal.get_sigma(city_slug, "ecmwf"),
+                sigma_hrrr=cal.get_sigma(city_slug, "hrrr"),
+                fetched_at=datetime.now(timezone.utc),
+                ecmwf_by_date=ecmwf_by_date,
+                hrrr_by_date=hrrr_by_date,
+            )
+
+        tasks = [_refresh_city(slug, loc) for slug, loc in LOCATIONS.items()]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
         count = 0
-        for city_slug, loc in LOCATIONS.items():
-            try:
-                ecmwf = await loop.run_in_executor(None, _fetch_ecmwf, city_slug, loc)
-                hrrr  = await loop.run_in_executor(None, _fetch_hrrr,  city_slug, loc)
-                metar = await loop.run_in_executor(None, _fetch_metar, loc.get("station", ""), loc.get("unit", "F"))
-
-                sigma_ecmwf = cal.get_sigma(city_slug, "ecmwf")
-                sigma_hrrr  = cal.get_sigma(city_slug, "hrrr")
-
-                wf = WeatherForecast(
-                    city_slug=city_slug,
-                    ecmwf_temp=ecmwf,
-                    hrrr_temp=hrrr,
-                    metar_temp=metar,
-                    sigma_ecmwf=sigma_ecmwf,
-                    sigma_hrrr=sigma_hrrr,
-                    fetched_at=datetime.now(timezone.utc),
-                )
-                async with self._state._lock:
-                    self._state.feeds.weather_forecasts[city_slug] = wf
-
-                count += 1
-            except Exception as e:
-                log.warning(f"[WeatherFeed] {city_slug}: {e}")
+        for result in results:
+            if isinstance(result, Exception):
+                log.warning(f"[WeatherFeed] city fetch error: {result}")
+                continue
+            city_slug, wf = result
+            async with self._state._lock:
+                self._state.feeds.weather_forecasts[city_slug] = wf
+            count += 1
 
         self._state.stamp_feed("weather")
         log.info(f"[WeatherFeed] refreshed {count}/{len(LOCATIONS)} cities")

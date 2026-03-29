@@ -171,10 +171,20 @@ def build_weather_probability(contract, feeds, weights: dict):
     from config import LOCATIONS
     region = LOCATIONS.get(city_slug, {}).get("region", "other")
 
+    # Use date-specific forecast when available (handles timezone-shifted markets like NZ)
+    ecmwf_temp = wf.ecmwf_temp
+    hrrr_temp  = wf.hrrr_temp
+    if contract.expiry and getattr(wf, "ecmwf_by_date", None):
+        target_date = contract.expiry.strftime("%Y-%m-%d")
+        if target_date in wf.ecmwf_by_date:
+            ecmwf_temp = wf.ecmwf_by_date[target_date]
+        if getattr(wf, "hrrr_by_date", None) and target_date in wf.hrrr_by_date:
+            hrrr_temp = wf.hrrr_by_date[target_date]
+
     # Blend forecasts
     temp, sigma, source_confidence = blend_forecasts(
-        ecmwf=wf.ecmwf_temp,
-        hrrr=wf.hrrr_temp,
+        ecmwf=ecmwf_temp,
+        hrrr=hrrr_temp,
         metar=wf.metar_temp,
         sigma_ecmwf=wf.sigma_ecmwf,
         sigma_hrrr=wf.sigma_hrrr,
