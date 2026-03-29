@@ -235,9 +235,11 @@ class RiskManager:
             if pos.opened_at < cutoff
         ]
         for tid in expired:
-            held_h = (now - self.open_positions[tid].opened_at) / 3600
+            pos = self.open_positions.pop(tid)
+            held_h = (now - pos.opened_at) / 3600
+            pos.status = CLOSED_PAPER
+            self.ledger.append(pos)
             log.info(f"paper position expired: {tid[:8]} (held {held_h:.1f}h)")
-            del self.open_positions[tid]
         return len(expired)
 
     def reset_daily(self):
