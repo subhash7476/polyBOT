@@ -142,7 +142,12 @@ async def process_resolutions(
     async with httpx.AsyncClient() as client:
         for token_id in tracked_ids:
             try:
-                is_resolved, resolved_yes, _payload = await fetch_market_resolution(client, token_id)
+                is_resolved, resolved_yes, payload = await fetch_market_resolution(client, token_id)
+                # Opportunistically backfill condition_id from Gamma API response
+                # (paper positions have no CLOB response to extract it from at trade time)
+                cid = payload.get("conditionId", "") or ""
+                if cid:
+                    await risk.update_wallet_metadata(token_id, condition_id=cid)
                 if not is_resolved or resolved_yes is None:
                     unresolved_count += 1
                     continue
