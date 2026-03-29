@@ -366,6 +366,8 @@ class CLOBMonitor(BaseFeed):
                     best_bid=meta["best_bid"],
                     best_ask=meta["best_ask"],
                     volume_usd=meta["volume"],
+                    neg_risk=meta.get("neg_risk", False),
+                    fees_enabled=meta.get("fees_enabled", True),
                 )
                 if meets_liquidity_threshold(cs, MIN_MARKET_LIQUIDITY):
                     await self._state.upsert_market(cs)

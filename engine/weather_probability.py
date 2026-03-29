@@ -19,8 +19,8 @@ from engine.bayesian import BayesianEngine, Signal
 log = logging.getLogger(__name__)
 
 # Fallback sigmas when no calibration data exists
-DEFAULT_SIGMA_F = 4.5
-DEFAULT_SIGMA_C = 2.5
+DEFAULT_SIGMA_F = 3.5   # °F — realistic D+1 prior
+DEFAULT_SIGMA_C = 1.5   # °C — realistic D+1 prior
 
 # Max age of a WeatherForecast before we refuse to trade on it
 MAX_FORECAST_AGE_SECONDS = 7200  # 2 hours
@@ -103,9 +103,10 @@ def blend_forecasts(
     """
     Returns (blended_temp, effective_sigma, source_confidence).
     Source selection:
-      - D+0 US with METAR: METAR 0.5 + HRRR 0.3 + ECMWF 0.2
-      - D+0/1 US:           HRRR 0.6 + ECMWF 0.4
-      - D+2+ or non-US:     ECMWF only
+      - US with METAR:     METAR 0.5 + HRRR 0.3 + ECMWF 0.2
+      - US without METAR:  HRRR 0.6 + ECMWF 0.4
+      - non-US with METAR: METAR 0.5 + ECMWF 0.5  (METAR = actual obs, highest weight)
+      - non-US no METAR:   ECMWF only
     confidence = 1.0 if 2+ sources, 0.6 if 1 source, 0.0 if none.
     """
     is_us = region == "us"
@@ -121,6 +122,12 @@ def blend_forecasts(
         sources.append(("hrrr",  hrrr,  sigma_hrrr,  0.6))
         if ecmwf is not None:
             sources.append(("ecmwf", ecmwf, sigma_ecmwf, 0.4))
+    elif not is_us and metar is not None:
+        # Non-US: METAR is an actual observation — give it equal weight with ECMWF
+        metar_sigma = min(sigma_ecmwf * 0.7, 1.0)  # obs sigma ~ 70% of forecast sigma, floor 1°
+        sources.append(("metar", metar, metar_sigma, 0.5))
+        if ecmwf is not None:
+            sources.append(("ecmwf", ecmwf, sigma_ecmwf, 0.5))
     elif ecmwf is not None:
         sources.append(("ecmwf", ecmwf, sigma_ecmwf, 1.0))
     elif hrrr is not None:
@@ -181,13 +188,23 @@ def build_weather_probability(contract, feeds, weights: dict):
         if getattr(wf, "hrrr_by_date", None) and target_date in wf.hrrr_by_date:
             hrrr_temp = wf.hrrr_by_date[target_date]
 
+    # Scale sigma by hours until market resolution.
+    # D+0 (<12h): 0.6× (near-observation)  D+1 (12-36h): 1.0×  D+2+ (>36h): 1.2×
+    sigma_scale = 1.0
+    if contract.expiry:
+        hours_to_expiry = (contract.expiry - datetime.now(timezone.utc)).total_seconds() / 3600
+        if hours_to_expiry < 12:
+            sigma_scale = 0.6   # same day — METAR/obs likely available
+        elif hours_to_expiry > 36:
+            sigma_scale = 1.2   # further out — more uncertainty
+
     # Blend forecasts
     temp, sigma, source_confidence = blend_forecasts(
         ecmwf=ecmwf_temp,
         hrrr=hrrr_temp,
         metar=wf.metar_temp,
-        sigma_ecmwf=wf.sigma_ecmwf,
-        sigma_hrrr=wf.sigma_hrrr,
+        sigma_ecmwf=wf.sigma_ecmwf * sigma_scale,
+        sigma_hrrr=wf.sigma_hrrr * sigma_scale,
         region=region,
     )
 
@@ -201,20 +218,23 @@ def build_weather_probability(contract, feeds, weights: dict):
 
     engine = BayesianEngine(prior=prior)
 
-    # Signal 1: forecast_confidence — always fires
-    conf_strength = (source_confidence - 0.5) * 2.0
+    # Direction factor: +1 when forecast supports bucket (prior > 0.5), -1 when it doesn't.
+    # This ensures signals confirm the forecast direction rather than always pushing toward YES.
+    direction = 1.0 if prior > 0.5 else -1.0
+
+    # Signal 1: forecast_confidence — strength in forecast direction, scaled by source quality
     engine.add_signal(Signal(
         name="weather_forecast_confidence",
-        strength=conf_strength,
+        strength=direction * source_confidence,
         weight=weights.get("weather_forecast_confidence", 0.35),
         confidence=source_confidence,
     ))
 
     # Signal 2: forecast_agreement — fires when ECMWF + HRRR both present and agree
-    if wf.ecmwf_temp is not None and wf.hrrr_temp is not None:
-        diff = abs(wf.ecmwf_temp - wf.hrrr_temp)
+    if ecmwf_temp is not None and hrrr_temp is not None:
+        diff = abs(ecmwf_temp - hrrr_temp)
         if diff <= 6.0:  # only add signal when models are in rough agreement
-            agreement_strength = math.tanh((3.0 - diff) / 3.0)
+            agreement_strength = direction * math.tanh((3.0 - diff) / 3.0)
             engine.add_signal(Signal(
                 name="weather_forecast_agreement",
                 strength=agreement_strength,

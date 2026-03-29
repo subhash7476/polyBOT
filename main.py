@@ -206,6 +206,7 @@ async def trading_loop(
                     market_price=contract_state.mid,
                     slippage=slippage,
                     ev_multiplier=risk.ev_multiplier,
+                    fees_enabled=contract_state.fees_enabled,
                 )
                 mkt_rec["ev"] = ev
                 enter, enter_reason = should_enter(ev, slippage, risk.ev_multiplier)

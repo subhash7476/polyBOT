@@ -38,19 +38,19 @@ def calculate_ev(
     slippage: SlippageEstimate,
     payout: float = 1.0,
     ev_multiplier: float = 1.0,
+    fees_enabled: bool = True,
 ) -> tuple[float, str]:
     """
     EV with slippage-adjusted entry price + spread penalty + adverse selection penalty.
     Returns (ev, side).
+    fees_enabled=False for negRisk weather markets (feesEnabled=False on Polymarket).
     """
     side, _ = get_trade_direction(model_prob, market_price)
     effective_prob = model_prob if side == "BUY_YES" else (1 - model_prob)
 
-    # adjusted_price is already best_ask (BUY_YES) or best_no_ask (BUY_NO),
-    # so spread is already captured — no additional spread_penalty needed.
-    # Fee is a percentage of notional (price × fee_pct), not a flat per-share add.
+    fee = POLYMARKET_FEE if fees_enabled else 0.0
     cost = (
-        slippage.adjusted_price * (1 + POLYMARKET_FEE)
+        slippage.adjusted_price * (1 + fee)
         + ADVERSE_SELECTION_PENALTY
     )
     ev = (effective_prob * payout) - cost
