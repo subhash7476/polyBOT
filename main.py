@@ -274,7 +274,7 @@ async def trading_loop(
                     price=contract_state.best_ask if side == "BUY_YES" else contract_state.no_best_ask,
                 )
                 if result.success:
-                    condition_id = getattr(result, "condition_id", "") or ""
+                    condition_id = getattr(result, "condition_id", "") or contract_state.condition_id
                     await risk.open_position(
                         yes_token_id,
                         parsed,

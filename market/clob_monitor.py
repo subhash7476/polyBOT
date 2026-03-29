@@ -198,6 +198,7 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 "expiry":      parsed.expiry or _parse_datetime(m.get("endDateIso") or m.get("endDate")),
                 "parseable":   parsed.parseable,
                 "no_token_id": no_id,
+                "condition_id": m.get("conditionId", "") or "",
                 "volume":      volume,
                 "volume_24h":  volume_24h,
                 "liquidity":   liquidity,
@@ -280,6 +281,7 @@ async def _fetch_weather_event_markets(client: httpx.AsyncClient) -> dict:
                 "expiry":      parsed.expiry or _parse_datetime(m.get("endDateIso") or m.get("endDate")),
                 "parseable":   parsed.parseable,
                 "no_token_id": no_id,
+                "condition_id": m.get("conditionId", "") or "",
                 "volume":      float(m.get("volumeClob") or m.get("volume") or 0),
                 "volume_24h":  float(m.get("volume24hrClob") or m.get("volume24hr") or 0),
                 "liquidity":   float(m.get("liquidityClob") or m.get("liquidity") or 0),
@@ -366,6 +368,7 @@ class CLOBMonitor(BaseFeed):
                     best_bid=meta["best_bid"],
                     best_ask=meta["best_ask"],
                     volume_usd=meta["volume"],
+                    condition_id=meta.get("condition_id", ""),
                     neg_risk=meta.get("neg_risk", False),
                     fees_enabled=meta.get("fees_enabled", True),
                 )

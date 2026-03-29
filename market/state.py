@@ -99,6 +99,7 @@ class ContractState:
     volume_usd: float = 0.0
     bid_depth: float = 0.0   # total size on best 5 bid levels (USDC)
     ask_depth: float = 0.0   # total size on best 5 ask levels (USDC)
+    condition_id: str = ""        # on-chain condition ID from Gamma API (used for redemption)
     neg_risk: bool = False       # negRisk market (temperature buckets, etc.)
     fees_enabled: bool = True    # False for negRisk weather markets
 
