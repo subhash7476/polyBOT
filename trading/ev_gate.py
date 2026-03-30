@@ -57,6 +57,31 @@ def calculate_ev(
     return ev, side
 
 
+def passes_divergence_guard(
+    model_prob: float,
+    market_price: float,
+    signal_count: int,
+    category: str,
+) -> tuple[bool, str]:
+    """
+    Reject weather trades where model and market disagree by >35 percentage points
+    and signal diversity is low (fewer than 2 independent signals).
+
+    A >35pp gap with a single signal path almost certainly means the model is
+    wrong, not the market.  The market aggregates many forecasters; a single
+    uncalibrated ECMWF run should not override it at high confidence.
+    """
+    if category != "weather":
+        return True, "ok"
+    divergence = abs(model_prob - market_price)
+    if divergence > 0.35 and signal_count < 2:
+        return False, (
+            f"weather divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
+            f"= {divergence:.3f} > 0.35 with only {signal_count} signal(s)"
+        )
+    return True, "ok"
+
+
 def should_enter(
     ev: float,
     slippage: SlippageEstimate,

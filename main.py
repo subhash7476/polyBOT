@@ -33,7 +33,7 @@ from engine.signal_filter import passes_signal_filter
 from engine.flatline import compute_flatline_signal, record_price as record_flatline_price
 from engine.orderbook_imbalance import compute_obi_signal, record_obi_reading
 from engine.volume_divergence import compute_vpd_signal, record_volume
-from trading.ev_gate import calculate_ev, should_enter, get_trade_direction
+from trading.ev_gate import calculate_ev, should_enter, get_trade_direction, passes_divergence_guard
 from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
@@ -172,6 +172,18 @@ async def trading_loop(
                     continue
                 n_signal += 1
                 mkt_rec["reason"] = "illiquid"
+
+                # 3b. Weather divergence guard — reject when model/market gap >35pp
+                #     with fewer than 2 signals (single uncalibrated forecast vs market)
+                ok, reason = passes_divergence_guard(
+                    model_prob, contract_state.mid, signal_count, parsed.category
+                )
+                if not ok:
+                    log.info(f"divergence guard [{yes_token_id[:8]}]: {reason}")
+                    mkt_rec["reason"] = reason
+                    _record_skip(parsed.category, "divergence_guard")
+                    dash.update({"active_markets_append": mkt_rec})
+                    continue
 
                 # 4. Determine direction, then estimate slippage on the correct token
                 direction, _ = get_trade_direction(model_prob, contract_state.mid)

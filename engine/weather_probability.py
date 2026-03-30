@@ -18,9 +18,11 @@ from engine.bayesian import BayesianEngine, Signal
 
 log = logging.getLogger(__name__)
 
-# Fallback sigmas when no calibration data exists
-DEFAULT_SIGMA_F = 3.5   # °F — realistic D+1 prior
-DEFAULT_SIGMA_C = 1.5   # °C — realistic D+1 prior
+# Fallback sigmas when no calibration data exists.
+# Set conservatively wide: NWS next-day high-temperature MAE is typically 4–6°F.
+# Tight sigmas produce overconfident probabilities before calibration data exists.
+DEFAULT_SIGMA_F = 5.5   # °F — was 3.5; widened to match real-world NWS D+1 MAE
+DEFAULT_SIGMA_C = 3.0   # °C — was 1.5
 
 # Max age of a WeatherForecast before we refuse to trade on it
 MAX_FORECAST_AGE_SECONDS = 7200  # 2 hours
@@ -223,7 +225,7 @@ def build_weather_probability(contract, feeds, weights: dict):
 
     # Compute prior probability
     prior = bucket_prob(temp, t_low, t_high, sigma)
-    prior = max(0.02, min(0.98, prior))  # clip to avoid log-odds explosion
+    prior = max(0.07, min(0.93, prior))  # weather ceiling: no single ECMWF run is >93% certain
 
     engine = BayesianEngine(prior=prior)
 
