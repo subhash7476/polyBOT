@@ -94,6 +94,16 @@ async def fetch_market_resolution(client: httpx.AsyncClient, token_id: str) -> t
     market = payload.get("market", {})
     is_resolved = bool(payload.get("resolved") or market.get("resolved"))
     resolved_yes = _resolved_yes_from_market_payload(payload) if is_resolved else None
+
+    # negRisk fallback: resolved=None but closed=True with decisive outcomePrices
+    if not is_resolved:
+        is_closed = bool(payload.get("closed") or market.get("closed"))
+        if is_closed:
+            resolved_yes_candidate = _resolved_yes_from_market_payload(payload)
+            if resolved_yes_candidate is not None:
+                is_resolved = True
+                resolved_yes = resolved_yes_candidate
+
     return is_resolved, resolved_yes, payload
 
 

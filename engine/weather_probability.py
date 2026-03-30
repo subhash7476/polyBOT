@@ -99,6 +99,7 @@ def blend_forecasts(
     sigma_ecmwf: float,
     sigma_hrrr: float,
     region: str = "us",
+    hours_to_expiry: float = 999.0,
 ) -> tuple:
     """
     Returns (blended_temp, effective_sigma, source_confidence).
@@ -108,11 +109,17 @@ def blend_forecasts(
       - non-US with METAR: METAR 0.5 + ECMWF 0.5  (METAR = actual obs, highest weight)
       - non-US no METAR:   ECMWF only
     confidence = 1.0 if 2+ sources, 0.6 if 1 source, 0.0 if none.
+
+    METAR is only usable when hours_to_expiry < 4.  METAR is an instantaneous
+    observation — at hours_to_expiry >= 4 the daily maximum has not yet been
+    reached, so METAR reflects the current (possibly overnight-low) temperature,
+    not the end-of-day high that the market resolves on.
     """
     is_us = region == "us"
+    metar_usable = metar is not None and hours_to_expiry < 4.0
 
     sources = []
-    if is_us and metar is not None:
+    if is_us and metar_usable:
         sources.append(("metar",  metar,  min(sigma_hrrr, sigma_ecmwf) * 0.8, 0.5))
         if hrrr is not None:
             sources.append(("hrrr",   hrrr,   sigma_hrrr,  0.3))
@@ -122,7 +129,7 @@ def blend_forecasts(
         sources.append(("hrrr",  hrrr,  sigma_hrrr,  0.6))
         if ecmwf is not None:
             sources.append(("ecmwf", ecmwf, sigma_ecmwf, 0.4))
-    elif not is_us and metar is not None:
+    elif not is_us and metar_usable:
         # Non-US: METAR is an actual observation — give it equal weight with ECMWF
         metar_sigma = min(sigma_ecmwf * 0.7, 1.0)  # obs sigma ~ 70% of forecast sigma, floor 1°
         sources.append(("metar", metar, metar_sigma, 0.5))
@@ -191,6 +198,7 @@ def build_weather_probability(contract, feeds, weights: dict):
     # Scale sigma by hours until market resolution.
     # D+0 (<12h): 0.6× (near-observation)  D+1 (12-36h): 1.0×  D+2+ (>36h): 1.2×
     sigma_scale = 1.0
+    hours_to_expiry = 999.0
     if contract.expiry:
         hours_to_expiry = (contract.expiry - datetime.now(timezone.utc)).total_seconds() / 3600
         if hours_to_expiry < 12:
@@ -206,6 +214,7 @@ def build_weather_probability(contract, feeds, weights: dict):
         sigma_ecmwf=wf.sigma_ecmwf * sigma_scale,
         sigma_hrrr=wf.sigma_hrrr * sigma_scale,
         region=region,
+        hours_to_expiry=hours_to_expiry,
     )
 
     if temp is None:

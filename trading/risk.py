@@ -224,22 +224,25 @@ class RiskManager:
 
     def expire_paper_positions(self, ttl_hours: float) -> int:
         """
-        Remove paper positions older than ttl_hours.
+        Remove paper positions older than their category TTL (or ttl_hours if no
+        category-specific TTL is configured).
         Called each scan cycle in paper mode so the bot keeps exploring.
         Returns number of positions expired.
         """
+        from config import CATEGORY_TTL_HOURS
         now = time.time()
-        cutoff = now - ttl_hours * 3600
-        expired = [
-            tid for tid, pos in self.open_positions.items()
-            if pos.opened_at < cutoff
-        ]
+        expired = []
+        for tid, pos in self.open_positions.items():
+            cat_ttl = CATEGORY_TTL_HOURS.get(pos.category, ttl_hours)
+            cutoff = now - cat_ttl * 3600
+            if pos.opened_at < cutoff:
+                expired.append(tid)
         for tid in expired:
             pos = self.open_positions.pop(tid)
             held_h = (now - pos.opened_at) / 3600
             pos.status = CLOSED_PAPER
             self.ledger.append(pos)
-            log.info(f"paper position expired: {tid[:8]} (held {held_h:.1f}h)")
+            log.info(f"paper position expired: {tid[:8]} category={pos.category} (held {held_h:.1f}h)")
         return len(expired)
 
     def reset_daily(self):

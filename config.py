@@ -17,8 +17,18 @@ ADVERSE_SELECTION_PENALTY = 0.005
 MIN_MARKET_LIQUIDITY = 1_000
 
 # Paper mode position management
-PAPER_POSITION_TTL_HOURS = float(os.getenv("PAPER_POSITION_TTL_HOURS", "6"))
-PAPER_USE_POSITION_TTL = os.getenv("PAPER_USE_POSITION_TTL", "false").lower() == "true"
+PAPER_POSITION_TTL_HOURS = float(os.getenv("PAPER_POSITION_TTL_HOURS", "48"))
+PAPER_USE_POSITION_TTL = os.getenv("PAPER_USE_POSITION_TTL", "true").lower() == "true"
+
+# Category-level TTL (hours). If a category is not listed, PAPER_POSITION_TTL_HOURS applies.
+CATEGORY_TTL_HOURS: dict = {
+    "weather":  float(os.getenv("TTL_WEATHER_HOURS",  "2")),
+    "crypto":   float(os.getenv("TTL_CRYPTO_HOURS",  "720")),   # 30 days
+    "rates":    float(os.getenv("TTL_RATES_HOURS",   "720")),
+    "macro":    float(os.getenv("TTL_MACRO_HOURS",   "720")),
+    "election": float(os.getenv("TTL_ELECTION_HOURS","2160")),  # 90 days
+    "event":    float(os.getenv("TTL_EVENT_HOURS",   "2160")),
+}
 TRACKED_POSITIONS_FILE = os.getenv("TRACKED_POSITIONS_FILE", "positions.jsonl")
 RESOLUTION_POLL_INTERVAL_SECONDS = int(os.getenv("RESOLUTION_POLL_INTERVAL_SECONDS", "120"))
 

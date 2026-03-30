@@ -61,13 +61,18 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
 
                 for token_id, pos in risk.open_positions.items():
                     cs = markets_snapshot.get(token_id)
-                    current_mid = cs.mid if cs else pos.entry_price
-                    if pos.side == "BUY_NO":
-                        payout_mid = 1.0 - current_mid
+                    stale = cs is None
+                    current_mid = cs.mid if cs else None
+                    if stale:
+                        pnl_usdc = None
                     else:
-                        payout_mid = current_mid
-                    pnl = (payout_mid - pos.entry_price) * (pos.size_usdc / pos.entry_price)
-                    question = cs.question if cs else token_id[:16]
+                        payout_mid = (1.0 - current_mid) if pos.side == "BUY_NO" else current_mid
+                        pnl_usdc = round((payout_mid - pos.entry_price) * (pos.size_usdc / pos.entry_price), 2)
+                    category = getattr(pos, "category", "")
+                    question = (
+                        cs.question if cs
+                        else getattr(pos, "question", "") or f"{category} {token_id[:8]}"
+                    )
                     positions.append({
                         "token_id": token_id,
                         "question": question,
@@ -75,7 +80,8 @@ async def dashboard_loop(state: AppState, dash: DashboardState, risk=None, inter
                         "size_usdc": pos.size_usdc,
                         "entry_price": pos.entry_price,
                         "current_mid": current_mid,
-                        "pnl_usdc": round(pnl, 2),
+                        "pnl_usdc": pnl_usdc,
+                        "stale": stale,
                         "opened_at": "",
                     })
 

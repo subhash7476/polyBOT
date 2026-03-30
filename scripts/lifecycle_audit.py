@@ -24,6 +24,7 @@ import httpx
 
 import config
 from trading.positions import PositionLedger, TrackedPosition, OPEN, RESOLVED_PENDING_REDEEM
+from trading.resolution import _resolved_yes_from_market_payload
 
 
 _GAMMA_URL = "https://gamma-api.polymarket.com/markets"
@@ -94,6 +95,10 @@ async def audit(fix: bool = False) -> None:
                 continue
 
             is_resolved = bool(payload.get("resolved"))
+            # negRisk fallback: closed=True + decisive outcomePrices
+            if not is_resolved and payload.get("closed"):
+                if _resolved_yes_from_market_payload(payload) is not None:
+                    is_resolved = True
             held_sec = now - pos.opened_at
 
             if is_resolved:
