@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Iterable
 
@@ -49,7 +49,9 @@ class TrackedPosition:
 
     @classmethod
     def from_record(cls, record: dict) -> "TrackedPosition":
-        return cls(**record)
+        allowed = {f.name for f in fields(cls)}
+        filtered = {k: v for k, v in record.items() if k in allowed}
+        return cls(**filtered)
 
 
 class PositionLedger:
