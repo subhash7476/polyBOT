@@ -13,8 +13,8 @@ from config import LOCATIONS
 
 log = logging.getLogger(__name__)
 
-DEFAULT_SIGMA_F = 3.5   # °F realistic D+1 prior
-DEFAULT_SIGMA_C = 1.5   # °C realistic D+1 prior
+DEFAULT_SIGMA_F = 5.5   # °F — NWS D+1 high-temperature MAE is typically 4–6°F
+DEFAULT_SIGMA_C = 3.0   # °C — equivalent conservative prior
 CALIBRATION_MIN_SAMPLES = 5   # minimum samples before sigma updates from default
 ROLLING_WINDOW = 30           # keep last N error samples per city/source
 

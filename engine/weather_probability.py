@@ -89,8 +89,8 @@ def bucket_prob(forecast_temp: float, t_low: float, t_high: float, sigma: float)
     if t_high == 999.0:
         return 1.0 - _norm_cdf((t_low - forecast_temp) / sigma)
     if t_low == t_high:
-        # exact match: within ±0.5 of forecast
-        return 1.0 if abs(forecast_temp - t_low) <= 0.5 else 0.0
+        # single-value bucket: integrate over [v-0.5, v+0.5] (1° Polymarket resolution)
+        return _norm_cdf((t_low + 0.5 - forecast_temp) / sigma) - _norm_cdf((t_low - 0.5 - forecast_temp) / sigma)
     return _norm_cdf((t_high - forecast_temp) / sigma) - _norm_cdf((t_low - forecast_temp) / sigma)
 
 
@@ -198,15 +198,20 @@ def build_weather_probability(contract, feeds, weights: dict):
             hrrr_temp = wf.hrrr_by_date[target_date]
 
     # Scale sigma by hours until market resolution.
-    # D+0 (<12h): 0.6× (near-observation)  D+1 (12-36h): 1.0×  D+2+ (>36h): 1.2×
+    # < 4h  (METAR window):  0.6× — observation nearly certain, METAR included
+    # 4–12h (same day, no METAR): 0.85× — modest reduction, ECMWF alone
+    # 12–36h (D+1):          1.0× — standard
+    # > 36h  (D+2+):         1.2× — wider prior
     sigma_scale = 1.0
     hours_to_expiry = 999.0
     if contract.expiry:
         hours_to_expiry = (contract.expiry - datetime.now(timezone.utc)).total_seconds() / 3600
-        if hours_to_expiry < 12:
-            sigma_scale = 0.6   # same day — METAR/obs likely available
+        if hours_to_expiry < 4:
+            sigma_scale = 0.6   # METAR window — observation available
+        elif hours_to_expiry < 12:
+            sigma_scale = 0.85  # same day but past METAR gate
         elif hours_to_expiry > 36:
-            sigma_scale = 1.2   # further out — more uncertainty
+            sigma_scale = 1.2   # D+2+ — more uncertainty
 
     # Blend forecasts
     temp, sigma, source_confidence = blend_forecasts(

@@ -39,6 +39,20 @@ TIMEZONES = {
     "sao-paulo":    "America/Sao_Paulo",
     "buenos-aires": "America/Argentina/Buenos_Aires",
     "wellington":   "Pacific/Auckland",
+    # Extended city list
+    "hong-kong":     "Asia/Hong_Kong",
+    "beijing":       "Asia/Shanghai",
+    "shenzhen":      "Asia/Shanghai",
+    "chongqing":     "Asia/Shanghai",
+    "taipei":        "Asia/Taipei",
+    "milan":         "Europe/Rome",
+    "madrid":        "Europe/Madrid",
+    "warsaw":        "Europe/Warsaw",
+    "austin":        "America/Chicago",
+    "denver":        "America/Denver",
+    "houston":       "America/Chicago",
+    "los-angeles":   "America/Los_Angeles",
+    "san-francisco": "America/Los_Angeles",
 }
 
 
