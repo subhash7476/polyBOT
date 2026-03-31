@@ -64,21 +64,27 @@ def passes_divergence_guard(
     category: str,
 ) -> tuple[bool, str]:
     """
-    Reject weather trades where model and market disagree by >35 percentage points
-    and signal diversity is low (fewer than 2 independent signals).
+    Reject trades where model and market disagree by more than the category
+    threshold and signal diversity is low.
 
-    A >35pp gap with a single signal path almost certainly means the model is
-    wrong, not the market.  The market aggregates many forecasters; a single
-    uncalibrated ECMWF run should not override it at high confidence.
+    A large gap with a single signal almost always means the model is wrong,
+    not the market. Applied to both weather and crypto.
     """
-    if category != "weather":
-        return True, "ok"
     divergence = abs(model_prob - market_price)
-    if divergence > 0.35 and signal_count < 2:
-        return False, (
-            f"weather divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
-            f"= {divergence:.3f} > 0.35 with only {signal_count} signal(s)"
-        )
+    if category == "weather":
+        if divergence > 0.35 and signal_count < 2:
+            return False, (
+                f"weather divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
+                f"= {divergence:.3f} > 0.35 with only {signal_count} signal(s)"
+            )
+    elif category == "crypto":
+        # Crypto Up/Down market makers are sophisticated. A >40pp gap almost
+        # always means the market has already priced in the move.
+        if divergence > 0.40 and signal_count < 2:
+            return False, (
+                f"crypto divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
+                f"= {divergence:.3f} > 0.40 with only {signal_count} signal(s)"
+            )
     return True, "ok"
 
 
@@ -90,11 +96,13 @@ def should_enter(
     effective_threshold = config.MIN_EV_THRESHOLD * ev_multiplier
     if not slippage.tradeable:
         return False, "market too thin"
-    # Reject near-resolved markets: EV math produces nonsensical numbers when
-    # buying at sub-penny prices (e.g. NO at 0.15¢ gives 49× EV on any model
-    # disagreement, even though the market has effectively already resolved).
+    # Reject near-resolved markets on both ends of the price range.
+    # Sub-floor entry (e.g. NO at 0.15¢) produces degenerate EV arithmetic.
+    # Above-ceiling entry (e.g. YES at 0.98) is the symmetric case.
     if slippage.adjusted_price < config.MIN_ENTRY_PRICE:
         return False, f"entry price {slippage.adjusted_price:.4f} < floor {config.MIN_ENTRY_PRICE}"
+    if slippage.adjusted_price > config.MAX_ENTRY_PRICE:
+        return False, f"entry price {slippage.adjusted_price:.4f} > ceiling {config.MAX_ENTRY_PRICE}"
     if ev < effective_threshold:
         return False, f"EV {ev:.3f} < threshold {effective_threshold:.3f}"
     return True, f"EV={ev:.3f} slippage={slippage.slippage_pct:.2%}"

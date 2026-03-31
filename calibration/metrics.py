@@ -325,6 +325,45 @@ def time_decay_analysis(fills: list[dict], bins: int = 4) -> list[dict]:
     return result
 
 
+def signal_strength_breakdown(fills: list[dict]) -> list[dict]:
+    """
+    Win rate bucketed by model_prob confidence level.
+    Detects model overconfidence: if the 0.85+ bucket wins at the same rate
+    as the 0.55-0.65 bucket, the model's confidence is not informative.
+    """
+    buckets = [
+        ("0.55-0.65", 0.55, 0.65),
+        ("0.65-0.75", 0.65, 0.75),
+        ("0.75-0.85", 0.75, 0.85),
+        ("0.85-1.00", 0.85, 1.01),
+    ]
+    resolved = [f for f in fills if f.get("outcome") is not None]
+    result = []
+    for label, lo, hi in buckets:
+        # For BUY_YES: model_prob is the YES confidence.
+        # For BUY_NO: effective confidence is 1 - model_prob.
+        bucket_fills = []
+        for f in resolved:
+            side = f.get("side", "BUY_YES")
+            mp = f.get("model_prob", 0.5)
+            conf = mp if side == "BUY_YES" else (1 - mp)
+            if lo <= conf < hi:
+                bucket_fills.append(f)
+        wins = sum(
+            1 for f in bucket_fills
+            if (f.get("side", "BUY_YES") == "BUY_YES" and f.get("outcome") == 1)
+            or (f.get("side") == "BUY_NO" and f.get("outcome") == 0)
+        )
+        n = len(bucket_fills)
+        result.append({
+            "bucket": label,
+            "count": n,
+            "wins": wins,
+            "win_rate": round(wins / n, 4) if n else None,
+        })
+    return result
+
+
 def print_detailed_report(log_file: str = "fills.jsonl"):
     # Load all fills for total signal count
     all_fills = []
@@ -360,6 +399,16 @@ def print_detailed_report(log_file: str = "fills.jsonl"):
             f"brier={stats['brier_score']} edge={stats['mean_edge']:.3f} "
             f"win_rate={stats['win_rate']:.2%} pnl=${stats['realized_pnl']:.2f}"
         )
+
+    print("\n--- Signal Strength Breakdown (overconfidence check) ---")
+    print("  If high-confidence buckets win at the same rate as low-confidence,")
+    print("  the model's confidence is noise, not signal.")
+    for row in signal_strength_breakdown(fills):
+        if row["count"] == 0:
+            print(f"  {row['bucket']}  n=0")
+        else:
+            flag = " ← CHECK" if row["win_rate"] is not None and row["win_rate"] < 0.50 else ""
+            print(f"  {row['bucket']}  n={row['count']:3d}  win_rate={row['win_rate']:.2%}{flag}")
 
     print("\n--- Edge Decay Check (30-day rolling) ---")
     decay = edge_decay_check(fills)
