@@ -12,6 +12,7 @@ KELLY_FRACTION = 0.05           # 5% default — conservative until calibrated
 
 # EV
 MIN_EV_THRESHOLD = float(os.getenv("MIN_EV_THRESHOLD", "0.02"))
+MIN_ENTRY_PRICE = float(os.getenv("MIN_ENTRY_PRICE", "0.03"))   # skip tokens priced below 3¢ — market effectively resolved
 POLYMARKET_FEE = float(os.getenv("POLYMARKET_FEE", "0.02"))   # fraction of notional; verify current taker fee
 ADVERSE_SELECTION_PENALTY = 0.005
 MIN_MARKET_LIQUIDITY = 1_000

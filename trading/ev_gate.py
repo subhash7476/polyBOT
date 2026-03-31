@@ -90,6 +90,11 @@ def should_enter(
     effective_threshold = config.MIN_EV_THRESHOLD * ev_multiplier
     if not slippage.tradeable:
         return False, "market too thin"
+    # Reject near-resolved markets: EV math produces nonsensical numbers when
+    # buying at sub-penny prices (e.g. NO at 0.15¢ gives 49× EV on any model
+    # disagreement, even though the market has effectively already resolved).
+    if slippage.adjusted_price < config.MIN_ENTRY_PRICE:
+        return False, f"entry price {slippage.adjusted_price:.4f} < floor {config.MIN_ENTRY_PRICE}"
     if ev < effective_threshold:
         return False, f"EV {ev:.3f} < threshold {effective_threshold:.3f}"
     return True, f"EV={ev:.3f} slippage={slippage.slippage_pct:.2%}"
