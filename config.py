@@ -39,7 +39,7 @@ MIN_SIGNALS_REQUIRED = 2
 MAX_GROUP_EXPOSURE_PCT = 0.20   # 20% of bankroll per direction-bucket
 
 # Supported assets
-SUPPORTED_CRYPTO_ASSETS = ["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX"]
+SUPPORTED_CRYPTO_ASSETS = ["BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX", "HYPE"]
 DERIBIT_DVOL_ASSETS = ["BTC", "ETH", "SOL"]  # others use realized vol estimate
 
 # Paper mode (set PAPER=false in .env to go live)

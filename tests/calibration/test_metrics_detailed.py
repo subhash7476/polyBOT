@@ -1,6 +1,7 @@
 import json
 import tempfile
 import pytest
+from datetime import datetime, timezone
 from pathlib import Path
 from calibration.metrics import (
     load_resolved_fills,
@@ -30,7 +31,7 @@ def _fill(outcome, model_prob=0.65, market_prob=0.55, edge=0.10,
             ]
         },
         "category": category,
-        "timestamp": "2026-03-01T00:00:00Z",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
 

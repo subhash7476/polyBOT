@@ -88,6 +88,7 @@ ASSET_ALIASES: dict = {
     "doge": "DOGE", "dogecoin": "DOGE",
     "ada": "ADA", "cardano": "ADA",
     "avax": "AVAX", "avalanche": "AVAX",
+    "hype": "HYPE", "hyperliquid": "HYPE",
 }
 DIRECTION_ABOVE = ["above", "over", "exceed", "higher than", "hit", "reach", ">"]
 DIRECTION_BELOW = ["below", "under", "drop", "fall below", "<"]
@@ -114,11 +115,49 @@ _SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
 
 # Short-dated crypto direction markets: "Will BTC go up in the next 5 minutes?"
 _SHORT_DATED_RE = re.compile(
-    r'(?:will\s+)?(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax)'
+    r'(?:will\s+)?(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax|hyperliquid|hype)'
     r'\s+(?:price\s+)?(?:go\s+)?(up|down|increase|decrease|rise|fall).*?'
     r'(?:next|in(?:\s+the\s+next)?)\s+(\d+)?\s*(min(?:ute)?s?|hour|hours?)',
     re.IGNORECASE,
 )
+
+# "Bitcoin Up or Down - March 30, 11:35AM-11:40AM ET"  (range: 5-min, 1-hr, 4-hr blocks)
+# "Bitcoin Up or Down - March 30, 2PM ET"              (hourly — single hour, no end time)
+_UP_OR_DOWN_RANGE_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|'
+    r'cardano|ada|avalanche|avax|hyperliquid|hype)'
+    r'\s+up\s+or\s+down\s*[-–]\s*'
+    r'(?:\w+\s+\d+,?\s*)?'                                   # optional "March 30,"
+    r'(\d{1,2}):(\d{2})\s*([ap]m)\s*-\s*(\d{1,2}):(\d{2})\s*([ap]m)',
+    re.IGNORECASE,
+)
+_UP_OR_DOWN_HOURLY_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|'
+    r'cardano|ada|avalanche|avax|hyperliquid|hype)'
+    r'\s+up\s+or\s+down\s*[-–]\s*'
+    r'(?:\w+\s+\d+,?\s*)?'                                   # optional "March 30,"
+    r'(\d{1,2})\s*([ap]m)\s*et',
+    re.IGNORECASE,
+)
+
+# "Bitcoin all time high by March 31, 2026?"
+_ATH_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax)'
+    r'\s+all.?time\s+high\s+by',
+    re.IGNORECASE,
+)
+
+# Approximate all-time-high prices (updated March 2026)
+_ASSET_ATH: dict = {
+    "BTC": 109_000.0,
+    "ETH":   4_868.0,
+    "SOL":     295.0,
+    "XRP":     3.84,
+    "BNB":   793.0,
+    "DOGE":    0.74,
+    "ADA":     3.10,
+    "AVAX":   146.0,
+}
 
 
 @dataclass
@@ -133,6 +172,7 @@ class ParsedContract:
     parseable: bool = True
     cut_count: Optional[int] = None     # for "exactly N cuts" rate markets
     T_days: Optional[float] = None      # for short-dated markets; overrides expiry-derived T
+    strategy_type: str = "directional"  # "directional" | "crypto_fast"
 
 
 def parse_contract(token_id: str, question: str) -> ParsedContract:
@@ -149,6 +189,61 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             contract.parseable = True
             contract.expiry = _parse_expiry(question)
             log.debug(f"weather market: {q[:60]}")
+            return contract
+
+    # 0b. "Bitcoin Up or Down - March 30, 11:35AM-11:40AM ET"  (range format)
+    m = _UP_OR_DOWN_RANGE_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset:
+            def _to_minutes(h: str, mi: str, ap: str) -> int:
+                hh = int(h) % 12
+                if ap.lower() == "pm":
+                    hh += 12
+                return hh * 60 + int(mi)
+            start_min = _to_minutes(m.group(2), m.group(3), m.group(4))
+            end_min   = _to_minutes(m.group(5), m.group(6), m.group(7))
+            window_min = max(end_min - start_min, 5)
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = None
+            contract.T_days = window_min / 1440.0
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "crypto_fast"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"up_or_down range: {q[:60]} window={window_min}min")
+            return contract
+
+    # 0c. "Bitcoin Up or Down - March 30, 2PM ET"  (hourly format — no end time)
+    m = _UP_OR_DOWN_HOURLY_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset:
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = None
+            contract.T_days = 1.0 / 24.0   # 1-hour window
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "crypto_fast"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"up_or_down hourly: {q[:60]}")
+            return contract
+
+    # 0d. "Bitcoin all time high by March 31, 2026?"
+    m = _ATH_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset and asset in _ASSET_ATH:
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = _ASSET_ATH[asset]
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "directional"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"ath market: {q[:60]} target={_ASSET_ATH[asset]}")
             return contract
 
     # 1. Rate contracts — detect early, extract direction/target/expiry
@@ -368,7 +463,10 @@ def _parse_expiry(question: str) -> Optional[datetime]:
 
     for month_str, month_num in EXPIRY_MONTHS.items():
         if month_str in q:
-            year = now.year if month_num >= now.month else now.year + 1
+            # Always use current year. Past-month dates → past datetime → expired correctly.
+            # Pushing past months to now.year+1 caused "February 24" in March 2026 to
+            # become Feb 24 2027, making stale fast markets appear far-future.
+            year = now.year
             day_match = re.search(rf"{month_str}\w*\s+(\d{{1,2}})", q)
             day = int(day_match.group(1)) if day_match else 28
             try:

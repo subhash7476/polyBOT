@@ -215,10 +215,17 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
     new_weather = {k: v for k, v in weather_markets.items() if k not in token_map}
     token_map.update(new_weather)
 
+    # Supplement with crypto Up/Down and ATH markets from the crypto-prices events endpoint.
+    # These are also buried deep in pagination; use start_date_min to fetch only current markets.
+    crypto_event_markets = await _fetch_crypto_event_markets(client)
+    new_crypto = {k: v for k, v in crypto_event_markets.items() if k not in token_map}
+    token_map.update(new_crypto)
+
     parseable_count = sum(1 for meta in token_map.values() if meta["parseable"])
     log.info(
         f"found {len(token_map)} active order-book markets from Gamma API "
-        f"({parseable_count} parseable by strategy, {len(new_weather)} weather buckets added)"
+        f"({parseable_count} parseable by strategy, {len(new_weather)} weather + "
+        f"{len(new_crypto)} crypto event markets added)"
     )
     return token_map
 
@@ -292,6 +299,101 @@ async def _fetch_weather_event_markets(client: httpx.AsyncClient) -> dict:
             }
 
     log.debug(f"weather events: found {len(token_map)} temperature bucket markets")
+    return token_map
+
+
+async def _fetch_crypto_event_markets(client: httpx.AsyncClient) -> dict:
+    """
+    Fetch crypto Up/Down and ATH markets from the crypto-prices events endpoint.
+
+    The Gamma events API stores these at deep pagination offsets (offset 200+) when
+    sorted by ID ascending. Using start_date_min=yesterday directly returns only
+    current and near-future markets without paging through ~200 stale December 2025
+    events. API expiry (endDateIso) is used as ground truth — bypasses the question
+    parser's year-inference for same-day short-window markets.
+    """
+    from datetime import timedelta
+    token_map = {}
+    now = datetime.now(timezone.utc)
+    # Fetch markets that started within the last 2 days — catches overnight markets
+    # and any pre-created upcoming ones.
+    start_min = (now - timedelta(days=2)).strftime("%Y-%m-%d")
+
+    try:
+        resp = await client.get(_GAMMA_EVENTS_URL, params={
+            "tag_slug": "crypto-prices",
+            "active": "true",
+            "closed": "false",
+            "limit": 200,
+            "start_date_min": start_min,
+        }, timeout=20.0)
+        resp.raise_for_status()
+        events = resp.json()
+        if isinstance(events, dict):
+            events = events.get("data", [])
+    except Exception as exc:
+        log.warning(f"crypto events fetch error: {exc}")
+        return token_map
+
+    skipped_expired = 0
+    for event in events:
+        for m in event.get("markets", []):
+            if not m.get("acceptingOrders") or not m.get("enableOrderBook"):
+                continue
+            token_ids_raw = m.get("clobTokenIds", "[]")
+            try:
+                token_ids = json.loads(token_ids_raw) if isinstance(token_ids_raw, str) else token_ids_raw
+            except Exception:
+                continue
+            if len(token_ids) < 2:
+                continue
+
+            # API endDateIso is authoritative — avoids question-parser year mis-inference
+            api_expiry = _parse_datetime(m.get("endDateIso") or m.get("endDate"))
+            if api_expiry is not None:
+                exp = api_expiry if api_expiry.tzinfo else api_expiry.replace(tzinfo=timezone.utc)
+                if exp < now:
+                    skipped_expired += 1
+                    continue
+
+            yes_id, no_id = token_ids[0], token_ids[1]
+            question = m.get("question", "")
+            parsed = parse_contract(yes_id, question)
+            if not parsed.parseable or parsed.category != "crypto":
+                continue
+
+            outcome_prices_raw = m.get("outcomePrices") or []
+            if isinstance(outcome_prices_raw, str):
+                try:
+                    outcome_prices_raw = json.loads(outcome_prices_raw)
+                except Exception:
+                    outcome_prices_raw = []
+            yes_price = float(outcome_prices_raw[0]) if outcome_prices_raw else None
+
+            raw_bid = float(m.get("bestBid") or 0)
+            raw_ask = float(m.get("bestAsk") or 1)
+            if (raw_ask - raw_bid) > 0.5 and yes_price is not None and 0.03 < yes_price < 0.97:
+                raw_bid = round(yes_price - 0.02, 4)
+                raw_ask = round(yes_price + 0.02, 4)
+
+            token_map[yes_id] = {
+                "question":      question,
+                "category":      "crypto",
+                "strategy_type": parsed.strategy_type,
+                "expiry":        api_expiry or parsed.expiry,
+                "parseable":     True,
+                "no_token_id":   no_id,
+                "condition_id":  m.get("conditionId", "") or "",
+                "volume":        float(m.get("volumeClob") or m.get("volume") or 0),
+                "volume_24h":    float(m.get("volume24hrClob") or m.get("volume24hr") or 0),
+                "liquidity":     float(m.get("liquidityClob") or m.get("liquidity") or 0),
+                "best_bid":      raw_bid,
+                "best_ask":      raw_ask,
+            }
+
+    log.debug(
+        f"crypto events: found {len(token_map)} price markets ({skipped_expired} expired skipped)"
+    )
     return token_map
 
 
