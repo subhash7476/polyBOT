@@ -364,6 +364,24 @@ def signal_strength_breakdown(fills: list[dict]) -> list[dict]:
     return result
 
 
+def bootstrap_win_rate_ci(outcomes: list[int], n_simulations: int = 10_000) -> dict:
+    """
+    Bootstrap 95% confidence interval on win rate.
+    outcomes: list of 1 (win) or 0 (loss)
+    If ci_low > 0.50, edge is statistically real with 95% confidence.
+    """
+    if not outcomes:
+        return {"mean": float("nan"), "ci_low": float("nan"), "ci_high": float("nan"), "n": 0}
+    arr = np.array(outcomes)
+    results = []
+    rng = np.random.default_rng(42)
+    for _ in range(n_simulations):
+        sample = rng.choice(arr, size=len(arr), replace=True)
+        results.append(sample.mean())
+    lo, hi = np.percentile(results, [2.5, 97.5])
+    return {"mean": float(arr.mean()), "ci_low": float(lo), "ci_high": float(hi), "n": len(arr)}
+
+
 def print_detailed_report(log_file: str = "fills.jsonl"):
     # Load all fills for total signal count
     all_fills = []
@@ -425,6 +443,24 @@ def print_detailed_report(log_file: str = "fills.jsonl"):
     for key, check in report["checks"].items():
         status = "PASS" if check["pass"] else "FAIL"
         print(f"  [{status}] {key}: {check}")
+
+    print("\n--- Bootstrap Win Rate CI (95%) ---")
+    outcomes = []
+    for f in fills:
+        side = f.get("side", "BUY_YES")
+        outcome = f.get("outcome")
+        if outcome is None:
+            continue
+        win = (side == "BUY_YES" and outcome == 1) or (side == "BUY_NO" and outcome == 0)
+        outcomes.append(1 if win else 0)
+    if len(outcomes) >= 10:
+        ci = bootstrap_win_rate_ci(outcomes)
+        edge_real = ci["ci_low"] > 0.50
+        verdict = "EDGE REAL (95% CI lower bound > 50%)" if edge_real else "INSUFFICIENT EVIDENCE — lower bound ≤ 50%"
+        print(f"  n={ci['n']}  win_rate={ci['mean']:.3f}  95% CI [{ci['ci_low']:.3f}, {ci['ci_high']:.3f}]")
+        print(f"  Verdict: {verdict}")
+    else:
+        print(f"  n={len(outcomes)} — need ≥10 resolved trades for CI")
 
 
 if __name__ == "__main__":
