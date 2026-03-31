@@ -42,7 +42,8 @@ def _is_ultra_short_crypto(meta: dict) -> bool:
 
 
 def _allowed_categories() -> set[str]:
-    raw = (MARKET_CATEGORY_FILTER or "").strip()
+    import config as _config
+    raw = (_config.MARKET_CATEGORY_FILTER or "").strip()
     if not raw:
         return set()
     return {part.strip().lower() for part in raw.split(",") if part.strip()}

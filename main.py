@@ -97,6 +97,16 @@ async def trading_loop(
                 if not parsed.parseable:
                     _record_skip(parsed.category or "unknown", "unparseable")
                     continue
+
+                # 1b. Category filter — skip if MARKET_CATEGORY_FILTER is set and this
+                # category is not in the allowed list. Prevents stale state.markets entries
+                # (seeded before the filter took effect) from reaching the analysis pipeline.
+                _allowed = config.MARKET_CATEGORY_FILTER.strip()
+                if _allowed:
+                    _allowed_set = {c.strip().lower() for c in _allowed.split(",") if c.strip()}
+                    if parsed.category not in _allowed_set:
+                        continue
+
                 n_parseable += 1
                 category_counts[parsed.category] = category_counts.get(parsed.category, 0) + 1
 
