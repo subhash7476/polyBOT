@@ -36,6 +36,13 @@ class RiskManager:
         self.ledger = ledger or PositionLedger(config.TRACKED_POSITIONS_FILE)
         self.open_positions, self.pending_redemptions = self.ledger.load_active()
         self.closed_positions: dict[str, TrackedPosition] = {}
+        # Set of token IDs that are closed/resolved in any previous or current session.
+        # Prevents re-entry into a market after it has been resolved or paper-closed.
+        self._closed_token_ids: set[str] = {
+            pos.token_id
+            for pos in self.ledger.iter_records()
+            if pos.status != OPEN
+        }
         self._lock = asyncio.Lock()
 
     _CRYPTO_ASSETS = {"BTC", "ETH", "SOL", "XRP", "BNB", "DOGE", "ADA", "AVAX"}
@@ -73,9 +80,15 @@ class RiskManager:
         feeds: FeedState,
     ) -> tuple[bool, str]:
         async with self._lock:
-            # 0. Already in this position
+            # 0a. Already in this position
             if token_id in self.open_positions:
                 return False, "position already open"
+
+            # 0b. Previously closed or resolved in any session — hard block against
+            # re-entry into dead markets (e.g. weather bucket that already resolved 0,
+            # or fast-exit positions that closed during this session).
+            if token_id in self._closed_token_ids or token_id in self.closed_positions:
+                return False, "token previously closed/resolved"
 
             # 1. Daily loss hard stop
             if self.daily_pnl <= -self.max_daily_loss:
@@ -150,6 +163,7 @@ class RiskManager:
                     self.consecutive_losses += 1
                 else:
                     self.consecutive_losses = 0
+                self._closed_token_ids.add(token_id)
                 log.info(f"closed {token_id[:8]} pnl=${pnl:.2f} daily_pnl=${self.daily_pnl:.2f}")
 
     async def resolve_position(
@@ -181,6 +195,7 @@ class RiskManager:
             else:
                 self.pending_redemptions[token_id] = pos
 
+            self._closed_token_ids.add(token_id)
             self.ledger.append(pos)
             log.info(
                 f"resolved {token_id[:8]} side={pos.side} outcome={'YES' if resolved_yes else 'NO'} "
@@ -201,6 +216,7 @@ class RiskManager:
             pos.status = REDEEMED
             pos.redeemed_at = redeemed_at or time.time()
             self.closed_positions[token_id] = pos
+            self._closed_token_ids.add(token_id)
             self.ledger.append(pos)
             return pos
 
