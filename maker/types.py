@@ -30,7 +30,7 @@ class Fill:
 
     @property
     def notional(self) -> float:
-        return self.size
+        return self.price * self.size
 
 
 @dataclass(frozen=True)

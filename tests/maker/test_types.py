@@ -26,7 +26,7 @@ def test_fill_fields():
         filled_at=1000.0,
     )
     assert f.side == "BUY"
-    assert f.notional == 10.0
+    assert f.notional == 4.5
 
 
 def test_skew_update():
