@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maker Bot Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: 'Segoe UI', system-ui, -apple-system, monospace;
+      font-size: 13px;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 20px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      flex-wrap: wrap;
+    }
+
+    #topbar h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .badge-paper  { background: #388bfd22; color: #58a6ff; border: 1px solid #388bfd55; }
+    .badge-live   { background: #3fb95022; color: #3fb950; border: 1px solid #3fb95055; }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .stat-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-value { font-size: 14px; font-weight: 600; color: #e6edf3; }
+    .positive   { color: #3fb950; }
+    .negative   { color: #f85149; }
+    .neutral    { color: #c9d1d9; }
+
+    #conn-status {
+      margin-left: auto;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #8b949e;
+    }
+    .dot.connected   { background: #3fb950; box-shadow: 0 0 6px #3fb950; }
+    .dot.connecting  { background: #d29922; }
+    .dot.disconnected { background: #f85149; }
+
+    /* ── Main grid ── */
+    #main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 16px 20px;
+    }
+
+    @media (max-width: 900px) {
+      #main { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .panel-full { grid-column: 1 / -1; }
+
+    .panel-header {
+      padding: 10px 14px;
+      background: #1c2128;
+      border-bottom: 1px solid #30363d;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-header .count {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: 11px;
+      color: #c9d1d9;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 8px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8b949e;
+      text-align: left;
+      border-bottom: 1px solid #21262d;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #21262d;
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1c2128; }
+
+    td {
+      padding: 8px 12px;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .tag-quoted   { background: #3fb95022; color: #3fb950; border: 1px solid #3fb95055; }
+    .tag-cooldown { background: #d2992222; color: #d29922; border: 1px solid #d2992255; }
+    .tag-buy  { background: #3fb95022; color: #3fb950; }
+    .tag-sell { background: #f8514922; color: #f85149; }
+
+    /* ── Feed status ── */
+    .feed-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    .feed-item {
+      padding: 12px 16px;
+      border-right: 1px solid #21262d;
+      border-bottom: 1px solid #21262d;
+    }
+    .feed-item:nth-child(even) { border-right: none; }
+    .feed-item:last-child, .feed-item:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+
+    .feed-name {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+    .feed-age {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .feed-fresh   { color: #3fb950; }
+    .feed-warning { color: #d29922; }
+    .feed-stale   { color: #f85149; }
+    .feed-unknown { color: #8b949e; }
+
+    /* ── Empty state ── */
+    .empty-row td {
+      text-align: center;
+      color: #8b949e;
+      padding: 24px;
+      font-style: italic;
+    }
+
+    /* ── Inventory bar ── */
+    .inv-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 80px;
+    }
+    .inv-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: #21262d;
+      border-radius: 3px;
+      overflow: hidden;
+      min-width: 40px;
+    }
+    .inv-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #58a6ff;
+      transition: width 0.3s;
+    }
+    .inv-bar-fill.negative { background: #f85149; }
+    .inv-val {
+      font-size: 12px;
+      color: #c9d1d9;
+      min-width: 32px;
+      text-align: right;
+    }
+
+    /* scrollable table bodies */
+    .scroll-body { max-height: 280px; overflow-y: auto; display: block; }
+    .scroll-body thead, .scroll-body tbody { display: table; width: 100%; table-layout: fixed; }
+  </style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══ -->
+<div id="topbar">
+  <h1>Maker Bot</h1>
+  <span id="mode-badge" class="badge badge-paper">PAPER</span>
+
+  <div class="stat">
+    <span class="stat-label">Uptime</span>
+    <span class="stat-value" id="uptime">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">Daily P&amp;L</span>
+    <span class="stat-value" id="daily-pnl">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">Total Inventory</span>
+    <span class="stat-value" id="total-inv">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">Active Markets</span>
+    <span class="stat-value" id="n-markets">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">CB Fires</span>
+    <span class="stat-value" id="cb-fires">—</span>
+  </div>
+
+  <div id="conn-status">
+    <div class="dot connecting" id="dot"></div>
+    <span id="conn-label">Connecting…</span>
+  </div>
+</div>
+
+<!-- ═══ MAIN GRID ═══ -->
+<div id="main">
+
+  <!-- Active Quotes -->
+  <div class="panel panel-full">
+    <div class="panel-header">
+      Active Quotes
+      <span class="count" id="quotes-count">0</span>
+    </div>
+    <div class="scroll-body">
+      <table id="quotes-table">
+        <thead>
+          <tr>
+            <th>Question</th>
+            <th>Bid</th>
+            <th>Ask</th>
+            <th>Spread</th>
+            <th>Inventory</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="quotes-body">
+          <tr class="empty-row"><td colspan="6">No active quotes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Fill History -->
+  <div class="panel panel-full">
+    <div class="panel-header">
+      Fill History
+      <span class="count" id="fills-count">0</span>
+    </div>
+    <div class="scroll-body">
+      <table id="fills-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Market</th>
+            <th>Side</th>
+            <th>Price</th>
+            <th>Size</th>
+          </tr>
+        </thead>
+        <tbody id="fills-body">
+          <tr class="empty-row"><td colspan="5">No fills yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Feed Status -->
+  <div class="panel">
+    <div class="panel-header">Feed Status</div>
+    <div class="feed-grid">
+      <div class="feed-item">
+        <div class="feed-name">CLOBMonitor</div>
+        <div class="feed-age feed-unknown" id="clob-age">?</div>
+      </div>
+      <div class="feed-item">
+        <div class="feed-name">MicrostructureFeed</div>
+        <div class="feed-age feed-unknown" id="micro-age">?</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#main -->
+
+<script>
+'use strict';
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+function fmtUptime(s) {
+  s = Math.floor(s);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+function fmtPnl(v) {
+  const sign = v >= 0 ? '+' : '';
+  return `${sign}$${v.toFixed(4)}`;
+}
+
+function pnlClass(v) {
+  if (v > 0) return 'positive';
+  if (v < 0) return 'negative';
+  return 'neutral';
+}
+
+function feedClass(ageStr) {
+  if (ageStr === '?') return 'feed-unknown';
+  // parse seconds
+  const s = parseAgeStr(ageStr);
+  if (s < 10) return 'feed-fresh';
+  if (s < 30) return 'feed-warning';
+  return 'feed-stale';
+}
+
+function parseAgeStr(str) {
+  // formats: "3s", "1m5s", "2m0s", "?"
+  if (!str || str === '?') return Infinity;
+  let total = 0;
+  const mMatch = str.match(/(\d+)m/);
+  const sMatch = str.match(/(\d+)s/);
+  if (mMatch) total += parseInt(mMatch[1]) * 60;
+  if (sMatch) total += parseInt(sMatch[1]);
+  return total;
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  return d.toTimeString().slice(0, 8);
+}
+
+// ── render ───────────────────────────────────────────────────────────────────
+
+function render(data) {
+  // Top bar
+  document.getElementById('uptime').textContent = fmtUptime(data.uptime_seconds || 0);
+
+  const pnlEl = document.getElementById('daily-pnl');
+  const pnl = data.daily_pnl || 0;
+  pnlEl.textContent = fmtPnl(pnl);
+  pnlEl.className = 'stat-value ' + pnlClass(pnl);
+
+  document.getElementById('total-inv').textContent = (data.total_abs_inventory || 0).toFixed(2);
+  document.getElementById('n-markets').textContent = data.n_active_markets || 0;
+  document.getElementById('cb-fires').textContent = data.cb_fires || 0;
+
+  // Mode badge
+  const badge = document.getElementById('mode-badge');
+  if (data.paper) {
+    badge.textContent = 'PAPER';
+    badge.className = 'badge badge-paper';
+  } else {
+    badge.textContent = 'LIVE';
+    badge.className = 'badge badge-live';
+  }
+
+  // Active quotes table
+  const markets = data.active_markets || [];
+  const qCount = document.getElementById('quotes-count');
+  qCount.textContent = markets.length;
+  const qBody = document.getElementById('quotes-body');
+  if (markets.length === 0) {
+    qBody.innerHTML = '<tr class="empty-row"><td colspan="6">No active quotes</td></tr>';
+  } else {
+    qBody.innerHTML = markets.map(m => {
+      const statusTag = m.cooldown
+        ? '<span class="tag tag-cooldown">COOLDOWN</span>'
+        : '<span class="tag tag-quoted">QUOTED</span>';
+
+      const inv = m.inventory || 0;
+      const maxInv = 50; // matches MakerState.max_inventory_per_market default
+      const pct = Math.min(Math.abs(inv) / maxInv * 100, 100);
+      const barClass = inv < 0 ? 'negative' : '';
+      const invBar = `
+        <div class="inv-bar-wrap">
+          <div class="inv-bar-bg"><div class="inv-bar-fill ${barClass}" style="width:${pct}%"></div></div>
+          <span class="inv-val">${inv.toFixed(2)}</span>
+        </div>`;
+
+      return `<tr>
+        <td title="${m.question}">${escHtml(m.question || m.token_id)}</td>
+        <td>${(m.bid || 0).toFixed(4)}</td>
+        <td>${(m.ask || 0).toFixed(4)}</td>
+        <td>${(m.spread || 0).toFixed(4)}</td>
+        <td>${invBar}</td>
+        <td>${statusTag}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Fill history
+  const fills = (data.fills || []).slice(0, 20);
+  const fCount = document.getElementById('fills-count');
+  fCount.textContent = fills.length;
+  const fBody = document.getElementById('fills-body');
+  if (fills.length === 0) {
+    fBody.innerHTML = '<tr class="empty-row"><td colspan="5">No fills yet</td></tr>';
+  } else {
+    fBody.innerHTML = fills.map(f => {
+      const side = (f.side || '').toUpperCase();
+      const sideTag = side === 'BUY'
+        ? '<span class="tag tag-buy">BUY</span>'
+        : '<span class="tag tag-sell">SELL</span>';
+      return `<tr>
+        <td>${fmtTime(f.timestamp || f.ts)}</td>
+        <td title="${f.question || ''}">${escHtml(f.question || f.token_id || '—').slice(0, 40)}</td>
+        <td>${sideTag}</td>
+        <td>${(f.price || 0).toFixed(4)}</td>
+        <td>${(f.size || 0).toFixed(2)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Feed status
+  const clobAge = data.clob_age || '?';
+  const microAge = data.micro_age || '?';
+
+  const clobEl = document.getElementById('clob-age');
+  clobEl.textContent = clobAge;
+  clobEl.className = 'feed-age ' + feedClass(clobAge);
+
+  const microEl = document.getElementById('micro-age');
+  microEl.textContent = microAge;
+  microEl.className = 'feed-age ' + feedClass(microAge);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── SSE connection ────────────────────────────────────────────────────────────
+
+let es = null;
+let retryTimer = null;
+
+function setConnStatus(state) {
+  const dot = document.getElementById('dot');
+  const label = document.getElementById('conn-label');
+  dot.className = 'dot ' + state;
+  const labels = { connected: 'Live', connecting: 'Connecting…', disconnected: 'Reconnecting…' };
+  label.textContent = labels[state] || state;
+}
+
+function connect() {
+  if (es) { es.close(); es = null; }
+  setConnStatus('connecting');
+
+  es = new EventSource('/maker-stream');
+
+  es.onopen = () => setConnStatus('connected');
+
+  es.onmessage = (ev) => {
+    try {
+      const data = JSON.parse(ev.data);
+      render(data);
+    } catch (e) {
+      console.warn('parse error', e);
+    }
+  };
+
+  es.onerror = () => {
+    es.close();
+    es = null;
+    setConnStatus('disconnected');
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = setTimeout(connect, 3000);
+  };
+}
+
+// Kick off on load
+connect();
+</script>
+</body>
+</html>

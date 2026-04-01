@@ -64,11 +64,22 @@ async def run_maker():
     from feeds.microstructure import MicrostructureFeed
     from market.clob_monitor import CLOBMonitor
     from trading.balance import BalancePoller
+    from dashboard.server import start_dashboard_server
+    from dashboard.state import DashboardState
+    from maker.dashboard_state import MakerDashboardState
+    from maker.dashboard_loop import maker_dashboard_loop
 
     paper = config.PAPER
     log.info(f"Starting maker bot (paper={paper})")
 
     app_state = AppState()
+
+    # Set up maker dashboard
+    maker_dash = MakerDashboardState()
+    maker_dash.update({"paper": paper})
+    dash = DashboardState()
+    start_dashboard_server(dash, port=5050, maker_dash=maker_dash)
+    log.info("Maker dashboard at http://127.0.0.1:5050/maker")
 
     # Build CLOB client for live mode
     clob = None
@@ -86,6 +97,9 @@ async def run_maker():
         bankroll=config.BANKROLL_USDC,
     )
 
+    # Expose MakerState for dashboard loop via order_manager
+    maker_state_ref = actors["order_manager"]._maker
+
     coros = [
         # Reused feeds
         CLOBMonitor(app_state).start(),
@@ -98,6 +112,9 @@ async def run_maker():
     # Maker actors
     for actor in actors.values():
         coros.append(actor.run())
+
+    # Dashboard snapshot loop
+    coros.append(maker_dashboard_loop(app_state, maker_state_ref, maker_dash))
 
     log.info(f"Maker bot running with {len(actors)} actors")
     await asyncio.gather(*coros)
