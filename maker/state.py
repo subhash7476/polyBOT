@@ -57,7 +57,7 @@ class MakerState:
         raw = inv / self.max_inventory_per_market
         return max(-1.0, min(1.0, raw))
 
-    def is_cooled_down(self, token_id: str) -> bool:
+    def in_cooldown(self, token_id: str) -> bool:
         """True if market is in cooldown (circuit breaker fired recently)."""
         resume_at = self.cooldowns.get(token_id, 0.0)
         return time.time() < resume_at

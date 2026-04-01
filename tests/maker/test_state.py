@@ -47,13 +47,13 @@ def test_skew_factor_clamped():
     assert s.skew_factor("abc") == 1.0
 
 
-def test_is_cooled_down():
+def test_in_cooldown():
     s = MakerState()
     s.cooldowns["abc"] = 9999999999.0  # far future
-    assert s.is_cooled_down("abc")
+    assert s.in_cooldown("abc")
 
 
-def test_not_cooled_down():
+def test_not_in_cooldown():
     s = MakerState()
     s.cooldowns["abc"] = 0.0  # in the past
-    assert not s.is_cooled_down("abc")
+    assert not s.in_cooldown("abc")
