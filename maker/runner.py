@@ -74,8 +74,10 @@ async def run_maker():
     clob = None
     wallet_address = ""
     if not paper:
-        from trading.executor import _build_clob_client
-        clob, wallet_address = _build_clob_client()
+        from trading.executor import CLOBExecutor
+        executor = CLOBExecutor(paper=False)
+        clob = executor._clob
+        wallet_address = executor.wallet_address
 
     actors, _ = build_maker_actors(
         app_state=app_state,

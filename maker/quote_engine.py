@@ -130,7 +130,7 @@ class QuoteEngine:
                 spread = compute_spread(
                     volume_usd=cs.volume_usd,
                     abs_inventory=abs_inv,
-                    hours_to_expiry=999.0,
+                    hours_to_expiry=999.0,  # TODO: compute from ContractState expiry
                 )
 
                 new_quote = self.build_quote(
