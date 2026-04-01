@@ -1,0 +1,101 @@
+# maker/runner.py
+"""Maker bot entrypoint — wires actors, queues, and reused feeds."""
+
+import asyncio
+import config
+from market.state import AppState
+from maker.state import MakerState
+from maker.market_selector import MarketSelector
+from maker.quote_engine import QuoteEngine
+from maker.order_manager import OrderManager
+from maker.fill_poller import FillPoller
+from maker.inventory import InventoryManager
+from utils.logger import get_logger
+
+log = get_logger(__name__)
+
+
+def build_maker_actors(
+    app_state: AppState,
+    paper: bool = True,
+    clob=None,
+    bankroll: float = 500.0,
+) -> tuple[dict, dict]:
+    """Create all actors and queues. Returns (actors_dict, queues_dict)."""
+    maker_state = MakerState()
+
+    # Queues
+    active_markets_q = asyncio.Queue()
+    quote_intents_q = asyncio.Queue()
+    fills_q = asyncio.Queue()
+    skew_updates_q = asyncio.Queue()
+    cancel_q = asyncio.Queue()
+
+    queues = {
+        "active_markets_q": active_markets_q,
+        "quote_intents_q": quote_intents_q,
+        "fills_q": fills_q,
+        "skew_updates_q": skew_updates_q,
+        "cancel_q": cancel_q,
+    }
+
+    actors = {
+        "selector": MarketSelector(app_state, active_markets_q),
+        "quote_engine": QuoteEngine(
+            app_state, maker_state, active_markets_q, quote_intents_q, skew_updates_q,
+        ),
+        "order_manager": OrderManager(
+            maker_state, clob=clob, paper=paper,
+            quote_intents_q=quote_intents_q, cancel_q=cancel_q,
+        ),
+        "fill_poller": FillPoller(
+            app_state, maker_state, fills_q, clob=clob, paper=paper,
+        ),
+        "inventory": InventoryManager(
+            maker_state, fills_q, skew_updates_q, cancel_q, bankroll=bankroll,
+        ),
+    }
+
+    return actors, queues
+
+
+async def run_maker():
+    """Main async entrypoint for maker mode."""
+    from feeds.microstructure import MicrostructureFeed
+    from market.clob_monitor import CLOBMonitor
+    from trading.balance import BalancePoller
+
+    paper = config.PAPER
+    log.info(f"Starting maker bot (paper={paper})")
+
+    app_state = AppState()
+
+    # Build CLOB client for live mode
+    clob = None
+    wallet_address = ""
+    if not paper:
+        from trading.executor import _build_clob_client
+        clob, wallet_address = _build_clob_client()
+
+    actors, _ = build_maker_actors(
+        app_state=app_state,
+        paper=paper,
+        clob=clob,
+        bankroll=config.BANKROLL_USDC,
+    )
+
+    coros = [
+        # Reused feeds
+        CLOBMonitor(app_state).start(),
+        MicrostructureFeed(app_state).start(),
+    ]
+
+    if wallet_address:
+        coros.append(BalancePoller(app_state, wallet_address).start())
+
+    # Maker actors
+    for actor in actors.values():
+        coros.append(actor.run())
+
+    log.info(f"Maker bot running with {len(actors)} actors")
+    await asyncio.gather(*coros)

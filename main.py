@@ -490,4 +490,14 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import argparse
+    ap = argparse.ArgumentParser(description="Polymarket trading bot")
+    ap.add_argument("--mode", default="taker", choices=["taker", "maker"],
+                    help="taker (directional) or maker (market making)")
+    cli_args = ap.parse_args()
+
+    if cli_args.mode == "maker":
+        from maker.runner import run_maker
+        asyncio.run(run_maker())
+    else:
+        asyncio.run(main())
