@@ -115,11 +115,10 @@ def test_fomc_contract_detected():
 # --- Unparseable contracts ---
 
 def test_no_asset_generic_binary():
-    # Non-crypto "Will X?" markets now route to the generic binary catch-all
+    # Sports markets are now detected before the generic binary catch-all
     c = parse_contract("t1", "Will the Lakers win the championship?")
     assert c.parseable is True
-    assert c.category == "event"
-    assert c.direction == "yes"
+    assert c.category == "sports"
 
 
 def test_no_direction_not_parseable():
@@ -205,8 +204,10 @@ def test_generic_binary_spacex_launch():
 
 
 def test_generic_binary_does_not_catch_non_will():
+    # "Lakers" is now a sports keyword — matched as sports regardless of "Will"
     c = parse_contract("t1", "Lakers win the championship?")
-    assert c.parseable is False
+    assert c.category == "sports"
+    assert c.parseable is True
 
 
 def test_generic_binary_does_not_catch_crypto_with_asset():

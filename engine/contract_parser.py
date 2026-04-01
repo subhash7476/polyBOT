@@ -110,6 +110,19 @@ _EVENT_RE = re.compile(
     re.IGNORECASE,
 )
 
+_SPORTS_RE = re.compile(
+    r'\b(?:nba|nfl|nhl|mlb|mls|ufc|pga|atp|wta|fifa|epl|la\s?liga|serie\s?a|bundesliga|ligue\s?1'
+    r'|super\s?bowl|world\s?series|stanley\s?cup|champions\s?league|world\s?cup|march\s?madness'
+    r'|playoffs?|championship|finals?|semifinals?'
+    r'|lakers|celtics|warriors|knicks|nets|bulls|heat|bucks|76ers|suns|mavericks|nuggets|cavaliers|clippers'
+    r'|chiefs|eagles|49ers|cowboys|bills|ravens|lions|packers|bears|dolphins|jets|steelers|bengals|rams'
+    r'|yankees|dodgers|braves|astros|phillies|mets|padres|orioles|rangers|red\s?sox|cubs|guardians'
+    r'|real\s?madrid|barcelona|manchester|liverpool|arsenal|chelsea|bayern|juventus|inter\s?milan|psg'
+    r')\b'
+    r'|\b(?:beat|defeat|advance|eliminate|sweep|upset)\b.*\b(?:game|match|series|round)\b',
+    re.IGNORECASE,
+)
+
 # Questions that look like crypto but aren't price threshold markets
 _SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
 
@@ -330,7 +343,14 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             contract.parseable = (contract.direction is not None and contract.target_price is not None)
             return contract
 
-    # 2b. Election/political markets
+    # 2b. Sports markets — detect before election/event catch-alls
+    if _SPORTS_RE.search(q):
+        contract.category = "sports"
+        contract.parseable = True
+        log.debug(f"sports market: {question[:60]}")
+        return contract
+
+    # 2c. Election/political markets
     if _ELECTION_RE.search(q) and any(w in q for w in ["win", "lose", "elected", "wins"]):
         contract.category = "election"
         contract.direction = "yes"
@@ -342,7 +362,7 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         log.debug(f"election market: {question[:60]}")
         return contract
 
-    # 2c. Deadline/event markets ("Will X happen by DATE?")
+    # 2d. Deadline/event markets ("Will X happen by DATE?")
     # Approval/launch keywords take priority even if an asset alias is present.
     # Exclude price-threshold questions (above/below/reach/exceed) without approval keywords,
     # so unknown-asset price markets remain unparseable.
@@ -358,7 +378,7 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
             log.debug(f"event/deadline market: {question[:60]}")
             return contract
 
-    # 2d. Short-dated crypto direction markets ("Will BTC go up in the next 5 minutes?")
+    # 2e. Short-dated crypto direction markets ("Will BTC go up in the next 5 minutes?")
     sd_match = _SHORT_DATED_RE.search(q)
     if sd_match:
         raw_asset, raw_direction, raw_count, raw_unit = sd_match.group(1), sd_match.group(2), sd_match.group(3), sd_match.group(4)
