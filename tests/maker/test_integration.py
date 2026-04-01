@@ -27,7 +27,7 @@ def test_full_pipeline_paper_mode():
                 category="sports",
                 best_bid=0.40,
                 best_ask=0.60,
-                volume_usd=500.0,
+                volume_usd=5_000.0,
             )
 
         actors, queues = build_maker_actors(app_state=app_state, paper=True)
@@ -41,7 +41,7 @@ def test_full_pipeline_paper_mode():
 
         # Test the components directly (rather than running async loops):
         fv = compute_fair_value(mid=0.50, skew=0.0, model_adj=0.0)
-        spread = compute_spread(volume_usd=500.0, abs_inventory=0.0, hours_to_expiry=100.0)
+        spread = compute_spread(volume_usd=5_000.0, abs_inventory=0.0, hours_to_expiry=100.0)
         quote = QuoteEngine.build_quote("tok1", fv, spread, 10.0, 10.0, "new_market")
 
         assert quote.bid_price < quote.ask_price

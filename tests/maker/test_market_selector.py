@@ -10,7 +10,7 @@ def _make_market(
     category: str = "sports",
     bid: float = 0.40,
     ask: float = 0.60,
-    volume: float = 500.0,
+    volume: float = 5_000.0,
 ) -> ContractState:
     return ContractState(
         yes_token_id=token_id,
@@ -23,20 +23,22 @@ def _make_market(
     )
 
 
-def test_filters_non_sports():
+def test_filters_non_sports_or_event():
     markets = {
         "crypto1": _make_market("crypto1", category="crypto"),
         "sports1": _make_market("sports1", category="sports"),
+        "event1":  _make_market("event1",  category="event"),
     }
     selected = MarketSelector.filter_and_rank(markets)
     assert "sports1" in selected
+    assert "event1" in selected
     assert "crypto1" not in selected
 
 
 def test_filters_low_volume():
     markets = {
         "thin": _make_market("thin", volume=50.0),
-        "ok": _make_market("ok", volume=200.0),
+        "ok":   _make_market("ok",   volume=2_000.0),
     }
     selected = MarketSelector.filter_and_rank(markets)
     assert "ok" in selected
@@ -46,7 +48,7 @@ def test_filters_low_volume():
 def test_filters_tight_spread():
     markets = {
         "tight": _make_market("tight", bid=0.49, ask=0.51),  # 2c spread
-        "wide": _make_market("wide", bid=0.40, ask=0.60),    # 20c spread
+        "wide":  _make_market("wide",  bid=0.40, ask=0.60),  # 20c spread
     }
     selected = MarketSelector.filter_and_rank(markets)
     assert "wide" in selected
@@ -55,8 +57,8 @@ def test_filters_tight_spread():
 
 def test_ranks_by_spread_times_volume():
     markets = {
-        "a": _make_market("a", bid=0.40, ask=0.50, volume=100.0),  # spread=0.10, score=10
-        "b": _make_market("b", bid=0.40, ask=0.60, volume=200.0),  # spread=0.20, score=40
+        "a": _make_market("a", bid=0.40, ask=0.50, volume=1_000.0),  # score=100
+        "b": _make_market("b", bid=0.40, ask=0.60, volume=2_000.0),  # score=400
     }
     selected = MarketSelector.filter_and_rank(markets)
     keys = list(selected.keys())
@@ -65,7 +67,7 @@ def test_ranks_by_spread_times_volume():
 
 def test_caps_at_max_active():
     markets = {
-        f"m{i}": _make_market(f"m{i}", volume=float(1000 - i))
+        f"m{i}": _make_market(f"m{i}", volume=float(10_000 - i))
         for i in range(30)
     }
     selected = MarketSelector.filter_and_rank(markets, max_markets=20)
