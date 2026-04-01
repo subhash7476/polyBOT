@@ -52,6 +52,14 @@ class MarketSelector:
 
     async def run(self):
         """Main loop — re-evaluate market selection every REFRESH_INTERVAL."""
+        # Wait for CLOBMonitor to seed initial markets before first selection
+        while True:
+            async with self._state._lock:
+                n = len(self._state.markets)
+            if n > 0:
+                break
+            await asyncio.sleep(2.0)
+
         while True:
             async with self._state._lock:
                 markets = dict(self._state.markets)
