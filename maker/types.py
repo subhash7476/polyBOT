@@ -64,5 +64,7 @@ class LadderUpdate:
 
     @property
     def center(self) -> "QuoteIntent":
-        """Middle level — used for stale detection."""
+        """Middle level — used for stale detection. Requires at least one level."""
+        if not self.levels:
+            raise ValueError("LadderUpdate.center called on empty levels")
         return self.levels[len(self.levels) // 2]

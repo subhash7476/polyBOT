@@ -66,3 +66,13 @@ def test_ladder_update_center():
     ]
     lu = LadderUpdate(token_id="tok1", levels=levels, reason="reprice")
     assert lu.center.bid_price == 0.45
+
+
+def test_ladder_update_is_frozen():
+    """LadderUpdate is a frozen dataclass — field reassignment must raise FrozenInstanceError."""
+    from dataclasses import FrozenInstanceError
+    import pytest
+    levels = [QuoteIntent("tok1", 0.44, 0.56, 10.0, 10.0, "reprice")]
+    lu = LadderUpdate(token_id="tok1", levels=levels, reason="reprice")
+    with pytest.raises(FrozenInstanceError):
+        lu.token_id = "other"
