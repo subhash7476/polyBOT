@@ -17,7 +17,7 @@ class MakerState:
     inventory: dict[str, float] = field(default_factory=dict)
 
     # Per-market live order IDs: token_id → {"bid_order_id": str, "ask_order_id": str, "bid_price": float, ...}
-    live_orders: dict[str, dict] = field(default_factory=dict)
+    live_orders: dict[str, list[dict]] = field(default_factory=dict)
 
     # Per-market last emitted quote (for stale detection)
     last_quotes: dict[str, QuoteIntent] = field(default_factory=dict)

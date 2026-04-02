@@ -57,3 +57,14 @@ def test_not_in_cooldown():
     s = MakerState()
     s.cooldowns["abc"] = 0.0  # in the past
     assert not s.in_cooldown("abc")
+
+
+def test_live_orders_is_list_per_market():
+    """live_orders[token_id] must be a list of per-level dicts."""
+    s = MakerState()
+    s.live_orders["tok1"] = [
+        {"bid_order_id": "b1", "ask_order_id": "a1", "bid_price": 0.44, "ask_price": 0.56, "bid_size": 10.0, "ask_size": 10.0},
+        {"bid_order_id": "b2", "ask_order_id": "a2", "bid_price": 0.45, "ask_price": 0.55, "bid_size": 10.0, "ask_size": 10.0},
+    ]
+    assert len(s.live_orders["tok1"]) == 2
+    assert s.live_orders["tok1"][0]["bid_price"] == 0.44
