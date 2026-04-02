@@ -1,8 +1,9 @@
 """QuoteEngine actor — computes fair value and bid/ask quotes."""
 
 import asyncio
+import time
 from maker.state import MakerState
-from maker.types import QuoteIntent, SkewUpdate
+from maker.types import QuoteIntent, SkewUpdate, LadderUpdate
 from market.state import AppState
 from utils.logger import get_logger
 
@@ -13,6 +14,8 @@ MIN_SPREAD = 0.04
 MAX_SPREAD = 0.15
 QUOTE_SIZE_USDC = 10.0
 MAX_SKEW_ADJ = 0.03
+LADDER_LEVELS = 3    # bid+ask pairs per market
+LEVEL_STEP = 0.01    # price offset between ladder levels
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
@@ -54,6 +57,7 @@ class QuoteEngine:
     """Computes quotes for active markets on a 1.5s cycle."""
 
     REPRICE_INTERVAL = 1.5
+    FORCE_REPRICE_INTERVAL = 30.0  # send quotes for all active markets every 30s
 
     def __init__(
         self,
@@ -69,6 +73,7 @@ class QuoteEngine:
         self._quote_intents_q = quote_intents_q
         self._skew_updates_q = skew_updates_q
         self._active_token_ids: set[str] = set()
+        self._last_force_reprice: float = 0.0
 
     @staticmethod
     def build_quote(
@@ -90,6 +95,43 @@ class QuoteEngine:
         )
 
     @staticmethod
+    def build_ladder(
+        token_id: str,
+        fair_value: float,
+        spread: float,
+        size: float,
+        reason: str,
+    ) -> LadderUpdate:
+        """Build a LADDER_LEVELS-deep ladder centred on fair_value.
+
+        Level layout (LADDER_LEVELS=3, center index=1):
+          index 0: bid = fv - half - LEVEL_STEP,  ask = fv + half + LEVEL_STEP
+          index 1: bid = fv - half,               ask = fv + half          ← center
+          index 2: bid = fv - half + LEVEL_STEP,  ask = fv + half - LEVEL_STEP
+
+        Tightest level (index 2) is closest to mid. Widest (index 0) is outermost.
+        All levels carry equal size.
+        """
+        half = spread / 2.0
+        center_idx = LADDER_LEVELS // 2
+        levels = []
+        for i in range(LADDER_LEVELS):
+            offset = (center_idx - i) * LEVEL_STEP
+            bid = round(_clamp(fair_value - half - offset, 0.01, 0.99), 4)
+            ask = round(_clamp(fair_value + half + offset, 0.01, 0.99), 4)
+            if bid >= ask:
+                continue  # skip degenerate level (very near 0 or 1)
+            levels.append(QuoteIntent(
+                token_id=token_id,
+                bid_price=bid,
+                ask_price=ask,
+                bid_size=size,
+                ask_size=size,
+                reason=reason,
+            ))
+        return LadderUpdate(token_id=token_id, levels=levels, reason=reason)
+
+    @staticmethod
     def is_stale(old: QuoteIntent, new: QuoteIntent, tick: float = 0.01) -> bool:
         """True if the new quote differs enough from the old to warrant a reprice."""
         return (
@@ -99,12 +141,17 @@ class QuoteEngine:
 
     async def run(self):
         while True:
+            now = time.monotonic()
+            force = (now - self._last_force_reprice) >= self.FORCE_REPRICE_INTERVAL
+
             # Drain market selector updates (non-blocking)
+            prev_ids = self._active_token_ids
             while not self._active_markets_q.empty():
                 try:
                     self._active_token_ids = self._active_markets_q.get_nowait()
                 except asyncio.QueueEmpty:
                     break
+            new_ids = self._active_token_ids - prev_ids
 
             # Drain skew updates (non-blocking)
             while not self._skew_updates_q.empty():
@@ -133,18 +180,25 @@ class QuoteEngine:
                     hours_to_expiry=999.0,  # TODO: compute from ContractState expiry
                 )
 
-                new_quote = self.build_quote(
+                ladder = self.build_ladder(
                     token_id=token_id,
                     fair_value=fv,
                     spread=spread,
-                    bid_size=QUOTE_SIZE_USDC,
-                    ask_size=QUOTE_SIZE_USDC,
+                    size=QUOTE_SIZE_USDC,
                     reason="reprice",
                 )
+                old_center = self._maker.last_quotes.get(token_id)
+                is_new = token_id in new_ids or old_center is None
+                if is_new or force or self.is_stale(old_center, ladder.center):
+                    self._maker.last_quotes[token_id] = ladder.center
+                    await self._quote_intents_q.put(ladder)
+                    log.debug(
+                        f"ladder [{token_id[:8]}] levels={len(ladder.levels)} "
+                        f"center={ladder.center.bid_price:.3f}/{ladder.center.ask_price:.3f} "
+                        f"force={force} new={is_new}"
+                    )
 
-                old_quote = self._maker.last_quotes.get(token_id)
-                if old_quote is None or self.is_stale(old_quote, new_quote):
-                    self._maker.last_quotes[token_id] = new_quote
-                    await self._quote_intents_q.put(new_quote)
+            if force:
+                self._last_force_reprice = now
 
             await asyncio.sleep(self.REPRICE_INTERVAL)
