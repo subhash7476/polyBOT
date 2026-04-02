@@ -48,3 +48,21 @@ class CancelAll:
     @property
     def is_global(self) -> bool:
         return self.token_id == "*"
+
+
+@dataclass(frozen=True)
+class LadderUpdate:
+    """Emitted by QuoteEngine → consumed by OrderManager.
+    Replaces all existing levels for token_id with this new set."""
+    token_id: str
+    levels: tuple  # tuple[QuoteIntent, ...] — frozen dataclass requires immutable field
+    reason: str
+
+    def __post_init__(self):
+        # Normalise to tuple so dataclass stays hashable
+        object.__setattr__(self, "levels", tuple(self.levels))
+
+    @property
+    def center(self) -> "QuoteIntent":
+        """Middle level — used for stale detection."""
+        return self.levels[len(self.levels) // 2]

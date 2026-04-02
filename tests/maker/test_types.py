@@ -1,4 +1,4 @@
-from maker.types import QuoteIntent, Fill, SkewUpdate, CancelAll
+from maker.types import QuoteIntent, Fill, SkewUpdate, CancelAll, LadderUpdate
 
 
 def test_quote_intent_fields():
@@ -42,3 +42,27 @@ def test_cancel_all_single():
 def test_cancel_all_global():
     c = CancelAll(token_id="*")
     assert c.is_global
+
+
+def test_ladder_update_levels():
+    levels = [
+        QuoteIntent("tok1", 0.44, 0.56, 10.0, 10.0, "reprice"),
+        QuoteIntent("tok1", 0.45, 0.55, 10.0, 10.0, "reprice"),
+        QuoteIntent("tok1", 0.46, 0.54, 10.0, 10.0, "reprice"),
+    ]
+    lu = LadderUpdate(token_id="tok1", levels=levels, reason="reprice")
+    assert lu.token_id == "tok1"
+    assert len(lu.levels) == 3
+    assert lu.levels[0].bid_price == 0.44
+    assert lu.reason == "reprice"
+
+
+def test_ladder_update_center():
+    """center property returns the middle level."""
+    levels = [
+        QuoteIntent("tok1", 0.44, 0.56, 10.0, 10.0, "reprice"),
+        QuoteIntent("tok1", 0.45, 0.55, 10.0, 10.0, "reprice"),
+        QuoteIntent("tok1", 0.46, 0.54, 10.0, 10.0, "reprice"),
+    ]
+    lu = LadderUpdate(token_id="tok1", levels=levels, reason="reprice")
+    assert lu.center.bid_price == 0.45
