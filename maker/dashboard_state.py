@@ -18,8 +18,10 @@ class MakerDashboardState:
         self.inventory: dict = {}
         # Cooldowns: list of token_id strings currently cooled down
         self.cooldowns: list = []
-        # Daily PnL
+        # Mark-to-market P&L (cash flows + open position value at current mid)
         self.daily_pnl: float = 0.0
+        # Raw cash-flow P&L (fills only, ignores open positions — can be misleading)
+        self.cash_pnl: float = 0.0
         # Total absolute inventory
         self.total_abs_inventory: float = 0.0
         # Fill history: deque of fill dicts
@@ -51,6 +53,7 @@ class MakerDashboardState:
                 "inventory": self.inventory,
                 "cooldowns": self.cooldowns,
                 "daily_pnl": self.daily_pnl,
+                "cash_pnl": self.cash_pnl,
                 "total_abs_inventory": self.total_abs_inventory,
                 "fills": list(self.fills),
                 "cb_fires": self.cb_fires,

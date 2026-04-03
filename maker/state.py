@@ -25,8 +25,14 @@ class MakerState:
     # Per-market cooldown: token_id → resume_at (unix timestamp)
     cooldowns: dict[str, float] = field(default_factory=dict)
 
-    # Daily realized P&L
-    daily_pnl: float = 0.0
+    # Cash-flow P&L: sum of (SELL price*size) - (BUY price*size) across all fills.
+    # WARNING: does NOT account for open position value. Use mtm_pnl() for real P&L.
+    cash_pnl: float = 0.0
+
+    # Alias kept for any code that still reads daily_pnl
+    @property
+    def daily_pnl(self) -> float:
+        return self.cash_pnl
 
     # Fill history for dashboard (capped at 100)
     fill_history: list = field(default_factory=list)
@@ -66,13 +72,13 @@ class MakerState:
         return time.time() < resume_at
 
     def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float) -> None:
-        """Record fill in history and update realized P&L (mark-to-cost basis)."""
-        # P&L contribution: SELL fills at price p realize p*size, BUY fills cost p*size
-        # Simple signed-PnL: +price*size for SELL, -price*size for BUY
+        """Record fill in history and update cash P&L."""
+        # cash_pnl tracks raw cash flows only — do NOT use this for decision-making.
+        # Use mtm_pnl(markets) for a number that accounts for open positions.
         if side == "SELL":
-            self.daily_pnl += price * size
+            self.cash_pnl += price * size
         else:
-            self.daily_pnl -= price * size
+            self.cash_pnl -= price * size
         entry = {
             "token_id": token_id[:16],
             "side": side,
@@ -84,5 +90,25 @@ class MakerState:
         if len(self.fill_history) > 100:
             self.fill_history.pop()
 
+    def mtm_pnl(self, markets: dict) -> float:
+        """
+        Mark-to-market P&L: cash_pnl + current value of all open positions.
+
+        cash_pnl alone is misleading — selling YES at 0.80 looks like +$8 profit
+        but you're short 10 units now worth $8 at current price, so net effect
+        on your real wealth is ~$0 until the position closes or resolves.
+
+        mtm_pnl = cash_flow_pnl + sum(net_position[t] * current_mid[t])
+
+        This is 0 on first fill and only moves when you capture spread or the
+        market moves in your favour after you've taken a position.
+        """
+        position_value = 0.0
+        for token_id, net_units in self.inventory.items():
+            cs = markets.get(token_id)
+            if cs is not None:
+                position_value += net_units * cs.mid
+        return self.cash_pnl + position_value
+
     def reset_daily(self) -> None:
-        self.daily_pnl = 0.0
+        self.cash_pnl = 0.0

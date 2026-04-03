@@ -24,7 +24,7 @@ async def maker_dashboard_loop(
             async with maker_state._lock:
                 inventory = dict(maker_state.inventory)
                 live_orders = dict(maker_state.live_orders)
-                daily_pnl = maker_state.daily_pnl
+                cash_pnl = maker_state.cash_pnl
                 fill_history = list(maker_state.fill_history[:20])  # last 20
                 cooldowns = [
                     tid for tid, exp in maker_state.cooldowns.items()
@@ -32,6 +32,13 @@ async def maker_dashboard_loop(
                 ]
 
             total_abs = sum(abs(v) for v in inventory.values())
+
+            # Mark-to-market P&L: cash flows + current value of open positions
+            position_value = sum(
+                net * (markets_snapshot[tid].mid if tid in markets_snapshot else 0.0)
+                for tid, net in inventory.items()
+            )
+            mtm_pnl = cash_pnl + position_value
 
             # Build active markets list — live_orders[token_id] is list[dict] (ladder levels)
             active_markets = []
@@ -71,7 +78,8 @@ async def maker_dashboard_loop(
                 "inventory": {k: round(v, 2) for k, v in inventory.items()},
                 "live_orders": live_orders,
                 "cooldowns": cooldowns,
-                "daily_pnl": round(daily_pnl, 4),
+                "daily_pnl": round(mtm_pnl, 4),        # MTM — the real number
+                "cash_pnl": round(cash_pnl, 4),         # cash flows only (misleading alone)
                 "total_abs_inventory": round(total_abs, 2),
                 "active_markets": active_markets,
                 "fills": fill_history,

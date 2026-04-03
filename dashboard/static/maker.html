@@ -244,8 +244,13 @@
   </div>
 
   <div class="stat">
-    <span class="stat-label">Daily P&amp;L</span>
-    <span class="stat-value" id="daily-pnl">—</span>
+    <span class="stat-label">MTM P&amp;L</span>
+    <span class="stat-value" id="daily-pnl" title="Mark-to-market: cash flows + open position value at current mid">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">Cash P&amp;L</span>
+    <span class="stat-value" id="cash-pnl" title="Raw cash flows only — misleading while positions are open">—</span>
   </div>
 
   <div class="stat">
@@ -400,6 +405,11 @@ function render(data) {
   const pnlEl = document.getElementById('daily-pnl');
   const pnl = data.daily_pnl || 0;
   pnlEl.textContent = fmtPnl(pnl);
+  pnlEl.className = 'stat-value ' + pnlClass(pnl);
+
+  const cashPnlEl = document.getElementById('cash-pnl');
+  const cashPnl = data.cash_pnl || 0;
+  cashPnlEl.textContent = fmtPnl(cashPnl);
   pnlEl.className = 'stat-value ' + pnlClass(pnl);
 
   document.getElementById('total-inv').textContent = (data.total_abs_inventory || 0).toFixed(2);
