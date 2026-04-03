@@ -10,6 +10,7 @@ from maker.quote_engine import QuoteEngine
 from maker.order_manager import OrderManager
 from maker.fill_poller import FillPoller
 from maker.inventory import InventoryManager
+from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -108,6 +109,16 @@ async def run_maker():
 
     if wallet_address:
         coros.append(BalancePoller(app_state, wallet_address).start())
+
+    # Redemption loop — recycles resolved positions every 15 min (no-op in paper mode)
+    coros.append(
+        redeemall_loop(
+            paper=paper,
+            wallet=wallet_address,
+            rpc_url=config.RPC_URL,
+            private_key=config.POLY_PRIVATE_KEY if not paper else "",
+        )
+    )
 
     # Maker actors
     for actor in actors.values():
