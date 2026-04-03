@@ -32,8 +32,9 @@ class InventoryManager:
 
     async def handle_fill(self, fill: Fill) -> None:
         """Process a fill: update inventory, compute skew, check limits."""
-        # 1. Update inventory
+        # 1. Update inventory and record fill
         self._maker.update_inventory(fill.token_id, fill.side, fill.size)
+        self._maker.record_fill(fill.token_id, fill.side, fill.price, fill.size, fill.filled_at)
 
         # 2. Emit skew update
         skew = self._maker.skew_factor(fill.token_id)

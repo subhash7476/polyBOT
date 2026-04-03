@@ -12,6 +12,8 @@ log = get_logger(__name__)
 _MIN_DAILY_VOLUME = 1_000.0
 _MAX_ACTIVE_MARKETS = 20
 _MIN_SPREAD = 0.04
+_MIN_BID = 0.05      # exclude near-zero / near-resolved markets (bid < 5¢)
+_MAX_BID = 0.95      # exclude near-certain markets (bid > 95¢)
 _TARGET_CATEGORIES = frozenset({"sports", "event"})
 
 
@@ -42,6 +44,8 @@ class MarketSelector:
             if spread < _MIN_SPREAD:
                 continue
             if cs.volume_usd < _MIN_DAILY_VOLUME:
+                continue
+            if cs.best_bid < _MIN_BID or cs.best_bid > _MAX_BID:
                 continue
             score = spread * cs.volume_usd
             candidates.append((token_id, cs, score))
@@ -76,6 +80,8 @@ class MarketSelector:
             if spread < _MIN_SPREAD:
                 continue
             if meta.get("volume", 0) < _MIN_DAILY_VOLUME:
+                continue
+            if meta["best_bid"] < _MIN_BID or meta["best_bid"] > _MAX_BID:
                 continue
             candidates.append((yes_id, meta, spread * meta.get("volume", 0)))
 

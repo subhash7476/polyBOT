@@ -25,6 +25,7 @@ async def maker_dashboard_loop(
                 inventory = dict(maker_state.inventory)
                 live_orders = dict(maker_state.live_orders)
                 daily_pnl = maker_state.daily_pnl
+                fill_history = list(maker_state.fill_history[:20])  # last 20
                 cooldowns = [
                     tid for tid, exp in maker_state.cooldowns.items()
                     if exp > time.time()
@@ -32,13 +33,15 @@ async def maker_dashboard_loop(
 
             total_abs = sum(abs(v) for v in inventory.values())
 
-            # Build active markets list
+            # Build active markets list — live_orders[token_id] is list[dict] (ladder levels)
             active_markets = []
-            for token_id, orders in live_orders.items():
+            for token_id, levels in live_orders.items():
                 cs = markets_snapshot.get(token_id)
                 question = cs.question[:60] if cs else token_id[:16]
-                bid_p = orders.get("bid_price", 0.0)
-                ask_p = orders.get("ask_price", 0.0)
+                # Use center level for display (index 1 for 3-level ladder)
+                center = levels[len(levels) // 2] if levels else {}
+                bid_p = center.get("bid_price", 0.0)
+                ask_p = center.get("ask_price", 0.0)
                 spread = round(ask_p - bid_p, 4)
                 inv = inventory.get(token_id, 0.0)
                 in_cd = token_id in cooldowns
@@ -48,6 +51,7 @@ async def maker_dashboard_loop(
                     "bid": bid_p,
                     "ask": ask_p,
                     "spread": spread,
+                    "n_levels": len(levels),
                     "inventory": round(inv, 2),
                     "cooldown": in_cd,
                 })
@@ -70,11 +74,13 @@ async def maker_dashboard_loop(
                 "daily_pnl": round(daily_pnl, 4),
                 "total_abs_inventory": round(total_abs, 2),
                 "active_markets": active_markets,
+                "fills": fill_history,
                 "n_active_markets": len(live_orders),
                 "clob_age": _age("clob"),
                 "micro_age": _age("microstructure"),
             })
-        except Exception:
-            pass
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(f"dashboard_loop error: {exc}")
 
         await asyncio.sleep(interval)

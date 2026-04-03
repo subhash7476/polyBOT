@@ -286,12 +286,13 @@
             <th>Bid</th>
             <th>Ask</th>
             <th>Spread</th>
+            <th>Levels</th>
             <th>Inventory</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody id="quotes-body">
-          <tr class="empty-row"><td colspan="6">No active quotes</td></tr>
+          <tr class="empty-row"><td colspan="7">No active quotes</td></tr>
         </tbody>
       </table>
     </div>
@@ -421,7 +422,7 @@ function render(data) {
   qCount.textContent = markets.length;
   const qBody = document.getElementById('quotes-body');
   if (markets.length === 0) {
-    qBody.innerHTML = '<tr class="empty-row"><td colspan="6">No active quotes</td></tr>';
+    qBody.innerHTML = '<tr class="empty-row"><td colspan="7">No active quotes</td></tr>';
   } else {
     qBody.innerHTML = markets.map(m => {
       const statusTag = m.cooldown
@@ -443,6 +444,7 @@ function render(data) {
         <td>${(m.bid || 0).toFixed(4)}</td>
         <td>${(m.ask || 0).toFixed(4)}</td>
         <td>${(m.spread || 0).toFixed(4)}</td>
+        <td>${m.n_levels || 1}</td>
         <td>${invBar}</td>
         <td>${statusTag}</td>
       </tr>`;
@@ -463,7 +465,7 @@ function render(data) {
         ? '<span class="tag tag-buy">BUY</span>'
         : '<span class="tag tag-sell">SELL</span>';
       return `<tr>
-        <td>${fmtTime(f.timestamp || f.ts)}</td>
+        <td>${fmtTime(f.filled_at || f.timestamp || f.ts)}</td>
         <td title="${f.question || ''}">${escHtml(f.question || f.token_id || '—').slice(0, 40)}</td>
         <td>${sideTag}</td>
         <td>${(f.price || 0).toFixed(4)}</td>

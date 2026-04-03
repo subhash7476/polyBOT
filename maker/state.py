@@ -28,6 +28,9 @@ class MakerState:
     # Daily realized P&L
     daily_pnl: float = 0.0
 
+    # Fill history for dashboard (capped at 100)
+    fill_history: list = field(default_factory=list)
+
     # Fill timestamps for rapid-fill detection: token_id → {side → timestamp}
     last_fill_times: dict[str, dict[str, float]] = field(default_factory=dict)
 
@@ -61,6 +64,25 @@ class MakerState:
         """True if market is in cooldown (circuit breaker fired recently)."""
         resume_at = self.cooldowns.get(token_id, 0.0)
         return time.time() < resume_at
+
+    def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float) -> None:
+        """Record fill in history and update realized P&L (mark-to-cost basis)."""
+        # P&L contribution: SELL fills at price p realize p*size, BUY fills cost p*size
+        # Simple signed-PnL: +price*size for SELL, -price*size for BUY
+        if side == "SELL":
+            self.daily_pnl += price * size
+        else:
+            self.daily_pnl -= price * size
+        entry = {
+            "token_id": token_id[:16],
+            "side": side,
+            "price": round(price, 4),
+            "size": round(size, 2),
+            "filled_at": round(filled_at, 1),
+        }
+        self.fill_history.insert(0, entry)   # newest first
+        if len(self.fill_history) > 100:
+            self.fill_history.pop()
 
     def reset_daily(self) -> None:
         self.daily_pnl = 0.0
