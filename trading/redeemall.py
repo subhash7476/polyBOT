@@ -152,6 +152,56 @@ async def redeem_tracked_positions(
     return redeemed_token_ids
 
 
+async def redeemall_loop(
+    paper: bool,
+    wallet: str,
+    rpc_url: str,
+    private_key: str,
+    tracked_positions_fn=None,
+    mark_redeemed_fn=None,
+    interval: int = 900,
+) -> None:
+    """
+    Periodic redemption loop — shared by taker and maker modes.
+
+    Args:
+        paper: if True, loop sleeps without doing anything.
+        wallet: on-chain wallet address.
+        rpc_url: Polygon RPC endpoint.
+        private_key: signing key.
+        tracked_positions_fn: async callable () -> dict[str, TrackedPosition].
+            If None, runs a full batch redeemall instead.
+        mark_redeemed_fn: async callable (token_id: str) -> None.
+            Called for each successfully redeemed position.
+        interval: seconds between checks (default 900 = 15 min).
+    """
+    await asyncio.sleep(60)   # initial delay — let the bot warm up first
+    while True:
+        try:
+            if paper:
+                await asyncio.sleep(interval)
+                continue
+
+            if tracked_positions_fn is not None:
+                pending = await tracked_positions_fn()
+                redeemed_ids = await redeem_tracked_positions(
+                    wallet=wallet,
+                    rpc_url=rpc_url,
+                    private_key=private_key,
+                    tracked_positions=pending,
+                )
+                if mark_redeemed_fn:
+                    for token_id in redeemed_ids:
+                        await mark_redeemed_fn(token_id)
+            else:
+                await run_redeemall(wallet, rpc_url, private_key)
+
+        except Exception as exc:
+            log.error(f"redeemall_loop error: {exc}")
+
+        await asyncio.sleep(interval)
+
+
 if __name__ == "__main__":
     from dotenv import load_dotenv
     load_dotenv()

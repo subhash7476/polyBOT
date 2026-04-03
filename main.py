@@ -39,7 +39,7 @@ from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
 from trading.positions import PositionLedger
 from trading.executor import CLOBExecutor
-from trading.redeemall import redeem_tracked_positions, run_redeemall
+from trading.redeemall import redeem_tracked_positions, run_redeemall, redeemall_loop as _redeemall_loop_impl
 from trading.resolution import resolution_loop
 from trading.balance import BalancePoller
 from calibration.tracker import CalibrationTracker
@@ -423,26 +423,20 @@ async def arb_scan_loop(
 
 
 async def redeemall_loop(executor, risk: RiskManager, interval: int = 900):
-    """Check for redeemable positions every 15 minutes."""
-    await asyncio.sleep(60)  # wait 60s before first check
-    while True:
-        try:
-            if PAPER:
-                await asyncio.sleep(interval)
-                continue
-            async with risk._lock:
-                pending_positions = dict(risk.pending_redemptions)
-            redeemed_ids = await redeem_tracked_positions(
-                wallet=executor.wallet_address,
-                rpc_url=config.RPC_URL,
-                private_key=config.POLY_PRIVATE_KEY,
-                tracked_positions=pending_positions,
-            )
-            for token_id in redeemed_ids:
-                await risk.mark_redeemed(token_id)
-        except Exception as exc:
-            log.error(f"redeemall_loop error: {exc}")
-        await asyncio.sleep(interval)
+    """Thin wrapper — delegates to trading.redeemall.redeemall_loop."""
+    async def _get_pending():
+        async with risk._lock:
+            return dict(risk.pending_redemptions)
+
+    await _redeemall_loop_impl(
+        paper=PAPER,
+        wallet=executor.wallet_address,
+        rpc_url=config.RPC_URL,
+        private_key=config.POLY_PRIVATE_KEY,
+        tracked_positions_fn=_get_pending,
+        mark_redeemed_fn=risk.mark_redeemed,
+        interval=interval,
+    )
 
 
 async def main():
