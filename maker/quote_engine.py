@@ -76,25 +76,6 @@ class QuoteEngine:
         self._last_force_reprice: float = 0.0
 
     @staticmethod
-    def build_quote(
-        token_id: str,
-        fair_value: float,
-        spread: float,
-        bid_size: float,
-        ask_size: float,
-        reason: str,
-    ) -> QuoteIntent:
-        half = spread / 2.0
-        return QuoteIntent(
-            token_id=token_id,
-            bid_price=round(fair_value - half, 4),
-            ask_price=round(fair_value + half, 4),
-            bid_size=bid_size,
-            ask_size=ask_size,
-            reason=reason,
-        )
-
-    @staticmethod
     def build_ladder(
         token_id: str,
         fair_value: float,
