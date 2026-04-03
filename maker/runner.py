@@ -31,6 +31,7 @@ def build_maker_actors(
     fills_q = asyncio.Queue()
     skew_updates_q = asyncio.Queue()
     cancel_q = asyncio.Queue()
+    price_update_q = asyncio.Queue(maxsize=200)  # CLOBMonitor → QuoteEngine price ticks
 
     queues = {
         "active_markets_q": active_markets_q,
@@ -38,12 +39,14 @@ def build_maker_actors(
         "fills_q": fills_q,
         "skew_updates_q": skew_updates_q,
         "cancel_q": cancel_q,
+        "price_update_q": price_update_q,
     }
 
     actors = {
         "selector": MarketSelector(app_state, active_markets_q),
         "quote_engine": QuoteEngine(
             app_state, maker_state, active_markets_q, quote_intents_q, skew_updates_q,
+            price_update_q=price_update_q,
         ),
         "order_manager": OrderManager(
             maker_state, clob=clob, paper=paper,
@@ -91,7 +94,7 @@ async def run_maker():
         clob = executor._clob
         wallet_address = executor.wallet_address
 
-    actors, _ = build_maker_actors(
+    actors, queues = build_maker_actors(
         app_state=app_state,
         paper=paper,
         clob=clob,
@@ -102,8 +105,8 @@ async def run_maker():
     maker_state_ref = actors["order_manager"]._maker
 
     coros = [
-        # Reused feeds
-        CLOBMonitor(app_state).start(),
+        # Reused feeds — CLOBMonitor gets price_update_q so QuoteEngine wakes on ticks
+        CLOBMonitor(app_state, price_update_q=queues["price_update_q"]).start(),
         MicrostructureFeed(app_state).start(),
     ]
 

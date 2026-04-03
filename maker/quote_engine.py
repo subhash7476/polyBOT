@@ -54,10 +54,9 @@ def compute_spread(
 
 
 class QuoteEngine:
-    """Computes quotes for active markets on a 1.5s cycle."""
+    """Computes quotes for active markets, event-driven on price ticks."""
 
-    REPRICE_INTERVAL = 1.5
-    FORCE_REPRICE_INTERVAL = 30.0  # send quotes for all active markets every 30s
+    FORCE_REPRICE_INTERVAL = 30.0  # fallback: reprice all markets if no tick arrives
 
     def __init__(
         self,
@@ -66,12 +65,14 @@ class QuoteEngine:
         active_markets_q: asyncio.Queue,
         quote_intents_q: asyncio.Queue,
         skew_updates_q: asyncio.Queue,
+        price_update_q: asyncio.Queue | None = None,
     ):
         self._app = app_state
         self._maker = maker_state
         self._active_markets_q = active_markets_q
         self._quote_intents_q = quote_intents_q
         self._skew_updates_q = skew_updates_q
+        self._price_update_q = price_update_q
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
 
@@ -120,12 +121,74 @@ class QuoteEngine:
             or abs(old.ask_price - new.ask_price) >= tick
         )
 
+    async def _reprice(self, tokens_to_check: set[str], force: bool, new_ids: set[str]) -> None:
+        """Compute and emit ladder updates for the given token set."""
+        async with self._app._lock:
+            markets = dict(self._app.markets)
+
+        for token_id in tokens_to_check:
+            cs = markets.get(token_id)
+            if not cs:
+                continue
+            if self._maker.in_cooldown(token_id):
+                continue
+
+            skew = self._maker.skew_factor(token_id)
+            abs_inv = abs(self._maker.get_inventory(token_id))
+
+            fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=0.0)
+            spread = compute_spread(
+                volume_usd=cs.volume_usd,
+                abs_inventory=abs_inv,
+                hours_to_expiry=999.0,
+            )
+
+            ladder = self.build_ladder(
+                token_id=token_id,
+                fair_value=fv,
+                spread=spread,
+                size=QUOTE_SIZE_USDC,
+                reason="reprice",
+            )
+            old_center = self._maker.last_quotes.get(token_id)
+            is_new = token_id in new_ids or old_center is None
+            if is_new or force or self.is_stale(old_center, ladder.center):
+                self._maker.last_quotes[token_id] = ladder.center
+                await self._quote_intents_q.put(ladder)
+                log.debug(
+                    f"ladder [{token_id[:8]}] levels={len(ladder.levels)} "
+                    f"center={ladder.center.bid_price:.3f}/{ladder.center.ask_price:.3f} "
+                    f"force={force} new={is_new}"
+                )
+
     async def run(self):
         while True:
-            now = time.monotonic()
-            force = (now - self._last_force_reprice) >= self.FORCE_REPRICE_INTERVAL
+            # --- Wait for a price tick or force-reprice timeout ---
+            triggered_ids: set[str] = set()
+            force = False
 
-            # Drain market selector updates (non-blocking)
+            if self._price_update_q is not None:
+                # Event-driven: block until a tick arrives or 30s elapses
+                time_since_force = time.monotonic() - self._last_force_reprice
+                timeout = max(0.1, self.FORCE_REPRICE_INTERVAL - time_since_force)
+                try:
+                    token_id = await asyncio.wait_for(
+                        self._price_update_q.get(), timeout=timeout
+                    )
+                    triggered_ids.add(token_id)
+                    # Drain any additional ticks that arrived while we were processing
+                    while not self._price_update_q.empty():
+                        try:
+                            triggered_ids.add(self._price_update_q.get_nowait())
+                        except asyncio.QueueEmpty:
+                            break
+                except asyncio.TimeoutError:
+                    force = True  # no tick arrived — force-reprice everything
+            else:
+                # Fallback polling mode (no price_update_q wired)
+                await asyncio.sleep(1.5)
+
+            # --- Drain market selector and skew updates (non-blocking) ---
             prev_ids = self._active_token_ids
             while not self._active_markets_q.empty():
                 try:
@@ -134,52 +197,26 @@ class QuoteEngine:
                     break
             new_ids = self._active_token_ids - prev_ids
 
-            # Drain skew updates (non-blocking)
             while not self._skew_updates_q.empty():
                 try:
                     self._skew_updates_q.get_nowait()
                 except asyncio.QueueEmpty:
                     break
 
-            async with self._app._lock:
-                markets = dict(self._app.markets)
+            # Check force-reprice regardless of path
+            now = time.monotonic()
+            if (now - self._last_force_reprice) >= self.FORCE_REPRICE_INTERVAL:
+                force = True
 
-            for token_id in self._active_token_ids:
-                cs = markets.get(token_id)
-                if not cs:
-                    continue
-                if self._maker.in_cooldown(token_id):
-                    continue
+            # Decide which markets to reprice
+            if force or new_ids:
+                tokens_to_check = self._active_token_ids
+            else:
+                # Only reprice the ticked markets that we're actively quoting
+                tokens_to_check = triggered_ids & self._active_token_ids
 
-                skew = self._maker.skew_factor(token_id)
-                abs_inv = abs(self._maker.get_inventory(token_id))
-
-                fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=0.0)
-                spread = compute_spread(
-                    volume_usd=cs.volume_usd,
-                    abs_inventory=abs_inv,
-                    hours_to_expiry=999.0,  # TODO: compute from ContractState expiry
-                )
-
-                ladder = self.build_ladder(
-                    token_id=token_id,
-                    fair_value=fv,
-                    spread=spread,
-                    size=QUOTE_SIZE_USDC,
-                    reason="reprice",
-                )
-                old_center = self._maker.last_quotes.get(token_id)
-                is_new = token_id in new_ids or old_center is None
-                if is_new or force or self.is_stale(old_center, ladder.center):
-                    self._maker.last_quotes[token_id] = ladder.center
-                    await self._quote_intents_q.put(ladder)
-                    log.debug(
-                        f"ladder [{token_id[:8]}] levels={len(ladder.levels)} "
-                        f"center={ladder.center.bid_price:.3f}/{ladder.center.ask_price:.3f} "
-                        f"force={force} new={is_new}"
-                    )
+            if tokens_to_check:
+                await self._reprice(tokens_to_check, force=force or bool(new_ids), new_ids=new_ids)
 
             if force:
                 self._last_force_reprice = now
-
-            await asyncio.sleep(self.REPRICE_INTERVAL)

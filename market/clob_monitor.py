@@ -436,9 +436,10 @@ def build_threshold_markets(markets: dict) -> list:
 class CLOBMonitor(BaseFeed):
     """Maintains live ContractState for all crypto/finance Polymarket markets."""
 
-    def __init__(self, state: AppState):
+    def __init__(self, state: AppState, price_update_q: asyncio.Queue | None = None):
         super().__init__("clob_monitor")
         self._state = state
+        self._price_update_q = price_update_q  # optional: signal maker QuoteEngine on tick
 
     _REDISCOVERY_INTERVAL = 15 * 60  # seconds between market re-discovery runs
 
@@ -557,6 +558,11 @@ class CLOBMonitor(BaseFeed):
             cs.ask_depth = sum(float(a.get("size", 0)) for a in asks[:5])
         if new_bid is not None or new_ask is not None:
             self._state.stamp_feed("clob")
+            if self._price_update_q is not None:
+                try:
+                    self._price_update_q.put_nowait(yes_token_id)
+                except asyncio.QueueFull:
+                    pass  # QuoteEngine is behind; drop the nudge, force-reprice will catch it
         # Record OBI and volume for all subscribed markets (feeds flatline + signals)
         record_obi_reading(yes_token_id, cs)
         record_volume(yes_token_id, cs)
@@ -580,3 +586,8 @@ class CLOBMonitor(BaseFeed):
         # Record price for all subscribed markets so flatline has history before trading
         if new_mid is not None:
             record_flatline_price(yes_token_id, new_mid)
+            if self._price_update_q is not None:
+                try:
+                    self._price_update_q.put_nowait(yes_token_id)
+                except asyncio.QueueFull:
+                    pass  # QuoteEngine is behind; drop the nudge, force-reprice will catch it
