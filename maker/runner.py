@@ -56,7 +56,8 @@ def build_maker_actors(
             app_state, maker_state, fills_q, clob=clob, paper=paper,
         ),
         "inventory": InventoryManager(
-            maker_state, fills_q, skew_updates_q, cancel_q, bankroll=bankroll,
+            maker_state, fills_q, skew_updates_q, cancel_q,
+            bankroll=bankroll, app_state=app_state,
         ),
     }
 

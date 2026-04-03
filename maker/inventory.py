@@ -4,6 +4,7 @@ import asyncio
 import time
 from maker.state import MakerState
 from maker.types import Fill, SkewUpdate, CancelAll
+from market.state import AppState
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -23,8 +24,10 @@ class InventoryManager:
         skew_updates_q: asyncio.Queue,
         cancel_q: asyncio.Queue,
         bankroll: float = 500.0,
+        app_state: AppState | None = None,
     ):
         self._maker = maker_state
+        self._app = app_state
         self._fills_q = fills_q
         self._skew_q = skew_updates_q
         self._cancel_q = cancel_q
@@ -59,11 +62,17 @@ class InventoryManager:
             await self._cancel_q.put(CancelAll("*"))
             log.warning(f"TOTAL INVENTORY CAP: ${total:.0f} — ALL quotes pulled")
 
-        # 6. Check daily loss
-        if self._maker.daily_pnl <= -self._max_daily_loss:
+        # 6. Check daily loss — use MTM P&L so net-long inventory doesn't false-trigger
+        if self._app is not None:
+            async with self._app._lock:
+                markets = dict(self._app.markets)
+            mtm = self._maker.mtm_pnl(markets)
+        else:
+            mtm = self._maker.cash_pnl  # fallback if app_state not wired
+        if mtm <= -self._max_daily_loss:
             await self._cancel_q.put(CancelAll("*"))
             log.warning(
-                f"DAILY LOSS LIMIT: ${self._maker.daily_pnl:.2f} — ALL quotes pulled"
+                f"DAILY LOSS LIMIT: MTM=${mtm:.2f} — ALL quotes pulled"
             )
 
         log.info(
