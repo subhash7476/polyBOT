@@ -6,7 +6,7 @@ import time
 from market.state import AppState, ContractState
 from maker.runner import build_maker_actors
 from maker.types import Fill
-from maker.quote_engine import compute_fair_value, compute_spread, QuoteEngine
+from maker.quote_engine import compute_fair_value, compute_spread, QuoteEngine, QUOTE_SIZE_USDC
 
 
 def test_full_pipeline_paper_mode():
@@ -42,18 +42,18 @@ def test_full_pipeline_paper_mode():
         # Test the components directly (rather than running async loops):
         fv = compute_fair_value(mid=0.50, skew=0.0, model_adj=0.0)
         spread = compute_spread(volume_usd=5_000.0, abs_inventory=0.0, hours_to_expiry=100.0)
-        quote = QuoteEngine.build_quote("tok1", fv, spread, 10.0, 10.0, "new_market")
+        ladder = QuoteEngine.build_ladder("tok1", fv, spread, QUOTE_SIZE_USDC, "new_market")
 
-        assert quote.bid_price < quote.ask_price
-        assert quote.spread >= 0.04
+        assert ladder.center.bid_price < ladder.center.ask_price
+        assert ladder.center.spread >= 0.04
 
         # 3. Simulate order placement via OrderManager
-        actors["order_manager"].handle_quote_intent_sync(quote)
+        actors["order_manager"].handle_ladder_sync(ladder)
         maker_state = actors["order_manager"]._maker
         assert "tok1" in maker_state.live_orders
 
         # 4. Simulate a fill via InventoryManager
-        fill = Fill("tok1", "BUY", quote.bid_price, 10.0, "paper-bid", time.time())
+        fill = Fill("tok1", "BUY", ladder.center.bid_price, 10.0, "paper-bid", time.time())
         await actors["inventory"].handle_fill(fill)
 
         assert maker_state.get_inventory("tok1") == 10.0
