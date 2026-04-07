@@ -95,6 +95,60 @@ def test_build_ladder_token_id_on_all_levels():
     assert all(qi.token_id == "tok1" for qi in lu.levels)
 
 
+def test_book_relative_quoting_tight_market():
+    """When market spread < our spread, eff_spread compresses to match the book.
+
+    For a 2c spread market (best_bid=0.49, best_ask=0.51):
+      - Our BASE_SPREAD=0.06 would post bid=0.47 (outside the book)
+      - Book-relative: eff_spread=0.02, eff_fv=0.50
+      - Center bid = 0.50 - 0.01 = 0.49 = best_bid  → fill condition >= works
+    """
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock
+    from maker.quote_engine import QuoteEngine, BASE_SPREAD
+    from maker.state import MakerState
+    from market.state import AppState, ContractState
+
+    async def _run():
+        app = AppState()
+        cs = ContractState(
+            yes_token_id="t1", no_token_id="n1",
+            question="test", category="event",
+            best_bid=0.49, best_ask=0.51,  # 2c spread < BASE_SPREAD (6c)
+            volume_usd=5000.0, condition_id="",
+        )
+        async with app._lock:
+            app.markets["t1"] = cs
+
+        maker = MakerState()
+        active_q = asyncio.Queue()
+        intent_q = asyncio.Queue()
+        skew_q = asyncio.Queue()
+        price_q = asyncio.Queue()
+
+        qe = QuoteEngine(app, maker, active_q, intent_q, skew_q, price_update_q=price_q)
+        qe._active_token_ids = {"t1"}
+
+        await qe._reprice({"t1"}, force=True, new_ids={"t1"})
+        assert not intent_q.empty(), "should have emitted a ladder"
+        ladder = intent_q.get_nowait()
+        # The CENTER level (tightest toward mid) must be inside the book so the
+        # fill poller's >= condition can fire.  Outer ladder levels may step
+        # outside — that's by design (they provide depth at wider prices).
+        center = ladder.center
+        assert center.bid_price >= 0.49, (
+            f"center bid {center.bid_price} is outside the book (best_bid=0.49)"
+        )
+        assert center.ask_price <= 0.51, (
+            f"center ask {center.ask_price} is outside the book (best_ask=0.51)"
+        )
+        # At least one level must be fill-eligible (bid >= best_bid)
+        eligible = [lv for lv in ladder.levels if lv.bid_price >= 0.49]
+        assert eligible, "no fill-eligible bid levels"
+
+    asyncio.run(_run())
+
+
 def test_is_stale_returns_false_when_same():
     old = QuoteIntent("abc", 0.45, 0.55, 10.0, 10.0, "reprice")
     new = QuoteIntent("abc", 0.45, 0.55, 10.0, 10.0, "reprice")

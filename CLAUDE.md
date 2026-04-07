@@ -94,6 +94,62 @@ FRED CSV endpoints block httpx (TLS fingerprint). `MacroFeed._fetch_fred_csv()` 
 
 All evaluated signals (pass or fail) written to `fills.jsonl` with model_prob, market_prob, edge, EV, signal summary. Outcomes recorded at resolution. `calibration/metrics.py` computes Brier score + calibration curve from this log.
 
+## Maker Bot
+
+Run via `python main.py` with `MODE=maker` (or directly via `maker/runner.py`). Dashboard at `http://127.0.0.1:5050/maker`.
+
+### Actor Pipeline
+
+```
+MarketSelector  → active_markets_q  → QuoteEngine
+QuoteEngine     → quote_intents_q   → OrderManager   (places/cancels ladder levels)
+                → price_update_q    ← CLOBMonitor    (event-driven reprice on price ticks)
+FillPoller      → fills_q           → InventoryManager
+InventoryManager→ skew_updates_q    → QuoteEngine    (inventory skew adjusts fair value)
+                → cancel_q          → OrderManager   (circuit breaker fires)
+                → markout_q         → MarkoutTracker (post-fill price tracking)
+```
+
+### Live-Validation Metric Layer (`maker/markout_tracker.py`)
+
+`MarkoutTracker` is the pre-live-go validation tool. For every fill it schedules market mid samples at **T+5s, T+30s, T+60s** and computes:
+
+```
+markout = sign * (mid_later - mid_at_fill)
+  where sign = +1 for BUY, -1 for SELL
+```
+
+Positive = price moved our way. Negative = adverse selection.
+
+Results are appended to **`fills_markout.jsonl`** and aggregated into rolling stats (last 500 fills):
+- `avg_markout_5s / 30s / 60s` — average post-fill price movement
+- `adverse_rate_5s / 30s / 60s` — fraction of fills with negative markout
+- `markout_fills` — total fills evaluated
+
+These stats appear in the maker dashboard alongside:
+- `quote_uptime` — fraction of 2s ticks with at least one quote resting
+- `total_fills` / `total_cancels` — cancel-to-fill ratio (`total_cancels / total_fills`)
+
+### Paper Mode Limitations
+
+Paper fills use a Poisson model: `rate = volume_usd / (86400 × size × COMPETITION_FACTOR=10)`. This simulates fill probability from reported market volume but **cannot measure queue position, true fill rate, or adverse selection**. Paper mode validates plumbing; tiny live quoting validates strategy.
+
+### Pre-Live Validation Gate (do not go live until all pass)
+
+1. Paper mode mechanics work: quotes inside spread, inventory caps fire, circuit breakers stop exposure.
+2. Tiny live quoting on 3-5 markets, minimum practical size.
+3. Collect several hundred live fills.
+4. `avg_markout_30s >= 0` (adverse selection manageable).
+5. `adverse_rate_30s` stable and acceptable.
+6. Net realized P&L after fees > 0 over multiple sessions.
+7. Inventory cap hits near zero; no uncontrolled inventory drift.
+
+### Fill Size Units
+
+Polymarket prices are in [0,1]; positions are in **shares** (each share pays $1 at resolution). `Fill.size` is shares, not USDC notional. `price × size = USDC cost`. Inventory tracking, cash P&L, and MTM P&L all operate in share units — this is consistent.
+
+Note: the paper Poisson fill model divides `volume_usd` (USD) by `size` (shares), creating a minor dimensional mismatch that inflates fill rates at low prices. Acceptable for plumbing validation; not trustworthy for strategy validation.
+
 ## Operational Infrastructure
 
 ### Log Files

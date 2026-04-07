@@ -27,6 +27,7 @@ class Fill:
     size: float
     order_id: str
     filled_at: float  # unix timestamp
+    mid_at_fill: float = 0.0  # market mid when fill detected — used for markout calc
 
     @property
     def notional(self) -> float:

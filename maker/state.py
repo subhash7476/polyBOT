@@ -25,9 +25,23 @@ class MakerState:
     # Per-market cooldown: token_id → resume_at (unix timestamp)
     cooldowns: dict[str, float] = field(default_factory=dict)
 
+    # Global cooldown: set when total inventory cap fires; blocks ALL quoting
+    global_cooldown_until: float = 0.0
+
     # Cash-flow P&L: sum of (SELL price*size) - (BUY price*size) across all fills.
     # WARNING: does NOT account for open position value. Use mtm_pnl() for real P&L.
     cash_pnl: float = 0.0
+
+    # Realized P&L: booked profit from completed round trips (FIFO lot matching).
+    # Only moves when a fill closes an existing opposite-side position.
+    realized_pnl: float = 0.0
+
+    # FIFO lot queue per token: list of [side, price, remaining_size]
+    _open_lots: dict = field(default_factory=dict)
+
+    # Fill and cancel counters for cancel-to-fill ratio
+    total_fills: int = 0
+    total_cancels: int = 0
 
     # Alias kept for any code that still reads daily_pnl
     @property
@@ -71,20 +85,50 @@ class MakerState:
         resume_at = self.cooldowns.get(token_id, 0.0)
         return time.time() < resume_at
 
-    def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float) -> None:
-        """Record fill in history and update cash P&L."""
+    def global_in_cooldown(self) -> bool:
+        """True if total inventory cap cooldown is active — no quoting on any market."""
+        return time.time() < self.global_cooldown_until
+
+    def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float,
+                    question: str = "", end_date_iso: str = "") -> None:
+        """Record fill in history, update cash P&L, and compute realized P&L via FIFO lot matching."""
         # cash_pnl tracks raw cash flows only — do NOT use this for decision-making.
         # Use mtm_pnl(markets) for a number that accounts for open positions.
         if side == "SELL":
             self.cash_pnl += price * size
         else:
             self.cash_pnl -= price * size
+        self.total_fills += 1
+
+        # FIFO lot matching — book realized P&L when this fill closes existing opposite lots.
+        # Formula: realized = (sell_price - buy_price) * matched_size
+        # Works for both long round-trips (BUY→SELL) and short round-trips (SELL→BUY).
+        lots = self._open_lots.setdefault(token_id, [])
+        opposite = "SELL" if side == "BUY" else "BUY"
+        remaining = size
+        new_lots = []
+        for lot_side, lot_price, lot_size in lots:
+            if lot_side == opposite and remaining > 0:
+                matched = min(lot_size, remaining)
+                sell_p = price if side == "SELL" else lot_price
+                buy_p  = price if side == "BUY"  else lot_price
+                self.realized_pnl += (sell_p - buy_p) * matched
+                remaining -= matched
+                if lot_size > matched:
+                    new_lots.append((lot_side, lot_price, lot_size - matched))
+            else:
+                new_lots.append((lot_side, lot_price, lot_size))
+        if remaining > 0:
+            new_lots.append((side, price, remaining))
+        self._open_lots[token_id] = new_lots
         entry = {
             "token_id": token_id[:16],
             "side": side,
             "price": round(price, 4),
             "size": round(size, 2),
             "filled_at": round(filled_at, 1),
+            "question": question,
+            "end_date_iso": end_date_iso,
         }
         self.fill_history.insert(0, entry)   # newest first
         if len(self.fill_history) > 100:
@@ -112,3 +156,5 @@ class MakerState:
 
     def reset_daily(self) -> None:
         self.cash_pnl = 0.0
+        self.realized_pnl = 0.0
+        self._open_lots.clear()

@@ -18,10 +18,12 @@ class MakerDashboardState:
         self.inventory: dict = {}
         # Cooldowns: list of token_id strings currently cooled down
         self.cooldowns: list = []
-        # Mark-to-market P&L (cash flows + open position value at current mid)
+        # Portfolio P&L: cash flows + open positions at current mid (full picture)
         self.daily_pnl: float = 0.0
-        # Raw cash-flow P&L (fills only, ignores open positions — can be misleading)
+        # Net cash flows: total sell proceeds minus total buy costs (not booked profit)
         self.cash_pnl: float = 0.0
+        # Realized P&L: booked profit from completed round trips only (FIFO)
+        self.realized_pnl: float = 0.0
         # Total absolute inventory
         self.total_abs_inventory: float = 0.0
         # Fill history: deque of fill dicts
@@ -34,6 +36,16 @@ class MakerDashboardState:
         # Feed ages
         self.clob_age: str = "?"
         self.micro_age: str = "?"
+        # Live-validation metrics
+        self.quote_uptime: float = 0.0       # fraction of time quotes are resting
+        self.total_fills: int = 0
+        self.total_cancels: int = 0
+        # Markout stats (keyed avg_markout_5s, avg_markout_30s, avg_markout_60s,
+        #                    adverse_rate_5s, adverse_rate_30s, adverse_rate_60s,
+        #                    markout_fills)
+        self.markout_stats: dict = {}
+        # Falcon intelligence snapshot
+        self.falcon_data: dict = {}
 
     def update(self, snapshot: dict) -> None:
         with self._lock:
@@ -54,6 +66,7 @@ class MakerDashboardState:
                 "cooldowns": self.cooldowns,
                 "daily_pnl": self.daily_pnl,
                 "cash_pnl": self.cash_pnl,
+                "realized_pnl": self.realized_pnl,
                 "total_abs_inventory": self.total_abs_inventory,
                 "fills": list(self.fills),
                 "cb_fires": self.cb_fires,
@@ -61,4 +74,9 @@ class MakerDashboardState:
                 "last_refresh": self.last_refresh,
                 "clob_age": self.clob_age,
                 "micro_age": self.micro_age,
+                "quote_uptime": self.quote_uptime,
+                "total_fills": self.total_fills,
+                "total_cancels": self.total_cancels,
+                "markout_stats": self.markout_stats,
+                "falcon_data": self.falcon_data,
             })

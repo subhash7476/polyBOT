@@ -229,6 +229,89 @@
     /* scrollable table bodies */
     .scroll-body { max-height: 280px; overflow-y: auto; display: block; }
     .scroll-body thead, .scroll-body tbody { display: table; width: 100%; table-layout: fixed; }
+
+    /* ── Falcon Intelligence panel ── */
+    .falcon-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+    @media (max-width: 800px) {
+      .falcon-grid { grid-template-columns: 1fr; }
+    }
+
+    .falcon-section {
+      padding: 0;
+      border-right: 1px solid #21262d;
+    }
+    .falcon-section:last-child { border-right: none; }
+
+    .falcon-section-header {
+      padding: 8px 14px;
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .falcon-meta {
+      margin-left: auto;
+      font-size: 10px;
+      color: #8b949e;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* Trust score pill */
+    .trust-elite { color: #f85149; font-weight: 700; }
+    .trust-good  { color: #3fb950; font-weight: 600; }
+    .trust-avg   { color: #8b949e; }
+
+    /* Gap indicators */
+    .gap-active-neg { color: #f85149; font-weight: 700; }  /* Poly > Kalshi — bearish adj */
+    .gap-active-pos { color: #3fb950; font-weight: 700; }  /* Poly < Kalshi — bullish adj */
+    .gap-inactive   { color: #8b949e; }
+
+    /* Spread multiplier badge in panel header */
+    .spread-badge {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .spread-normal  { background: #21262d;   color: #8b949e; }
+    .spread-widened { background: #f8514922; color: #f85149; border: 1px solid #f8514955; }
+
+    .adj-pill {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .adj-neg { background: #f8514922; color: #f85149; }
+    .adj-pos { background: #3fb95022; color: #3fb950; }
+    .adj-zero { color: #8b949e; }
+
+    /* Stale data indicator */
+    .stale-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .stale-dot.fresh { background: #3fb950; }
+    .stale-dot.stale { background: #f85149; }
   </style>
 </head>
 <body>
@@ -244,13 +327,18 @@
   </div>
 
   <div class="stat">
-    <span class="stat-label">MTM P&amp;L</span>
-    <span class="stat-value" id="daily-pnl" title="Mark-to-market: cash flows + open position value at current mid">—</span>
+    <span class="stat-label">Portfolio P&amp;L</span>
+    <span class="stat-value" id="daily-pnl" title="Cash flows + open positions marked at current mid price">—</span>
   </div>
 
   <div class="stat">
-    <span class="stat-label">Cash P&amp;L</span>
-    <span class="stat-value" id="cash-pnl" title="Raw cash flows only — misleading while positions are open">—</span>
+    <span class="stat-label">Net Cash Flows</span>
+    <span class="stat-value" id="cash-pnl" title="Total sell proceeds minus total buy costs — not booked profit while positions remain open">—</span>
+  </div>
+
+  <div class="stat">
+    <span class="stat-label">Realized P&amp;L</span>
+    <span class="stat-value" id="realized-pnl" title="Booked profit from completed round trips only (FIFO matched). This is locked in.">—</span>
   </div>
 
   <div class="stat">
@@ -315,13 +403,14 @@
           <tr>
             <th>Time</th>
             <th>Market</th>
+            <th>Resolves</th>
             <th>Side</th>
             <th>Price</th>
             <th>Size</th>
           </tr>
         </thead>
         <tbody id="fills-body">
-          <tr class="empty-row"><td colspan="5">No fills yet</td></tr>
+          <tr class="empty-row"><td colspan="6">No fills yet</td></tr>
         </tbody>
       </table>
     </div>
@@ -340,6 +429,70 @@
         <div class="feed-age feed-unknown" id="micro-age">?</div>
       </div>
     </div>
+  </div>
+
+  <!-- ── Falcon Intelligence ── -->
+  <div class="panel panel-full" id="falcon-panel">
+    <div class="panel-header">
+      Falcon Intelligence
+      <span id="falcon-spread-badge" class="spread-badge spread-normal">1.0× spread</span>
+    </div>
+    <div class="falcon-grid">
+
+      <!-- Whale Trackers -->
+      <div class="falcon-section">
+        <div class="falcon-section-header">
+          Whale Trackers
+          <span class="count" id="falcon-whale-count">0</span>
+          <span class="falcon-meta" id="falcon-whale-age"></span>
+        </div>
+        <div class="scroll-body">
+          <table id="falcon-whale-table">
+            <thead>
+              <tr>
+                <th>Rank / Wallet</th>
+                <th>PnL (USD)</th>
+                <th>Win Rate</th>
+                <th>H-Score</th>
+                <th>Trust</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody id="falcon-whale-body">
+              <tr class="empty-row"><td colspan="6">Awaiting FALCON_API_KEY — leaderboard not loaded</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Market Intelligence -->
+      <div class="falcon-section">
+        <div class="falcon-section-header">
+          Market Intelligence
+          <span class="count" id="falcon-markets-count">0</span>
+          <span id="falcon-markets-badges" style="display:flex;gap:6px;margin-left:4px;"></span>
+          <span class="falcon-meta" id="falcon-insights-age"></span>
+        </div>
+        <div class="scroll-body">
+          <table id="falcon-markets-table">
+            <thead>
+              <tr>
+                <th>Market</th>
+                <th>Vol 24h</th>
+                <th>Trend</th>
+                <th>Top-1 %</th>
+                <th>Traders</th>
+                <th>Spread</th>
+              </tr>
+            </thead>
+            <tbody id="falcon-markets-body">
+              <tr class="empty-row"><td colspan="6">No market insights — awaiting FALCON_API_KEY</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /.falcon-grid -->
   </div>
 
 </div><!-- /#main -->
@@ -396,6 +549,34 @@ function fmtTime(ts) {
   return d.toTimeString().slice(0, 8);
 }
 
+function fmtResolves(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d)) return '—';
+  const now = new Date();
+  const diffMs = d - now;
+  const diffH = diffMs / 3600000;
+  if (diffH < 0) return 'Resolved';
+  if (diffH < 1) return `${Math.round(diffH * 60)}m`;
+  if (diffH < 24) return `${Math.round(diffH)}h`;
+  const diffD = Math.round(diffH / 24);
+  if (diffD === 1) return '1 day';
+  if (diffD < 30) return `${diffD} days`;
+  // Show date for distant markets
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function resolveUrgencyClass(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const diffH = (d - new Date()) / 3600000;
+  if (diffH < 0) return 'neutral';
+  if (diffH < 6) return 'negative';   // resolves very soon — high inventory risk
+  if (diffH < 48) return 'feed-warning'; // resolves within 2 days
+  return 'neutral';
+}
+
 // ── render ───────────────────────────────────────────────────────────────────
 
 function render(data) {
@@ -410,7 +591,12 @@ function render(data) {
   const cashPnlEl = document.getElementById('cash-pnl');
   const cashPnl = data.cash_pnl || 0;
   cashPnlEl.textContent = fmtPnl(cashPnl);
-  pnlEl.className = 'stat-value ' + pnlClass(pnl);
+  cashPnlEl.className = 'stat-value ' + pnlClass(cashPnl);
+
+  const realizedEl = document.getElementById('realized-pnl');
+  const realizedPnl = data.realized_pnl || 0;
+  realizedEl.textContent = fmtPnl(realizedPnl);
+  realizedEl.className = 'stat-value ' + pnlClass(realizedPnl);
 
   document.getElementById('total-inv').textContent = (data.total_abs_inventory || 0).toFixed(2);
   document.getElementById('n-markets').textContent = data.n_active_markets || 0;
@@ -467,22 +653,28 @@ function render(data) {
   fCount.textContent = fills.length;
   const fBody = document.getElementById('fills-body');
   if (fills.length === 0) {
-    fBody.innerHTML = '<tr class="empty-row"><td colspan="5">No fills yet</td></tr>';
+    fBody.innerHTML = '<tr class="empty-row"><td colspan="6">No fills yet</td></tr>';
   } else {
     fBody.innerHTML = fills.map(f => {
       const side = (f.side || '').toUpperCase();
       const sideTag = side === 'BUY'
         ? '<span class="tag tag-buy">BUY</span>'
         : '<span class="tag tag-sell">SELL</span>';
+      const resolves = fmtResolves(f.end_date_iso);
+      const resolvesClass = resolveUrgencyClass(f.end_date_iso);
       return `<tr>
         <td>${fmtTime(f.filled_at || f.timestamp || f.ts)}</td>
-        <td title="${f.question || ''}">${escHtml(f.question || f.token_id || '—').slice(0, 40)}</td>
+        <td title="${escHtml(f.question || '')}">${escHtml(f.question || f.token_id || '—').slice(0, 55)}</td>
+        <td class="${resolvesClass}">${resolves}</td>
         <td>${sideTag}</td>
         <td>${(f.price || 0).toFixed(4)}</td>
         <td>${(f.size || 0).toFixed(2)}</td>
       </tr>`;
     }).join('');
   }
+
+  // Falcon Intelligence
+  renderFalcon(data.falcon_data || {});
 
   // Feed status
   const clobAge = data.clob_age || '?';
@@ -495,6 +687,87 @@ function render(data) {
   const microEl = document.getElementById('micro-age');
   microEl.textContent = microAge;
   microEl.className = 'feed-age ' + feedClass(microAge);
+}
+
+// ── Falcon Intelligence ──────────────────────────────────────────────────────
+
+function renderFalcon(f) {
+  // Global spread badge
+  const multiplier = f.spread_multiplier || 1.0;
+  const badge = document.getElementById('falcon-spread-badge');
+  if (multiplier > 1.0) {
+    badge.textContent = `${multiplier.toFixed(2)}× spread`;
+    badge.className = 'spread-badge spread-widened';
+    badge.title = `Whale activity detected — spread widened ${((multiplier - 1) * 100).toFixed(0)}% to reduce adverse selection`;
+  } else {
+    badge.textContent = '1.0× spread';
+    badge.className = 'spread-badge spread-normal';
+    badge.title = 'No whale activity in active markets — standard spread';
+  }
+
+  // ── Elite whale trackers ──────────────────────────────────────────────
+  const wallets = f.wallets || [];
+  document.getElementById('falcon-whale-count').textContent = wallets.length;
+  document.getElementById('falcon-whale-age').textContent = wallets.length ? `last: ${f.wallet_feed_age || '?'}` : '';
+  const whaleBody = document.getElementById('falcon-whale-body');
+  if (wallets.length === 0) {
+    whaleBody.innerHTML = '<tr class="empty-row"><td colspan="6">Awaiting FALCON_API_KEY — leaderboard not loaded</td></tr>';
+  } else {
+    whaleBody.innerHTML = wallets.map(w => {
+      const trustClass = w.elite ? 'trust-elite' : (w.trust_score >= 1.0 ? 'trust-good' : 'trust-avg');
+      const eliteMark = w.elite ? ' ▲' : '';
+      const sybilMark = w.sybil ? ' ⚠' : '';
+      const staleDot = `<span class="stale-dot ${w.fresh ? 'fresh' : 'stale'}"></span>`;
+      const pnlSign = (w.pnl || 0) >= 0 ? '+' : '';
+      const trendColor = w.trend === 'improving' ? 'positive' : w.trend === 'declining' ? 'negative' : 'neutral';
+      const rankStr = w.rank ? `#${w.rank}` : '—';
+      return `<tr>
+        <td title="${escHtml(w.address)}">${staleDot}${rankStr} ${escHtml(w.address)}</td>
+        <td class="${(w.pnl||0) >= 0 ? 'positive' : 'negative'}">${pnlSign}$${Number(w.pnl||0).toLocaleString()}</td>
+        <td>${(w.win_rate||0).toFixed(1)}%</td>
+        <td>${(w.h_score||0).toFixed(1)}</td>
+        <td class="${trustClass}">${(w.trust_score||0).toFixed(3)}${eliteMark}${sybilMark}</td>
+        <td class="${trendColor}">${w.trend || '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Market Intelligence ───────────────────────────────────────────────
+  const markets = f.markets || [];
+  const nWhale = f.n_whale_markets || 0;
+  const nSpiking = f.n_spiking || 0;
+  document.getElementById('falcon-markets-count').textContent = markets.length;
+
+  const badgesEl = document.getElementById('falcon-markets-badges');
+  let badgesHtml = '';
+  if (nWhale > 0)   badgesHtml += `<span class="spread-badge spread-widened" title="Markets with whale control flag">${nWhale} 🐋</span>`;
+  if (nSpiking > 0) badgesHtml += `<span class="spread-badge" style="background:#3fb95022;color:#3fb950;border:1px solid #3fb95055" title="Volume spiking markets">${nSpiking} ⚡</span>`;
+  badgesEl.innerHTML = badgesHtml;
+
+  document.getElementById('falcon-insights-age').textContent = markets.length ? `last: ${f.insights_feed_age || '?'}` : '';
+  const mBody = document.getElementById('falcon-markets-body');
+  if (markets.length === 0) {
+    mBody.innerHTML = '<tr class="empty-row"><td colspan="6">Awaiting FALCON_API_KEY — market insights not loaded</td></tr>';
+  } else {
+    mBody.innerHTML = markets.map(m => {
+      const trendClass = m.volume_trend === 'Spiking' ? 'positive'
+                       : m.volume_trend === 'Dying Interest' ? 'negative'
+                       : m.volume_trend === 'Declining' ? 'feed-warning'
+                       : 'neutral';
+      const whalePctClass = m.whale_flag ? 'trust-elite' : (m.top1_pct > 40 ? 'trust-good' : 'neutral');
+      const spreadClass = m.spread_mult > 1.0 ? 'spread-widened' : 'spread-normal';
+      const activeMark = m.in_active ? ' <span class="tag tag-quoted" style="font-size:9px">QUOTING</span>' : '';
+      const whaleMark = m.whale_flag ? ' 🐋' : '';
+      return `<tr>
+        <td title="${escHtml(m.question)}">${escHtml((m.question||m.condition_id).slice(0,45))}${whaleMark}${activeMark}</td>
+        <td>$${Number(m.volume_24h||0).toLocaleString()}</td>
+        <td class="${trendClass}">${m.volume_trend || '—'}</td>
+        <td class="${whalePctClass}">${(m.top1_pct||0).toFixed(1)}%</td>
+        <td>${m.unique_traders || 0}</td>
+        <td><span class="spread-badge ${spreadClass}">${(m.spread_mult||1).toFixed(2)}×</span></td>
+      </tr>`;
+    }).join('');
+  }
 }
 
 function escHtml(str) {

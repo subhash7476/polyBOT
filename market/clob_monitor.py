@@ -436,10 +436,16 @@ def build_threshold_markets(markets: dict) -> list:
 class CLOBMonitor(BaseFeed):
     """Maintains live ContractState for all crypto/finance Polymarket markets."""
 
-    def __init__(self, state: AppState, price_update_q: asyncio.Queue | None = None):
+    def __init__(
+        self,
+        state: AppState,
+        price_update_q: asyncio.Queue | None = None,
+        trades_q: asyncio.Queue | None = None,
+    ):
         super().__init__("clob_monitor")
         self._state = state
         self._price_update_q = price_update_q  # optional: signal maker QuoteEngine on tick
+        self._trades_q = trades_q              # optional: emit (token_id, price, size) on each trade
 
     _REDISCOVERY_INTERVAL = 15 * 60  # seconds between market re-discovery runs
 
@@ -464,6 +470,7 @@ class CLOBMonitor(BaseFeed):
             for yes_id, meta in token_map.items():
                 if yes_id in existing_ids:
                     continue  # preserve existing ContractState (live WS prices)
+                _expiry = meta.get("expiry")
                 cs = ContractState(
                     yes_token_id=yes_id,
                     no_token_id=meta["no_token_id"],
@@ -472,9 +479,11 @@ class CLOBMonitor(BaseFeed):
                     best_bid=meta["best_bid"],
                     best_ask=meta["best_ask"],
                     volume_usd=meta["volume"],
+                    volume_24h=meta.get("volume_24h", 0.0),
                     condition_id=meta.get("condition_id", ""),
                     neg_risk=meta.get("neg_risk", False),
                     fees_enabled=meta.get("fees_enabled", True),
+                    end_date_iso=_expiry.isoformat() if _expiry else "",
                 )
                 if meets_liquidity_threshold(cs, MIN_MARKET_LIQUIDITY):
                     await self._state.upsert_market(cs)
@@ -531,6 +540,8 @@ class CLOBMonitor(BaseFeed):
             await self._handle_book(msg)
         elif event_type == "price_change":
             await self._handle_price(msg)
+        elif event_type == "last_trade_price":
+            self._handle_trade(msg)
 
     async def _handle_book(self, msg: dict):
         yes_token_id = msg.get("asset_id", "")
@@ -591,3 +602,18 @@ class CLOBMonitor(BaseFeed):
                     self._price_update_q.put_nowait(yes_token_id)
                 except asyncio.QueueFull:
                     pass  # QuoteEngine is behind; drop the nudge, force-reprice will catch it
+
+    def _handle_trade(self, msg: dict) -> None:
+        """Route last_trade_price events to trades_q for shadow fill simulation."""
+        if self._trades_q is None:
+            return
+        token_id = msg.get("asset_id", "")
+        price_raw = msg.get("price", None)
+        if not token_id or price_raw is None:
+            return
+        try:
+            price = float(price_raw)
+            size = float(msg.get("size", 0.0))
+            self._trades_q.put_nowait((token_id, price, size))
+        except (ValueError, asyncio.QueueFull):
+            pass  # drop if queue full — ShadowFillPoller will catch next trade

@@ -25,28 +25,47 @@ class InventoryManager:
         cancel_q: asyncio.Queue,
         bankroll: float = 500.0,
         app_state: AppState | None = None,
+        markout_q: asyncio.Queue | None = None,
     ):
         self._maker = maker_state
         self._app = app_state
         self._fills_q = fills_q
         self._skew_q = skew_updates_q
         self._cancel_q = cancel_q
+        self._markout_q = markout_q
         self._max_daily_loss = bankroll * MAX_DAILY_LOSS_PCT
 
     async def handle_fill(self, fill: Fill) -> None:
         """Process a fill: update inventory, compute skew, check limits."""
+        # 0. Snapshot market metadata and state in one lock acquisition
+        question = ""
+        end_date_iso = ""
+        markets: dict = {}
+        if self._app is not None:
+            async with self._app._lock:
+                markets = dict(self._app.markets)
+                cs = markets.get(fill.token_id)
+                if cs:
+                    question = cs.question
+                    end_date_iso = cs.end_date_iso
+
         # 1. Update inventory and record fill
         self._maker.update_inventory(fill.token_id, fill.side, fill.size)
-        self._maker.record_fill(fill.token_id, fill.side, fill.price, fill.size, fill.filled_at)
+        self._maker.record_fill(fill.token_id, fill.side, fill.price, fill.size, fill.filled_at,
+                                question=question, end_date_iso=end_date_iso)
 
         # 2. Emit skew update
         skew = self._maker.skew_factor(fill.token_id)
         await self._skew_q.put(SkewUpdate(token_id=fill.token_id, skew_factor=skew))
 
-        # 3. Check rapid double-fill
+        # 3. Forward to markout tracker (non-blocking; absent in tests)
+        if self._markout_q is not None:
+            await self._markout_q.put(fill)
+
+        # 4. Check rapid double-fill
         await self._check_rapid_fill(fill)
 
-        # 4. Check per-market inventory cap
+        # 5. Check per-market inventory cap
         abs_pos = abs(self._maker.get_inventory(fill.token_id))
         if abs_pos >= self._maker.max_inventory_per_market:
             await self._cancel_q.put(CancelAll(fill.token_id))
@@ -56,16 +75,17 @@ class InventoryManager:
                 f"— quotes pulled for {COOLDOWN_SECONDS}s"
             )
 
-        # 5. Check total inventory cap
+        # 6. Check total inventory cap
         total = self._maker.total_abs_inventory
         if total >= self._maker.max_total_inventory:
             await self._cancel_q.put(CancelAll("*"))
-            log.warning(f"TOTAL INVENTORY CAP: ${total:.0f} — ALL quotes pulled")
+            self._maker.global_cooldown_until = time.time() + COOLDOWN_SECONDS
+            log.warning(
+                f"TOTAL INVENTORY CAP: ${total:.0f} — ALL quotes pulled for {COOLDOWN_SECONDS}s"
+            )
 
-        # 6. Check daily loss — use MTM P&L so net-long inventory doesn't false-trigger
-        if self._app is not None:
-            async with self._app._lock:
-                markets = dict(self._app.markets)
+        # 7. Check daily loss — use MTM P&L so net-long inventory doesn't false-trigger
+        if markets:
             mtm = self._maker.mtm_pnl(markets)
         else:
             mtm = self._maker.cash_pnl  # fallback if app_state not wired

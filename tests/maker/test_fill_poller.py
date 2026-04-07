@@ -88,3 +88,18 @@ def test_paper_no_fill_zero_volume():
     markets = {"tok1": _make_market(bid=0.20, ask=0.80, volume_usd=0.0)}
     fills = FillPoller.check_paper_fills(maker_state, markets, poll_interval=1e6)
     assert len(fills) == 0
+
+
+def test_consumed_paper_order_does_not_fill_twice():
+    maker_state = MakerState()
+    _add_ladder(maker_state, "tok1", n_levels=1)
+    markets = {"tok1": _make_market(bid=0.20, ask=0.80)}
+
+    fills = FillPoller.check_paper_fills(maker_state, markets, poll_interval=1e6)
+    buy_fills = [f for f in fills if f.side == "BUY"]
+    assert len(buy_fills) == 1
+
+    FillPoller.consume_paper_fills(maker_state, buy_fills)
+    second_pass = FillPoller.check_paper_fills(maker_state, markets, poll_interval=1e6)
+
+    assert all(f.side != "BUY" for f in second_pass)

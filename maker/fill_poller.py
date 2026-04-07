@@ -64,35 +64,83 @@ class FillPoller:
                 ask_price = level.get("ask_price", 1.0)
                 bid_size = level.get("bid_size", 0.0)
                 ask_size = level.get("ask_size", 0.0)
+                bid_order_id = level.get("bid_order_id", "")
+                ask_order_id = level.get("ask_order_id", "")
 
                 # Poisson fill probability for this poll window
                 size_ref = max(bid_size, ask_size, 1.0)
                 rate_per_sec = cs.volume_usd / (86400.0 * size_ref * _COMPETITION_FACTOR)
                 p_fill = 1.0 - math.exp(-rate_per_sec * poll_interval)
 
-                # Bid fills when our bid is better than (above) the market's best bid
-                if bid_price > cs.best_bid and bid_price > 0 and random.random() < p_fill:
+                mid = cs.mid
+
+                # Bid fills when our bid is at or better than the market's best bid.
+                # >= (not >) so that joining the queue (posting exactly at best_bid)
+                # also generates paper fills — this is valid for book-relative quotes
+                # that compress to the market spread on tight markets.
+                if (
+                    bid_order_id
+                    and bid_size > 0
+                    and bid_price >= cs.best_bid
+                    and bid_price > 0
+                    and random.random() < p_fill
+                ):
                     fills.append(Fill(
                         token_id=token_id,
                         side="BUY",
                         price=bid_price,
                         size=bid_size,
-                        order_id=level.get("bid_order_id", ""),
+                        order_id=bid_order_id,
                         filled_at=now,
+                        mid_at_fill=mid,
                     ))
 
-                # Ask fills when our ask is better than (below) the market's best ask
-                if ask_price < cs.best_ask and ask_price < 1.0 and random.random() < p_fill:
+                # Ask fills when our ask is at or better than the market's best ask.
+                # <= (not <) to match the bid-side change above.
+                if (
+                    ask_order_id
+                    and ask_size > 0
+                    and ask_price <= cs.best_ask
+                    and ask_price < 1.0
+                    and random.random() < p_fill
+                ):
                     fills.append(Fill(
                         token_id=token_id,
                         side="SELL",
                         price=ask_price,
                         size=ask_size,
-                        order_id=level.get("ask_order_id", ""),
+                        order_id=ask_order_id,
                         filled_at=now,
+                        mid_at_fill=mid,
                     ))
 
         return fills
+
+    @staticmethod
+    def consume_paper_fills(maker_state: MakerState, fills: list[Fill]) -> None:
+        """Remove filled paper order sides so one synthetic order cannot fill twice."""
+        for fill in fills:
+            levels = maker_state.live_orders.get(fill.token_id, [])
+            updated_levels = []
+            for level in levels:
+                if fill.side == "BUY" and level.get("bid_order_id", "") == fill.order_id:
+                    level = dict(level)
+                    level["bid_order_id"] = ""
+                    level["bid_size"] = 0.0
+                elif fill.side == "SELL" and level.get("ask_order_id", "") == fill.order_id:
+                    level = dict(level)
+                    level["ask_order_id"] = ""
+                    level["ask_size"] = 0.0
+
+                has_bid = bool(level.get("bid_order_id", "")) and level.get("bid_size", 0.0) > 0
+                has_ask = bool(level.get("ask_order_id", "")) and level.get("ask_size", 0.0) > 0
+                if has_bid or has_ask:
+                    updated_levels.append(level)
+
+            if updated_levels:
+                maker_state.live_orders[fill.token_id] = updated_levels
+            else:
+                maker_state.live_orders.pop(fill.token_id, None)
 
     async def _run_paper(self):
         while True:
@@ -100,6 +148,7 @@ class FillPoller:
                 markets = dict(self._app.markets)
 
             fills = self.check_paper_fills(self._maker, markets, poll_interval=self.POLL_INTERVAL)
+            self.consume_paper_fills(self._maker, fills)
             for fill in fills:
                 log.info(
                     f"PAPER FILL: {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
@@ -121,13 +170,18 @@ class FillPoller:
                     prev = self._order_states.get(oid)
 
                     if prev in ("OPEN", "live") and status in ("MATCHED", "FILLED"):
+                        asset_id = order.get("asset_id", "")
+                        async with self._app._lock:
+                            cs = self._app.markets.get(asset_id)
+                            mid = cs.mid if cs else 0.0
                         fill = Fill(
-                            token_id=order.get("asset_id", ""),
+                            token_id=asset_id,
                             side=order.get("side", "BUY"),
                             price=float(order.get("price", 0)),
                             size=float(order.get("size_matched", order.get("original_size", 0))),
                             order_id=oid,
                             filled_at=time.time(),
+                            mid_at_fill=mid,
                         )
                         log.info(
                             f"FILL: {fill.side} {fill.size:.2f} @ {fill.price:.3f} "

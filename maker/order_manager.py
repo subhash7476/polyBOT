@@ -55,12 +55,15 @@ class OrderManager:
         if cancel.is_global:
             if not self._paper and self._clob:
                 self._clob.cancel_all()
+            n = sum(len(v) for v in self._maker.live_orders.values())
             self._maker.live_orders.clear()
+            self._maker.total_cancels += n
             log.warning("CANCEL ALL — all quotes pulled")
         else:
             levels = self._maker.live_orders.pop(cancel.token_id, [])
             for level in levels:
                 self._cancel_level(level)
+            self._maker.total_cancels += len(levels)
             log.info(f"CANCEL [{cancel.token_id[:8]}] — {len(levels)} levels")
 
     def _place_one(self, token_id: str, price: float, size: float, side: str) -> str:

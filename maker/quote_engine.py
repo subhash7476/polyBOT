@@ -5,6 +5,7 @@ import time
 from maker.state import MakerState
 from maker.types import QuoteIntent, SkewUpdate, LadderUpdate
 from market.state import AppState
+from engine.falcon_signals import compute_adverse_selection_penalty, compute_market_skew_adjustment
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -125,6 +126,7 @@ class QuoteEngine:
         """Compute and emit ladder updates for the given token set."""
         async with self._app._lock:
             markets = dict(self._app.markets)
+            feeds = self._app.feeds  # reference — Falcon lookups only read, never mutate
 
         for token_id in tokens_to_check:
             cs = markets.get(token_id)
@@ -136,17 +138,36 @@ class QuoteEngine:
             skew = self._maker.skew_factor(token_id)
             abs_inv = abs(self._maker.get_inventory(token_id))
 
-            fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=0.0)
-            spread = compute_spread(
+            # Per-market Falcon adjustments (condition_id matches Market Insights data)
+            spread_multiplier = compute_adverse_selection_penalty(cs.condition_id, feeds)
+            model_adj = compute_market_skew_adjustment(cs.condition_id, feeds)
+
+            fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=model_adj)
+            base_spread = compute_spread(
                 volume_usd=cs.volume_usd,
                 abs_inventory=abs_inv,
                 hours_to_expiry=999.0,
             )
+            spread = min(base_spread * spread_multiplier, MAX_SPREAD)
+
+            # Book-relative quoting: if the market spread is tighter than our desired
+            # spread, compress our half to match the book so we post inside it (not
+            # outside it). This ensures the fill poller's >= condition is satisfied
+            # for tight-spread markets (including high-volume Falcon-spiking markets).
+            book_spread = cs.best_ask - cs.best_bid
+            if book_spread > 0 and spread > book_spread:
+                eff_half = book_spread / 2.0
+                # Clamp fv to stay inside the book after compression
+                eff_fv = _clamp(fv, cs.best_bid + eff_half, cs.best_ask - eff_half)
+                eff_spread = book_spread
+            else:
+                eff_fv = fv
+                eff_spread = spread
 
             ladder = self.build_ladder(
                 token_id=token_id,
-                fair_value=fv,
-                spread=spread,
+                fair_value=eff_fv,
+                spread=eff_spread,
                 size=QUOTE_SIZE_USDC,
                 reason="reprice",
             )
@@ -216,7 +237,10 @@ class QuoteEngine:
                 tokens_to_check = triggered_ids & self._active_token_ids
 
             if tokens_to_check:
-                await self._reprice(tokens_to_check, force=force or bool(new_ids), new_ids=new_ids)
+                if self._maker.global_in_cooldown():
+                    log.debug("global inventory cooldown active — skipping reprice")
+                else:
+                    await self._reprice(tokens_to_check, force=force or bool(new_ids), new_ids=new_ids)
 
             if force:
                 self._last_force_reprice = now

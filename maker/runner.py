@@ -9,7 +9,9 @@ from maker.market_selector import MarketSelector
 from maker.quote_engine import QuoteEngine
 from maker.order_manager import OrderManager
 from maker.fill_poller import FillPoller
+from maker.shadow_fill_poller import ShadowFillPoller
 from maker.inventory import InventoryManager
+from maker.markout_tracker import MarkoutTracker
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
@@ -19,6 +21,7 @@ log = get_logger(__name__)
 def build_maker_actors(
     app_state: AppState,
     paper: bool = True,
+    shadow: bool = False,
     clob=None,
     bankroll: float = 500.0,
 ) -> tuple[dict, dict]:
@@ -32,6 +35,9 @@ def build_maker_actors(
     skew_updates_q = asyncio.Queue()
     cancel_q = asyncio.Queue()
     price_update_q = asyncio.Queue(maxsize=200)  # CLOBMonitor → QuoteEngine price ticks
+    markout_q: asyncio.Queue = asyncio.Queue()    # InventoryManager → MarkoutTracker
+    # Shadow mode: CLOBMonitor routes real trade events here instead of Poisson dice
+    trades_q: asyncio.Queue | None = asyncio.Queue(maxsize=500) if shadow else None
 
     queues = {
         "active_markets_q": active_markets_q,
@@ -40,7 +46,16 @@ def build_maker_actors(
         "skew_updates_q": skew_updates_q,
         "cancel_q": cancel_q,
         "price_update_q": price_update_q,
+        "markout_q": markout_q,
+        "trades_q": trades_q,
     }
+
+    # Shadow mode swaps the paper Poisson fill model for real-trade-driven fills.
+    # OrderManager still uses paper=True (no real orders placed).
+    if shadow:
+        fill_poller = ShadowFillPoller(app_state, maker_state, fills_q, trades_q)
+    else:
+        fill_poller = FillPoller(app_state, maker_state, fills_q, clob=clob, paper=paper)
 
     actors = {
         "selector": MarketSelector(app_state, active_markets_q),
@@ -49,16 +64,15 @@ def build_maker_actors(
             price_update_q=price_update_q,
         ),
         "order_manager": OrderManager(
-            maker_state, clob=clob, paper=paper,
+            maker_state, clob=clob, paper=True,  # always paper — shadow never places real orders
             quote_intents_q=quote_intents_q, cancel_q=cancel_q,
         ),
-        "fill_poller": FillPoller(
-            app_state, maker_state, fills_q, clob=clob, paper=paper,
-        ),
+        "fill_poller": fill_poller,
         "inventory": InventoryManager(
             maker_state, fills_q, skew_updates_q, cancel_q,
-            bankroll=bankroll, app_state=app_state,
+            bankroll=bankroll, app_state=app_state, markout_q=markout_q,
         ),
+        "markout_tracker": MarkoutTracker(app_state, markout_q),
     }
 
     return actors, queues
@@ -75,13 +89,17 @@ async def run_maker():
     from maker.dashboard_loop import maker_dashboard_loop
 
     paper = config.PAPER
-    log.info(f"Starting maker bot (paper={paper})")
+    shadow = config.SHADOW and paper  # shadow requires paper mode
+    if config.SHADOW and not paper:
+        log.warning("SHADOW=true requires PAPER=true — shadow mode disabled")
+
+    log.info(f"Starting maker bot (paper={paper}, shadow={shadow})")
 
     app_state = AppState()
 
     # Set up maker dashboard
     maker_dash = MakerDashboardState()
-    maker_dash.update({"paper": paper})
+    maker_dash.update({"paper": paper, "shadow": shadow})
     dash = DashboardState()
     start_dashboard_server(dash, port=5050, maker_dash=maker_dash)
     log.info("Maker dashboard at http://127.0.0.1:5050/maker")
@@ -98,6 +116,7 @@ async def run_maker():
     actors, queues = build_maker_actors(
         app_state=app_state,
         paper=paper,
+        shadow=shadow,
         clob=clob,
         bankroll=config.BANKROLL_USDC,
     )
@@ -105,10 +124,19 @@ async def run_maker():
     # Expose MakerState for dashboard loop via order_manager
     maker_state_ref = actors["order_manager"]._maker
 
+    from feeds.falcon import FalconFeed
+
+    # CLOBMonitor gets trades_q in shadow mode so ShadowFillPoller receives real trade events
+    clob_monitor = CLOBMonitor(
+        app_state,
+        price_update_q=queues["price_update_q"],
+        trades_q=queues["trades_q"],
+    )
+
     coros = [
-        # Reused feeds — CLOBMonitor gets price_update_q so QuoteEngine wakes on ticks
-        CLOBMonitor(app_state, price_update_q=queues["price_update_q"]).start(),
+        clob_monitor.start(),
         MicrostructureFeed(app_state).start(),
+        FalconFeed(app_state).start(),
     ]
 
     if wallet_address:
@@ -128,8 +156,13 @@ async def run_maker():
     for actor in actors.values():
         coros.append(actor.run())
 
-    # Dashboard snapshot loop
-    coros.append(maker_dashboard_loop(app_state, maker_state_ref, maker_dash))
+    # Dashboard snapshot loop — pass markout_tracker for live-validation stats
+    coros.append(
+        maker_dashboard_loop(
+            app_state, maker_state_ref, maker_dash,
+            markout_tracker=actors["markout_tracker"],
+        )
+    )
 
     log.info(f"Maker bot running with {len(actors)} actors")
     await asyncio.gather(*coros)

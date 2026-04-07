@@ -23,6 +23,7 @@ from feeds.microstructure import MicrostructureFeed
 from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
 from feeds.weather import WeatherFeed
+from feeds.falcon import FalconFeed
 from market.clob_monitor import CLOBMonitor, build_threshold_markets
 from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
 from engine.probability import build_model_probability, build_microstructure_probability
@@ -468,6 +469,7 @@ async def main():
         OnChainFeed(state).start(),
         MacroFeed(state).start(),
         WeatherFeed(state).start(),
+        FalconFeed(state).start(),
         CLOBMonitor(state).start(),
         trading_loop(state, risk, executor, tracker, dash),
         resolution_loop(

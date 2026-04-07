@@ -46,6 +46,9 @@ DERIBIT_DVOL_ASSETS = ["BTC", "ETH", "SOL"]  # others use realized vol estimate
 
 # Paper mode (set PAPER=false in .env to go live)
 PAPER = os.getenv("PAPER", "true").lower() != "false"
+# Shadow Live Mode: connect to live markets, simulate fills from real trade events.
+# Requires PAPER=true (no real orders placed). Set SHADOW=true to enable.
+SHADOW = os.getenv("SHADOW", "false").lower() == "true"
 
 # Signal weights (calibrate from fills.jsonl after 50+ resolved signals)
 SIGNAL_WEIGHTS = {
@@ -63,7 +66,29 @@ SIGNAL_WEIGHTS = {
     "volume_divergence": 0.10,
     "weather_forecast_confidence": 0.35,
     "weather_forecast_agreement":  0.25,
+    # Falcon signals — start conservative; recalibrate after 50+ resolved signals
+    "falcon_whale_consensus":  0.20,
+    "falcon_cross_platform":   0.25,
 }
+
+# Falcon agent IDs (each routes to a different dataset on the unified endpoint)
+FALCON_AGENT_LEADERBOARD   = int(os.getenv("FALCON_AGENT_LEADERBOARD",   "584"))  # 15d filtered leaderboard
+FALCON_AGENT_TOP_TRADERS   = int(os.getenv("FALCON_AGENT_TOP_TRADERS",   "579"))  # rolling leaderboard
+FALCON_AGENT_WALLET_360    = int(os.getenv("FALCON_AGENT_WALLET_360",    "581"))  # deep per-wallet analytics
+FALCON_AGENT_MARKET_INSIGHTS = int(os.getenv("FALCON_AGENT_MARKET_INSIGHTS", "575"))  # market activity + whale flags
+
+# Falcon poll intervals (seconds)
+FALCON_LEADERBOARD_POLL_INTERVAL   = int(os.getenv("FALCON_LEADERBOARD_POLL_INTERVAL",   "900"))   # 15 min
+FALCON_WALLET_POLL_INTERVAL        = int(os.getenv("FALCON_WALLET_POLL_INTERVAL",        "300"))   # 5 min
+FALCON_MARKET_INSIGHTS_POLL_INTERVAL = int(os.getenv("FALCON_MARKET_INSIGHTS_POLL_INTERVAL", "120"))  # 2 min
+
+# Leaderboard filters: only track wallets meeting these thresholds
+FALCON_MIN_WIN_RATE   = float(os.getenv("FALCON_MIN_WIN_RATE",   "0.55"))   # 55%
+FALCON_MIN_PNL_15D    = float(os.getenv("FALCON_MIN_PNL_15D",    "5000"))   # $5k in 15d
+FALCON_MIN_TRADES_15D = int(os.getenv("FALCON_MIN_TRADES_15D",   "20"))     # 20 trades
+
+# Whale market control threshold — above this we widen spreads
+FALCON_WHALE_CONTROL_PCT = float(os.getenv("FALCON_WHALE_CONTROL_PCT", "60.0"))  # top-1 wallet owns >60%
 
 # Flatline detector
 FLATLINE_WINDOW_HOURS = 48.0        # price range computed over this lookback
@@ -103,6 +128,8 @@ MODEL_CATEGORY_MIN_SLOTS = int(os.getenv("MODEL_CATEGORY_MIN_SLOTS", "80"))
 # Credentials
 POLY_PRIVATE_KEY = os.getenv("POLY_PRIVATE_KEY", "")
 POLY_API_KEY = os.getenv("POLY_API_KEY", "")
+FALCON_API_KEY = os.getenv("FALCON_API_KEY", "")
+FALCON_BASE_URL = os.getenv("FALCON_BASE_URL", "https://narrative.agent.heisenberg.so/api/v2/semantic/retrieve/parameterized")
 GLASSNODE_API_KEY = os.getenv("GLASSNODE_API_KEY", "")
 SIGNATURE_TYPE      = int(os.getenv("SIGNATURE_TYPE", "0"))   # 0=EOA, 1=POLY_PROXY, 2=GNOSIS_SAFE
 FUNDER_ADDRESS      = os.getenv("FUNDER_ADDRESS", "")
