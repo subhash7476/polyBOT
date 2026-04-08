@@ -5,6 +5,7 @@ import json
 import httpx
 import time
 from collections import OrderedDict
+from datetime import datetime, timezone
 from market.state import AppState, ContractState, FeedState
 from market.clob_monitor import fetch_active_markets
 from utils.logger import get_logger
@@ -12,10 +13,11 @@ from utils.logger import get_logger
 log = get_logger(__name__)
 
 _MIN_DAILY_VOLUME = 1_000.0
-_MAX_ACTIVE_MARKETS = 50        # increased from 20 — category-agnostic selection supports more
-_MIN_SPREAD = 0.01              # 1c minimum — current Polymarket liquid markets are mostly 1c spread
+_MAX_ACTIVE_MARKETS = 120       # increased from 50 — 116+ candidates pass filters regularly
+_MIN_SPREAD = 0.0               # no floor — tight-spread markets still rank low (score = spread×vol)
 _MIN_BID = 0.05      # exclude near-zero / near-resolved markets (bid < 5¢)
 _MAX_BID = 0.95      # exclude near-certain markets (bid > 95¢)
+_MAX_DAYS_TO_RESOLVE = 90       # exclude far-future markets (>90 days to resolution)
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
 # "unknown" = parse_contract() couldn't classify it — skip to avoid garbage markets.
@@ -199,8 +201,9 @@ class MarketSelector:
         falcon_log: list[str] = []
 
         # Diagnostic counters
-        n_excluded_cat = n_tight = n_low_vol = n_bad_bid = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = 0
         cat_counts: dict[str, int] = {}
+        now_ts = time.time()
 
         # One-time diagnostic: show Falcon spiking questions vs state market questions
         if feeds and feeds.falcon_market_insights:
@@ -225,21 +228,9 @@ class MarketSelector:
 
             spread = cs.best_ask - cs.best_bid
 
-            # Falcon spiking bypass: high-volume markets flagged as "Spiking" by
-            # Falcon are allowed through even with tight spread.  They are quoted
-            # book-relative by the QuoteEngine (eff_spread = book_spread), so the
-            # normal _MIN_SPREAD guard isn't needed for fill eligibility.
-            # Falls back to question-text matching when condition_id lookup misses
-            # (Falcon and Gamma can use different condition_id formats for the same market).
-            falcon_spiking = False
-            if feeds:
-                ins = _get_falcon_insight(cs.condition_id, cs.question, feeds)
-                if ins and ins.volume_trend == "Spiking" and not ins.whale_control_flag:
-                    falcon_spiking = True
-
-            if spread < _MIN_SPREAD and not falcon_spiking:
-                n_tight += 1
-                continue
+            # Zero-spread markets (locked book) score 0 (score = spread × volume) so
+            # they naturally rank last and are excluded by the cap. QuoteEngine still
+            # enforces MIN_SPREAD = 0.04 internally, so our quotes always have edge.
             vol_check = cs.volume_24h if cs.volume_24h > 0 else cs.volume_usd
             if vol_check < _MIN_DAILY_VOLUME:
                 n_low_vol += 1
@@ -247,6 +238,18 @@ class MarketSelector:
             if cs.best_bid < _MIN_BID or cs.best_bid > _MAX_BID:
                 n_bad_bid += 1
                 continue
+
+            # Exclude far-future markets: capital tied up for months/years with no
+            # resolution catalyst → frozen price → one-sided inventory accumulation.
+            if cs.end_date_iso:
+                try:
+                    end_dt = datetime.fromisoformat(cs.end_date_iso.replace("Z", "+00:00"))
+                    days_left = (end_dt.timestamp() - now_ts) / 86400.0
+                    if days_left > _MAX_DAYS_TO_RESOLVE:
+                        n_far_future += 1
+                        continue
+                except ValueError:
+                    pass
 
             # Rank by 24h volume if available — reflects current taker activity
             vol_rank = cs.volume_24h if cs.volume_24h > 0 else cs.volume_usd
@@ -284,19 +287,11 @@ class MarketSelector:
 
         candidates.sort(key=lambda x: -x[2])
 
-        n_falcon_bypass = sum(
-            1 for _, cs, _ in candidates
-            if feeds
-            and _get_falcon_insight(cs.condition_id, cs.question, feeds) is not None
-            and _get_falcon_insight(cs.condition_id, cs.question, feeds).volume_trend == "Spiking"
-            and (cs.best_ask - cs.best_bid) < _MIN_SPREAD
-        )
         log.info(
             f"filter_and_rank: {len(markets)} markets in state "
             f"(cats={cat_counts}) → "
-            f"excluded_cat={n_excluded_cat} tight_spread={n_tight} "
-            f"low_vol={n_low_vol} bad_bid={n_bad_bid} "
-            f"falcon_spiking_bypass={n_falcon_bypass} → "
+            f"excluded_cat={n_excluded_cat} low_vol={n_low_vol} "
+            f"bad_bid={n_bad_bid} far_future={n_far_future} → "
             f"{len(candidates)} candidates → {min(len(candidates), max_markets)} selected"
         )
 
@@ -354,14 +349,11 @@ class MarketSelector:
             return
 
         candidates = []
-        n_excluded_cat = n_tight = n_low_vol = n_bad_bid = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = 0
+        now_ts = time.time()
         for yes_id, meta in token_map.items():
             if meta["category"] in _EXCLUDED_CATEGORIES:
                 n_excluded_cat += 1
-                continue
-            spread = meta["best_ask"] - meta["best_bid"]
-            if spread < _MIN_SPREAD:
-                n_tight += 1
                 continue
             if meta.get("volume", 0) < _MIN_DAILY_VOLUME:
                 n_low_vol += 1
@@ -369,14 +361,21 @@ class MarketSelector:
             if meta["best_bid"] < _MIN_BID or meta["best_bid"] > _MAX_BID:
                 n_bad_bid += 1
                 continue
+            expiry = meta.get("expiry")
+            if expiry is not None:
+                exp_ts = expiry.timestamp() if hasattr(expiry, "timestamp") else float(expiry)
+                if (exp_ts - now_ts) / 86400.0 > _MAX_DAYS_TO_RESOLVE:
+                    n_far_future += 1
+                    continue
             # Rank by 24h volume if available (reflects current activity), else total volume
+            spread = meta["best_ask"] - meta["best_bid"]
             vol_rank = meta.get("volume_24h", 0) or meta.get("volume", 0)
             candidates.append((yes_id, meta, spread * vol_rank))
 
         log.info(
             f"_discover_and_seed: {len(token_map)} Gamma markets scanned "
-            f"(cats: excluded={n_excluded_cat} tight={n_tight} "
-            f"low_vol={n_low_vol} bad_bid={n_bad_bid}) "
+            f"(excluded={n_excluded_cat} low_vol={n_low_vol} "
+            f"bad_bid={n_bad_bid} far_future={n_far_future}) "
             f"→ {len(candidates)} candidates"
         )
 
@@ -408,6 +407,8 @@ class MarketSelector:
             for yes_id, meta, _ in top:
                 if yes_id in existing:
                     continue
+                expiry = meta.get("expiry")
+                end_date_iso = expiry.isoformat() if expiry and hasattr(expiry, "isoformat") else ""
                 cs = ContractState(
                     yes_token_id=yes_id,
                     no_token_id=meta.get("no_token_id", ""),
@@ -417,6 +418,7 @@ class MarketSelector:
                     best_ask=meta["best_ask"],
                     volume_usd=meta.get("volume", 0),
                     condition_id=meta.get("condition_id", ""),
+                    end_date_iso=end_date_iso,
                 )
                 self._state.markets[yes_id] = cs
                 seeded += 1
