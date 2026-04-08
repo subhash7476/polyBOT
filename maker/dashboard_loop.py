@@ -1,6 +1,7 @@
 """Asyncio loop that snapshots MakerState -> MakerDashboardState every 2s."""
 import asyncio
 import time
+from datetime import datetime as _dt, timezone as _tz
 from typing import TYPE_CHECKING
 
 from market.state import AppState
@@ -51,6 +52,9 @@ async def maker_dashboard_loop(
                 total_fills = maker_state.total_fills
                 total_cancels = maker_state.total_cancels
                 realized_pnl = maker_state.realized_pnl
+                session_by_market = dict(maker_state.session_by_market)
+                today_stats = dict(maker_state.today_stats)
+                lifetime_stats = dict(maker_state.lifetime_stats)
 
             # Quote uptime: fraction of 2s ticks where at least one quote is resting
             _uptime_samples += 1
@@ -100,6 +104,37 @@ async def maker_dashboard_loop(
                 s = int(now - ts)
                 return f"{s}s" if s < 60 else f"{s // 60}m{s % 60}s"
 
+            # ── Three-timeframe P&L ───────────────────────────────────────
+            # SESSION: fills accumulated since process start (session_by_market)
+            sess_fills = sum(m.get("fills", 0) for m in session_by_market.values())
+            sess_cash = sum(m.get("cash_pnl", 0.0) for m in session_by_market.values())
+            sess_realized = sum(m.get("realized_pnl", 0.0) for m in session_by_market.values())
+            sess_position_value = sum(
+                net * (markets_snapshot[tid].mid if tid in markets_snapshot else 0.0)
+                for tid, net in inventory.items()
+            )
+            sess_mtm = sess_cash + sess_position_value
+
+            # TODAY: pre-session ledger snapshot + session delta
+            today_fills = today_stats.get("fills", 0) + sess_fills
+            today_cash = today_stats.get("cash_pnl", 0.0) + sess_cash
+            today_realized = today_stats.get("realized_pnl", 0.0) + sess_realized
+
+            # ALL TIME: lifetime (days before today) + today
+            lt_fills = lifetime_stats.get("total_fills", 0)
+            lt_cash = lifetime_stats.get("total_cash_pnl", 0.0)
+            lt_realized = lifetime_stats.get("total_realized_pnl", 0.0)
+            alltime_fills = lt_fills + today_fills
+            alltime_cash = lt_cash + today_cash
+            alltime_realized = lt_realized + today_realized
+
+            # Per-market: merge lifetime + today + session
+            by_market = _merge_market_stats(
+                lifetime_stats.get("by_market", {}),
+                today_stats.get("by_market", {}),
+                session_by_market,
+            )
+
             # ── Falcon intelligence snapshot ──────────────────────────────
             falcon_data = _build_falcon_snapshot(feeds, markets_snapshot, now)
 
@@ -122,6 +157,17 @@ async def maker_dashboard_loop(
                 "total_cancels": total_cancels,
                 "markout_stats": markout_tracker.stats if markout_tracker else {},
                 "falcon_data": falcon_data,
+                "session_fills": sess_fills,
+                "session_cash_pnl": round(sess_cash, 4),
+                "session_realized_pnl": round(sess_realized, 4),
+                "session_mtm_pnl": round(sess_mtm, 4),
+                "today_fills": today_fills,
+                "today_cash_pnl": round(today_cash, 4),
+                "today_realized_pnl": round(today_realized, 4),
+                "alltime_fills": alltime_fills,
+                "alltime_cash_pnl": round(alltime_cash, 4),
+                "alltime_realized_pnl": round(alltime_realized, 4),
+                "by_market": by_market,
             })
         except Exception as exc:
             import logging
@@ -213,6 +259,35 @@ def _build_falcon_snapshot(feeds, markets_snapshot: dict, now: float) -> dict:
         "n_whale_markets": sum(1 for m in market_rows if m["whale_flag"]),
         "n_spiking": sum(1 for m in market_rows if m["volume_trend"] == "Spiking"),
     }
+
+
+def _merge_market_stats(
+    lt_by_market: dict,
+    today_by_market: dict,
+    session_by_market: dict,
+) -> list:
+    """Merge lifetime + today + session per-market dicts into a sorted list for the dashboard."""
+    merged: dict[str, dict] = {}
+    for src in (lt_by_market, today_by_market, session_by_market):
+        for tid, m in src.items():
+            row = merged.setdefault(tid, {
+                "token_id": tid[:16],
+                "question": "",
+                "alltime_fills": 0,
+                "alltime_cash_pnl": 0.0,
+                "alltime_realized_pnl": 0.0,
+            })
+            row["alltime_fills"] += m.get("fills", 0)
+            row["alltime_cash_pnl"] += m.get("cash_pnl", 0.0)
+            row["alltime_realized_pnl"] += m.get("realized_pnl", 0.0)
+            if m.get("question"):
+                row["question"] = m["question"]
+
+    for row in merged.values():
+        row["alltime_cash_pnl"] = round(row["alltime_cash_pnl"], 4)
+        row["alltime_realized_pnl"] = round(row["alltime_realized_pnl"], 4)
+
+    return sorted(merged.values(), key=lambda r: r["alltime_fills"], reverse=True)[:50]
 
 
 def _fmt_age(seconds: float) -> str:

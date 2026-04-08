@@ -47,6 +47,23 @@ class MakerDashboardState:
         # Falcon intelligence snapshot
         self.falcon_data: dict = {}
 
+        # ── Three-timeframe P&L ──────────────────────────────────────────
+        # SESSION: fills/P&L since this process started
+        self.session_fills: int = 0
+        self.session_cash_pnl: float = 0.0
+        self.session_realized_pnl: float = 0.0
+        self.session_mtm_pnl: float = 0.0
+        # TODAY: all fills/P&L for today UTC (pre-session + session)
+        self.today_fills: int = 0
+        self.today_cash_pnl: float = 0.0
+        self.today_realized_pnl: float = 0.0
+        # ALL TIME: lifetime totals (prior days + today + session)
+        self.alltime_fills: int = 0
+        self.alltime_cash_pnl: float = 0.0
+        self.alltime_realized_pnl: float = 0.0
+        # Per-market breakdown: list of dicts sorted by alltime fills desc
+        self.by_market: list = []
+
     def update(self, snapshot: dict) -> None:
         with self._lock:
             for key, val in snapshot.items():
@@ -79,4 +96,15 @@ class MakerDashboardState:
                 "total_cancels": self.total_cancels,
                 "markout_stats": self.markout_stats,
                 "falcon_data": self.falcon_data,
+                "session_fills": self.session_fills,
+                "session_cash_pnl": self.session_cash_pnl,
+                "session_realized_pnl": self.session_realized_pnl,
+                "session_mtm_pnl": self.session_mtm_pnl,
+                "today_fills": self.today_fills,
+                "today_cash_pnl": self.today_cash_pnl,
+                "today_realized_pnl": self.today_realized_pnl,
+                "alltime_fills": self.alltime_fills,
+                "alltime_cash_pnl": self.alltime_cash_pnl,
+                "alltime_realized_pnl": self.alltime_realized_pnl,
+                "by_market": self.by_market,
             })

@@ -12,6 +12,8 @@ from maker.fill_poller import FillPoller
 from maker.shadow_fill_poller import ShadowFillPoller
 from maker.inventory import InventoryManager
 from maker.markout_tracker import MarkoutTracker
+from maker.fill_ledger import FillLedger
+from maker.state_persistence import MakerCheckpointer, MakerStateLoader
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
@@ -24,9 +26,12 @@ def build_maker_actors(
     shadow: bool = False,
     clob=None,
     bankroll: float = 500.0,
+    fill_ledger: FillLedger | None = None,
+    maker_state: MakerState | None = None,
 ) -> tuple[dict, dict]:
     """Create all actors and queues. Returns (actors_dict, queues_dict)."""
-    maker_state = MakerState()
+    if maker_state is None:
+        maker_state = MakerState()
 
     # Queues
     active_markets_q = asyncio.Queue()
@@ -71,6 +76,7 @@ def build_maker_actors(
         "inventory": InventoryManager(
             maker_state, fills_q, skew_updates_q, cancel_q,
             bankroll=bankroll, app_state=app_state, markout_q=markout_q,
+            fill_ledger=fill_ledger,
         ),
         "markout_tracker": MarkoutTracker(app_state, markout_q),
     }
@@ -113,16 +119,26 @@ async def run_maker():
         clob = executor._clob
         wallet_address = executor.wallet_address
 
+    # Persistence: fill ledger + state loader + checkpointer
+    fill_ledger = FillLedger(base_dir="maker_data")
+    preloaded_state = MakerState()
+    MakerStateLoader(preloaded_state, fill_ledger, paper=paper).load()
+
     actors, queues = build_maker_actors(
         app_state=app_state,
         paper=paper,
         shadow=shadow,
         clob=clob,
         bankroll=config.BANKROLL_USDC,
+        fill_ledger=fill_ledger,
+        maker_state=preloaded_state,
     )
 
     # Expose MakerState for dashboard loop via order_manager
     maker_state_ref = actors["order_manager"]._maker
+
+    # Checkpointer — saves state every 60s
+    checkpointer = MakerCheckpointer(maker_state_ref)
 
     from feeds.falcon import FalconFeed
 
@@ -137,6 +153,7 @@ async def run_maker():
         clob_monitor.start(),
         MicrostructureFeed(app_state).start(),
         FalconFeed(app_state).start(),
+        checkpointer.checkpoint_loop(),
     ]
 
     if wallet_address:
@@ -165,4 +182,10 @@ async def run_maker():
     )
 
     log.info(f"Maker bot running with {len(actors)} actors")
-    await asyncio.gather(*coros)
+    try:
+        await asyncio.gather(*coros)
+    finally:
+        # Shutdown: save final checkpoint and close fill ledger
+        log.info("Maker shutting down — saving final checkpoint")
+        checkpointer.save()
+        fill_ledger.close()

@@ -312,6 +312,40 @@
     }
     .stale-dot.fresh { background: #3fb950; }
     .stale-dot.stale { background: #f85149; }
+
+    /* ── Three-column P&L group ── */
+    .pnl-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pnl-group-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #58a6ff;
+      margin-bottom: 2px;
+    }
+    .pnl-row {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .pnl-sub {
+      font-size: 9px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      min-width: 38px;
+    }
+    .pnl-val { font-size: 13px; }
+    .pnl-divider {
+      width: 1px;
+      height: 44px;
+      background: #30363d;
+      align-self: center;
+    }
   </style>
 </head>
 <body>
@@ -326,19 +360,57 @@
     <span class="stat-value" id="uptime">—</span>
   </div>
 
-  <div class="stat">
-    <span class="stat-label">Portfolio P&amp;L</span>
-    <span class="stat-value" id="daily-pnl" title="Cash flows + open positions marked at current mid price">—</span>
+  <!-- SESSION / TODAY / ALL TIME P&L columns -->
+  <div class="pnl-group" title="This process run only">
+    <div class="pnl-group-label">SESSION</div>
+    <div class="pnl-row">
+      <span class="pnl-sub">MTM</span>
+      <span class="stat-value pnl-val" id="sess-mtm">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Realized</span>
+      <span class="stat-value pnl-val" id="sess-realized">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Fills</span>
+      <span class="stat-value pnl-val neutral" id="sess-fills">—</span>
+    </div>
   </div>
 
-  <div class="stat">
-    <span class="stat-label">Net Cash Flows</span>
-    <span class="stat-value" id="cash-pnl" title="Total sell proceeds minus total buy costs — not booked profit while positions remain open">—</span>
+  <div class="pnl-divider"></div>
+
+  <div class="pnl-group" title="All fills since UTC midnight">
+    <div class="pnl-group-label">TODAY</div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Cash</span>
+      <span class="stat-value pnl-val" id="today-cash">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Realized</span>
+      <span class="stat-value pnl-val" id="today-realized">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Fills</span>
+      <span class="stat-value pnl-val neutral" id="today-fills">—</span>
+    </div>
   </div>
 
-  <div class="stat">
-    <span class="stat-label">Realized P&amp;L</span>
-    <span class="stat-value" id="realized-pnl" title="Booked profit from completed round trips only (FIFO matched). This is locked in.">—</span>
+  <div class="pnl-divider"></div>
+
+  <div class="pnl-group" title="All time across all sessions">
+    <div class="pnl-group-label">ALL TIME</div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Cash</span>
+      <span class="stat-value pnl-val" id="alltime-cash">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Realized</span>
+      <span class="stat-value pnl-val" id="alltime-realized">—</span>
+    </div>
+    <div class="pnl-row">
+      <span class="pnl-sub">Fills</span>
+      <span class="stat-value pnl-val neutral" id="alltime-fills">—</span>
+    </div>
   </div>
 
   <div class="stat">
@@ -411,6 +483,29 @@
         </thead>
         <tbody id="fills-body">
           <tr class="empty-row"><td colspan="6">No fills yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Per-Market Performance -->
+  <div class="panel panel-full">
+    <div class="panel-header">
+      Per-Market Performance (All Time)
+      <span class="count" id="market-perf-count">0</span>
+    </div>
+    <div class="scroll-body">
+      <table id="market-perf-table">
+        <thead>
+          <tr>
+            <th>Market</th>
+            <th>Fills</th>
+            <th>Cash P&amp;L</th>
+            <th>Realized P&amp;L</th>
+          </tr>
+        </thead>
+        <tbody id="market-perf-body">
+          <tr class="empty-row"><td colspan="4">No data yet</td></tr>
         </tbody>
       </table>
     </div>
@@ -517,6 +612,13 @@ function fmtPnl(v) {
   return `${sign}$${v.toFixed(4)}`;
 }
 
+function _setPnl(id, v) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = fmtPnl(v);
+  el.className = 'stat-value pnl-val ' + pnlClass(v);
+}
+
 function pnlClass(v) {
   if (v > 0) return 'positive';
   if (v < 0) return 'negative';
@@ -583,20 +685,40 @@ function render(data) {
   // Top bar
   document.getElementById('uptime').textContent = fmtUptime(data.uptime_seconds || 0);
 
-  const pnlEl = document.getElementById('daily-pnl');
-  const pnl = data.daily_pnl || 0;
-  pnlEl.textContent = fmtPnl(pnl);
-  pnlEl.className = 'stat-value ' + pnlClass(pnl);
+  // SESSION
+  _setPnl('sess-mtm', data.session_mtm_pnl || 0);
+  _setPnl('sess-realized', data.session_realized_pnl || 0);
+  document.getElementById('sess-fills').textContent = data.session_fills || 0;
 
-  const cashPnlEl = document.getElementById('cash-pnl');
-  const cashPnl = data.cash_pnl || 0;
-  cashPnlEl.textContent = fmtPnl(cashPnl);
-  cashPnlEl.className = 'stat-value ' + pnlClass(cashPnl);
+  // TODAY
+  _setPnl('today-cash', data.today_cash_pnl || 0);
+  _setPnl('today-realized', data.today_realized_pnl || 0);
+  document.getElementById('today-fills').textContent = data.today_fills || 0;
 
-  const realizedEl = document.getElementById('realized-pnl');
-  const realizedPnl = data.realized_pnl || 0;
-  realizedEl.textContent = fmtPnl(realizedPnl);
-  realizedEl.className = 'stat-value ' + pnlClass(realizedPnl);
+  // ALL TIME
+  _setPnl('alltime-cash', data.alltime_cash_pnl || 0);
+  _setPnl('alltime-realized', data.alltime_realized_pnl || 0);
+  document.getElementById('alltime-fills').textContent = data.alltime_fills || 0;
+
+  // Per-market table
+  const mktRows = data.by_market || [];
+  document.getElementById('market-perf-count').textContent = mktRows.length;
+  const mpBody = document.getElementById('market-perf-body');
+  if (mktRows.length === 0) {
+    mpBody.innerHTML = '<tr class="empty-row"><td colspan="4">No data yet</td></tr>';
+  } else {
+    mpBody.innerHTML = mktRows.map(m => {
+      const cash = m.alltime_cash_pnl || 0;
+      const realized = m.alltime_realized_pnl || 0;
+      const q = m.question ? m.question.substring(0, 60) : m.token_id;
+      return `<tr>
+        <td title="${m.token_id}">${q}</td>
+        <td>${m.alltime_fills || 0}</td>
+        <td class="${pnlClass(cash)}">${fmtPnl(cash)}</td>
+        <td class="${pnlClass(realized)}">${fmtPnl(realized)}</td>
+      </tr>`;
+    }).join('');
+  }
 
   document.getElementById('total-inv').textContent = (data.total_abs_inventory || 0).toFixed(2);
   document.getElementById('n-markets').textContent = data.n_active_markets || 0;

@@ -6,6 +6,10 @@ from maker.state import MakerState
 from maker.types import Fill, SkewUpdate, CancelAll
 from market.state import AppState
 from utils.logger import get_logger
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from maker.fill_ledger import FillLedger
 
 log = get_logger(__name__)
 
@@ -26,6 +30,7 @@ class InventoryManager:
         bankroll: float = 500.0,
         app_state: AppState | None = None,
         markout_q: asyncio.Queue | None = None,
+        fill_ledger: "FillLedger | None" = None,
     ):
         self._maker = maker_state
         self._app = app_state
@@ -33,6 +38,7 @@ class InventoryManager:
         self._skew_q = skew_updates_q
         self._cancel_q = cancel_q
         self._markout_q = markout_q
+        self._fill_ledger = fill_ledger
         self._max_daily_loss = bankroll * MAX_DAILY_LOSS_PCT
 
     async def handle_fill(self, fill: Fill) -> None:
@@ -49,10 +55,28 @@ class InventoryManager:
                     question = cs.question
                     end_date_iso = cs.end_date_iso
 
-        # 1. Update inventory and record fill
+        # 1. Update inventory and record fill (capture realized delta for ledger)
+        _realized_before = self._maker.realized_pnl
         self._maker.update_inventory(fill.token_id, fill.side, fill.size)
         self._maker.record_fill(fill.token_id, fill.side, fill.price, fill.size, fill.filled_at,
                                 question=question, end_date_iso=end_date_iso)
+
+        # 1b. Persist to fill ledger; track fill_id so replay skips it on restart
+        if self._fill_ledger is not None:
+            cash_flow = (fill.price * fill.size) if fill.side == "SELL" else -(fill.price * fill.size)
+            fill_id = self._fill_ledger.append(
+                session_id=self._maker.session_id,
+                token_id=fill.token_id,
+                question=question,
+                side=fill.side,
+                price=fill.price,
+                size=fill.size,
+                cash_flow=cash_flow,
+                realized_pnl=self._maker.realized_pnl - _realized_before,
+                inventory_after=self._maker.get_inventory(fill.token_id),
+                filled_at=fill.filled_at,
+            )
+            self._maker.daily_fills_seen.add(fill_id)
 
         # 2. Emit skew update
         skew = self._maker.skew_factor(fill.token_id)

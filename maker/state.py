@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+import uuid
 from dataclasses import dataclass, field
 from maker.types import QuoteIntent
 
@@ -54,6 +55,22 @@ class MakerState:
     # Fill timestamps for rapid-fill detection: token_id → {side → timestamp}
     last_fill_times: dict[str, dict[str, float]] = field(default_factory=dict)
 
+    # Persistence: unique ID for this runtime session
+    session_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
+
+    # Persistence: fill_ids from today's ledger that have already been applied to inventory
+    daily_fills_seen: set = field(default_factory=set)
+
+    # Persistence: per-market P&L for fills during this session only (not replayed)
+    # token_id → {fills, cash_pnl, realized_pnl, question}
+    session_by_market: dict = field(default_factory=dict)
+
+    # Persistence: pre-session snapshot of today's fill ledger (set by MakerStateLoader)
+    today_stats: dict = field(default_factory=dict)
+
+    # Persistence: all-time stats for days before today (set by MakerStateLoader)
+    lifetime_stats: dict = field(default_factory=dict)
+
     # Lock for concurrent actor access
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, repr=False)
 
@@ -90,14 +107,18 @@ class MakerState:
         return time.time() < self.global_cooldown_until
 
     def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float,
-                    question: str = "", end_date_iso: str = "") -> None:
-        """Record fill in history, update cash P&L, and compute realized P&L via FIFO lot matching."""
+                    question: str = "", end_date_iso: str = "", *, _track_session: bool = True) -> None:
+        """Record fill in history, update cash P&L, and compute realized P&L via FIFO lot matching.
+
+        _track_session=False during startup replay — suppresses session_by_market updates since
+        those fills are already counted in today_stats (read from the ledger at startup).
+        """
+        _realized_before = self.realized_pnl
+
         # cash_pnl tracks raw cash flows only — do NOT use this for decision-making.
         # Use mtm_pnl(markets) for a number that accounts for open positions.
-        if side == "SELL":
-            self.cash_pnl += price * size
-        else:
-            self.cash_pnl -= price * size
+        cash_flow = (price * size) if side == "SELL" else -(price * size)
+        self.cash_pnl += cash_flow
         self.total_fills += 1
 
         # FIFO lot matching — book realized P&L when this fill closes existing opposite lots.
@@ -133,6 +154,16 @@ class MakerState:
         self.fill_history.insert(0, entry)   # newest first
         if len(self.fill_history) > 100:
             self.fill_history.pop()
+
+        if _track_session:
+            mkt = self.session_by_market.setdefault(token_id, {
+                "fills": 0, "cash_pnl": 0.0, "realized_pnl": 0.0, "question": question
+            })
+            mkt["fills"] += 1
+            if question:
+                mkt["question"] = question
+            mkt["cash_pnl"] += cash_flow
+            mkt["realized_pnl"] += self.realized_pnl - _realized_before
 
     def mtm_pnl(self, markets: dict) -> float:
         """
