@@ -67,6 +67,7 @@ def build_maker_actors(
         "quote_engine": QuoteEngine(
             app_state, maker_state, active_markets_q, quote_intents_q, skew_updates_q,
             price_update_q=price_update_q,
+            cancel_q=cancel_q,
         ),
         "order_manager": OrderManager(
             maker_state, clob=clob,

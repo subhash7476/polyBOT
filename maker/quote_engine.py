@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from datetime import datetime, timezone
 from maker.state import MakerState
 from maker.types import QuoteIntent, SkewUpdate, LadderUpdate
 from market.state import AppState
@@ -38,7 +39,15 @@ def compute_spread(
     abs_inventory: float,
     hours_to_expiry: float,
 ) -> float:
-    """Dynamic spread based on volume, inventory, and time to resolution."""
+    """Dynamic spread based on volume, inventory, and time to resolution.
+
+    Spread schedule (we only quote 4h–7d markets):
+      < 4h : MAX_SPREAD — imminent resolution, stop quoting (MarketSelector excludes these)
+      < 12h: +0.06 — very high uncertainty / adverse selection risk
+      < 24h: +0.04 — elevated risk
+      < 72h: +0.02 — moderate
+      3–7d : BASE_SPREAD — normal window
+    """
     spread = BASE_SPREAD
 
     if volume_usd < 500.0:
@@ -46,18 +55,23 @@ def compute_spread(
 
     spread += abs_inventory * 0.01
 
-    if hours_to_expiry < 6.0:
+    if hours_to_expiry < 4.0:
         return MAX_SPREAD
-    if hours_to_expiry < 48.0:
-        spread += 0.03
+    elif hours_to_expiry < 12.0:
+        spread += 0.06
+    elif hours_to_expiry < 24.0:
+        spread += 0.04
+    elif hours_to_expiry < 72.0:
+        spread += 0.02
 
-    return max(MIN_SPREAD, spread)
+    return max(MIN_SPREAD, min(spread, MAX_SPREAD))
 
 
 class QuoteEngine:
     """Computes quotes for active markets, event-driven on price ticks."""
 
     FORCE_REPRICE_INTERVAL = 30.0  # fallback: reprice all markets if no tick arrives
+    CLOB_STALE_SECONDS = 30.0      # pull all quotes if CLOB feed silent this long
 
     def __init__(
         self,
@@ -67,6 +81,7 @@ class QuoteEngine:
         quote_intents_q: asyncio.Queue,
         skew_updates_q: asyncio.Queue,
         price_update_q: asyncio.Queue | None = None,
+        cancel_q: asyncio.Queue | None = None,
     ):
         self._app = app_state
         self._maker = maker_state
@@ -74,6 +89,8 @@ class QuoteEngine:
         self._quote_intents_q = quote_intents_q
         self._skew_updates_q = skew_updates_q
         self._price_update_q = price_update_q
+        self._cancel_q = cancel_q
+        self._clob_stale = False  # tracks whether we already pulled quotes
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
 
@@ -142,11 +159,20 @@ class QuoteEngine:
             spread_multiplier = compute_adverse_selection_penalty(cs.condition_id, feeds)
             model_adj = compute_market_skew_adjustment(cs.condition_id, feeds)
 
+            # Compute hours to expiry from market end date
+            hours_to_expiry = 999.0
+            if cs.end_date_iso:
+                try:
+                    end_dt = datetime.fromisoformat(cs.end_date_iso.replace("Z", "+00:00"))
+                    hours_to_expiry = max(0.0, (end_dt.timestamp() - time.time()) / 3600.0)
+                except ValueError:
+                    pass
+
             fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=model_adj)
             base_spread = compute_spread(
                 volume_usd=cs.volume_usd,
                 abs_inventory=abs_inv,
-                hours_to_expiry=999.0,
+                hours_to_expiry=hours_to_expiry,
             )
             spread = min(base_spread * spread_multiplier, MAX_SPREAD)
 
@@ -235,6 +261,24 @@ class QuoteEngine:
             else:
                 # Only reprice the ticked markets that we're actively quoting
                 tokens_to_check = triggered_ids & self._active_token_ids
+
+            # CLOB staleness circuit breaker: if the feed has gone silent, pull all
+            # quotes and wait. Quoting on stale prices is worse than not quoting.
+            clob_age = time.time() - self._app.feeds.last_feed_update.get("clob", 0)
+            if clob_age > self.CLOB_STALE_SECONDS:
+                if not self._clob_stale:
+                    self._clob_stale = True
+                    log.warning(
+                        f"CLOB feed stale ({clob_age:.0f}s) — pulling all quotes"
+                    )
+                    if self._cancel_q is not None:
+                        from maker.types import CancelAll
+                        await self._cancel_q.put(CancelAll("*"))
+                continue  # skip reprice until feed recovers
+
+            if self._clob_stale:
+                log.info("CLOB feed recovered — resuming quotes")
+                self._clob_stale = False
 
             if tokens_to_check:
                 if self._maker.global_in_cooldown():
