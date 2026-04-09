@@ -32,6 +32,11 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
+# Maximum distance between trade price and our quote level for a fill to trigger.
+# A trade at 0.001 cannot realistically fill our bid at 0.62 — in a real CLOB the
+# taker would hit the best bid (0.001 in that case), not walk up to ours.
+_MAX_FILL_DISTANCE = 0.10
+
 
 class ShadowFillPoller:
     """Fills hypothetical quotes when real trades cross our prices."""
@@ -73,8 +78,13 @@ class ShadowFillPoller:
             bid_order_id = level.get("bid_order_id", "")
             ask_order_id = level.get("ask_order_id", "")
 
-            # Trade crossed our bid — taker sold to us
-            if bid_order_id and bid_size > 0 and trade_price <= bid_price:
+            # Trade crossed our bid — taker sold to us.
+            # Proximity guard: trade must be within _MAX_FILL_DISTANCE of our bid.
+            # A trade at 0.001 cannot fill a bid at 0.62 — in a real CLOB the taker
+            # hits the best bid at the time of the trade, not a level 60¢ away.
+            if (bid_order_id and bid_size > 0
+                    and trade_price <= bid_price
+                    and (bid_price - trade_price) <= _MAX_FILL_DISTANCE):
                 fill_size = min(bid_size, remaining_size)
                 fills.append(Fill(
                     token_id=token_id,
@@ -87,8 +97,11 @@ class ShadowFillPoller:
                 ))
                 remaining_size -= fill_size
 
-            # Trade crossed our ask — taker bought from us
-            if ask_order_id and ask_size > 0 and trade_price >= ask_price:
+            # Trade crossed our ask — taker bought from us.
+            # Proximity guard: trade must be within _MAX_FILL_DISTANCE of our ask.
+            if (ask_order_id and ask_size > 0
+                    and trade_price >= ask_price
+                    and (trade_price - ask_price) <= _MAX_FILL_DISTANCE):
                 fill_size = min(ask_size, remaining_size)
                 fills.append(Fill(
                     token_id=token_id,

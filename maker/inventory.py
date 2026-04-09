@@ -13,9 +13,15 @@ if TYPE_CHECKING:
 
 log = get_logger(__name__)
 
-COOLDOWN_SECONDS = 300  # 5 minutes
-RAPID_FILL_WINDOW = 5.0  # seconds
-MAX_DAILY_LOSS_PCT = 0.03  # 3% of bankroll
+COOLDOWN_SECONDS = 300         # 5 minutes
+ADVERSE_COOLDOWN_SECONDS = 1800  # 30 minutes — adverse selection detected
+RAPID_FILL_WINDOW = 5.0        # seconds
+MAX_DAILY_LOSS_PCT = 0.03      # 3% of bankroll
+
+# Adverse-selection detector: if >= ADVERSE_MIN_FILLS fills seen and
+# >= ADVERSE_DIRECTION_PCT are the same side, trigger extended cooldown.
+ADVERSE_MIN_FILLS = 5
+ADVERSE_DIRECTION_PCT = 0.80
 
 
 class InventoryManager:
@@ -89,6 +95,9 @@ class InventoryManager:
         # 4. Check rapid double-fill
         await self._check_rapid_fill(fill)
 
+        # 4b. Check adverse-selection (one-directional fills)
+        await self._check_adverse_selection(fill)
+
         # 5. Check per-market inventory cap
         abs_pos = abs(self._maker.get_inventory(fill.token_id))
         if abs_pos >= self._maker.max_inventory_per_market:
@@ -139,6 +148,37 @@ class InventoryManager:
             )
 
         times[fill.side] = fill.filled_at
+
+    async def _check_adverse_selection(self, fill: Fill) -> None:
+        """Detect one-directional fill streams indicating adverse selection.
+
+        If >= ADVERSE_MIN_FILLS fills have been seen on a market and
+        >= ADVERSE_DIRECTION_PCT are the same side, the bot is being consistently
+        picked off. Trigger extended cooldown and warn.
+        """
+        sides = self._maker.recent_fill_sides.setdefault(fill.token_id, [])
+        sides.append(fill.side)
+        # Keep only the last 20 fills per market
+        if len(sides) > 20:
+            sides[:] = sides[-20:]
+
+        n = len(sides)
+        if n < ADVERSE_MIN_FILLS:
+            return
+
+        buy_count = sides.count("BUY")
+        sell_count = n - buy_count
+        dominant = max(buy_count, sell_count)
+        if dominant / n >= ADVERSE_DIRECTION_PCT:
+            dominant_side = "BUY" if buy_count > sell_count else "SELL"
+            await self._cancel_q.put(CancelAll(fill.token_id))
+            self._maker.cooldowns[fill.token_id] = time.time() + ADVERSE_COOLDOWN_SECONDS
+            # Reset so it doesn't keep re-triggering every fill
+            self._maker.recent_fill_sides[fill.token_id] = []
+            log.warning(
+                f"ADVERSE SELECTION: [{fill.token_id[:8]}] {dominant}/{n} fills are "
+                f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
+            )
 
     async def run(self):
         """Main loop — process fills from queue."""

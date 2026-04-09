@@ -150,16 +150,16 @@ class QuoteEngine:
             )
             spread = min(base_spread * spread_multiplier, MAX_SPREAD)
 
-            # Book-relative quoting: if the market spread is tighter than our desired
-            # spread, compress our half to match the book so we post inside it (not
-            # outside it). This ensures the fill poller's >= condition is satisfied
-            # for tight-spread markets (including high-volume Falcon-spiking markets).
+            # Book-relative quoting: compress toward book spread but never below
+            # MIN_SPREAD — we need at least that much to capture edge after fees.
+            # If the book is tighter than MIN_SPREAD, we quote at MIN_SPREAD
+            # (outside the book is fine — we wait for the book to come to us).
             book_spread = cs.best_ask - cs.best_bid
+            floor = MIN_SPREAD
             if book_spread > 0 and spread > book_spread:
-                eff_half = book_spread / 2.0
-                # Clamp fv to stay inside the book after compression
+                eff_spread = max(book_spread, floor)
+                eff_half = eff_spread / 2.0
                 eff_fv = _clamp(fv, cs.best_bid + eff_half, cs.best_ask - eff_half)
-                eff_spread = book_spread
             else:
                 eff_fv = fv
                 eff_spread = spread

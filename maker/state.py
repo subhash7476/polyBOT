@@ -55,6 +55,9 @@ class MakerState:
     # Fill timestamps for rapid-fill detection: token_id → {side → timestamp}
     last_fill_times: dict[str, dict[str, float]] = field(default_factory=dict)
 
+    # Recent fill directions for adverse-selection detection: token_id → deque of "BUY"/"SELL"
+    recent_fill_sides: dict[str, list] = field(default_factory=dict)
+
     # Persistence: unique ID for this runtime session
     session_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
 

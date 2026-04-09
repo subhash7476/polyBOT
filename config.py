@@ -47,8 +47,10 @@ DERIBIT_DVOL_ASSETS = ["BTC", "ETH", "SOL"]  # others use realized vol estimate
 # Paper mode (set PAPER=false in .env to go live)
 PAPER = os.getenv("PAPER", "true").lower() != "false"
 # Shadow Live Mode: connect to live markets, simulate fills from real trade events.
-# Requires PAPER=true (no real orders placed). Set SHADOW=true to enable.
-SHADOW = os.getenv("SHADOW", "false").lower() == "true"
+# Requires PAPER=true (no real orders placed). Default ON in paper mode —
+# Poisson paper fills are only useful for plumbing smoke tests.
+# Set SHADOW=false to revert to Poisson mode if needed.
+SHADOW = os.getenv("SHADOW", "true").lower() == "true"
 
 # Signal weights (calibrate from fills.jsonl after 50+ resolved signals)
 SIGNAL_WEIGHTS = {

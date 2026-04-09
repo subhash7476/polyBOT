@@ -69,7 +69,8 @@ def build_maker_actors(
             price_update_q=price_update_q,
         ),
         "order_manager": OrderManager(
-            maker_state, clob=clob, paper=True,  # always paper — shadow never places real orders
+            maker_state, clob=clob,
+            paper=True if shadow else paper,  # shadow always paper; live respects config
             quote_intents_q=quote_intents_q, cancel_q=cancel_q,
         ),
         "fill_poller": fill_poller,
@@ -98,6 +99,12 @@ async def run_maker():
     shadow = config.SHADOW and paper  # shadow requires paper mode
     if config.SHADOW and not paper:
         log.warning("SHADOW=true requires PAPER=true — shadow mode disabled")
+    if paper and not shadow:
+        log.warning(
+            "Running Poisson paper mode — fills are synthetic, not from real trades. "
+            "This is a plumbing smoke test only. Set SHADOW=true (now the default) "
+            "for realistic fill validation."
+        )
 
     log.info(f"Starting maker bot (paper={paper}, shadow={shadow})")
 

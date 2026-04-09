@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import httpx
 import time
 from collections import OrderedDict
@@ -12,12 +13,13 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-_MIN_DAILY_VOLUME = 1_000.0
-_MAX_ACTIVE_MARKETS = 120       # increased from 50 — 116+ candidates pass filters regularly
-_MIN_SPREAD = 0.0               # no floor — tight-spread markets still rank low (score = spread×vol)
+_MIN_DAILY_VOLUME = 10_000.0    # meaningful taker activity required
+_MAX_ACTIVE_MARKETS = 30        # focus on best opportunities, not thin spread
+_MIN_SPREAD = 0.02              # need ≥2¢ spread to capture any edge
 _MIN_BID = 0.05      # exclude near-zero / near-resolved markets (bid < 5¢)
 _MAX_BID = 0.95      # exclude near-certain markets (bid > 95¢)
-_MAX_DAYS_TO_RESOLVE = 90       # exclude far-future markets (>90 days to resolution)
+_MAX_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE", "7"))   # near-expiry only
+_MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # ≥4h — skip imminent resolution
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
 # "unknown" = parse_contract() couldn't classify it — skip to avoid garbage markets.
@@ -201,7 +203,7 @@ class MarketSelector:
         falcon_log: list[str] = []
 
         # Diagnostic counters
-        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_tight_spread = n_too_soon = 0
         cat_counts: dict[str, int] = {}
         now_ts = time.time()
 
@@ -227,10 +229,10 @@ class MarketSelector:
                 continue
 
             spread = cs.best_ask - cs.best_bid
+            if spread < _MIN_SPREAD:
+                n_tight_spread += 1
+                continue
 
-            # Zero-spread markets (locked book) score 0 (score = spread × volume) so
-            # they naturally rank last and are excluded by the cap. QuoteEngine still
-            # enforces MIN_SPREAD = 0.04 internally, so our quotes always have edge.
             vol_check = cs.volume_24h if cs.volume_24h > 0 else cs.volume_usd
             if vol_check < _MIN_DAILY_VOLUME:
                 n_low_vol += 1
@@ -239,14 +241,18 @@ class MarketSelector:
                 n_bad_bid += 1
                 continue
 
-            # Exclude far-future markets: capital tied up for months/years with no
-            # resolution catalyst → frozen price → one-sided inventory accumulation.
+            # Near-expiry filter: only quote markets resolving within the window.
+            # Too far out = frozen price, inventory trap.
+            # Too close = resolution imminent, quotes are dangerous.
             if cs.end_date_iso:
                 try:
                     end_dt = datetime.fromisoformat(cs.end_date_iso.replace("Z", "+00:00"))
                     days_left = (end_dt.timestamp() - now_ts) / 86400.0
                     if days_left > _MAX_DAYS_TO_RESOLVE:
                         n_far_future += 1
+                        continue
+                    if days_left < _MIN_DAYS_TO_RESOLVE:
+                        n_too_soon += 1
                         continue
                 except ValueError:
                     pass
@@ -291,7 +297,8 @@ class MarketSelector:
             f"filter_and_rank: {len(markets)} markets in state "
             f"(cats={cat_counts}) → "
             f"excluded_cat={n_excluded_cat} low_vol={n_low_vol} "
-            f"bad_bid={n_bad_bid} far_future={n_far_future} → "
+            f"tight_spread={n_tight_spread} bad_bid={n_bad_bid} "
+            f"far_future={n_far_future} too_soon={n_too_soon} → "
             f"{len(candidates)} candidates → {min(len(candidates), max_markets)} selected"
         )
 
@@ -364,11 +371,16 @@ class MarketSelector:
             expiry = meta.get("expiry")
             if expiry is not None:
                 exp_ts = expiry.timestamp() if hasattr(expiry, "timestamp") else float(expiry)
-                if (exp_ts - now_ts) / 86400.0 > _MAX_DAYS_TO_RESOLVE:
+                days_left = (exp_ts - now_ts) / 86400.0
+                if days_left > _MAX_DAYS_TO_RESOLVE:
                     n_far_future += 1
                     continue
-            # Rank by 24h volume if available (reflects current activity), else total volume
+                if days_left < _MIN_DAYS_TO_RESOLVE:
+                    continue
+            # Spread filter — same as filter_and_rank
             spread = meta["best_ask"] - meta["best_bid"]
+            if spread < _MIN_SPREAD:
+                continue
             vol_rank = meta.get("volume_24h", 0) or meta.get("volume", 0)
             candidates.append((yes_id, meta, spread * vol_rank))
 
