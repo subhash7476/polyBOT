@@ -23,6 +23,17 @@ if TYPE_CHECKING:
 _start_time = time.time()
 
 
+def _days_left(end_date_iso: str | None) -> float | None:
+    """Return days until end_date_iso from now. Negative = expired. None = unknown."""
+    if not end_date_iso:
+        return None
+    try:
+        end = _dt.fromisoformat(end_date_iso.replace("Z", "+00:00"))
+        return (end.timestamp() - _dt.now(_tz.utc).timestamp()) / 86400.0
+    except ValueError:
+        return None
+
+
 async def maker_dashboard_loop(
     app_state: AppState,
     maker_state: MakerState,
@@ -55,6 +66,7 @@ async def maker_dashboard_loop(
                 session_by_market = dict(maker_state.session_by_market)
                 today_stats = dict(maker_state.today_stats)
                 lifetime_stats = dict(maker_state.lifetime_stats)
+                selected_token_ids = set(maker_state.selected_token_ids)
 
             # Quote uptime: fraction of 2s ticks where at least one quote is resting
             _uptime_samples += 1
@@ -92,7 +104,36 @@ async def maker_dashboard_loop(
                     "n_levels": len(levels),
                     "inventory": round(inv, 2),
                     "cooldown": in_cd,
+                    "end_date_iso": cs.end_date_iso if cs else None,
+                    "days_left": _days_left(cs.end_date_iso if cs else None),
+                    "volume_24h": (getattr(cs, 'volume_24h', None) or cs.volume_usd) if cs else None,
+                    "book_bid": cs.best_bid if cs else None,
+                    "book_ask": cs.best_ask if cs else None,
+                    "bid_depth": getattr(cs, 'bid_depth', 0.0) if cs else 0.0,
+                    "ask_depth": getattr(cs, 'ask_depth', 0.0) if cs else 0.0,
+                    "category": cs.category if cs else None,
                 })
+
+            # Build selected markets list (all markets chosen by MarketSelector)
+            selected_markets = []
+            for token_id in selected_token_ids:
+                cs = markets_snapshot.get(token_id)
+                if cs is None:
+                    continue
+                dl = _days_left(cs.end_date_iso)
+                selected_markets.append({
+                    "token_id": token_id[:16],
+                    "question": cs.question[:70],
+                    "category": cs.category,
+                    "book_bid": cs.best_bid,
+                    "book_ask": cs.best_ask,
+                    "spread": round(cs.best_ask - cs.best_bid, 4),
+                    "volume_24h": getattr(cs, 'volume_24h', None) or cs.volume_usd,
+                    "days_left": dl,
+                    "is_quoting": token_id in live_orders,
+                })
+            # Sort: QUOTING first, then by volume descending
+            selected_markets.sort(key=lambda m: (not m["is_quoting"], -(m["volume_24h"] or 0)))
 
             # Feed ages
             now = time.time()
@@ -168,6 +209,7 @@ async def maker_dashboard_loop(
                 "alltime_cash_pnl": round(alltime_cash, 4),
                 "alltime_realized_pnl": round(alltime_realized, 4),
                 "by_market": by_market,
+                "selected_markets": selected_markets,
             })
         except Exception as exc:
             import logging

@@ -63,6 +63,8 @@ class MakerDashboardState:
         self.alltime_realized_pnl: float = 0.0
         # Per-market breakdown: list of dicts sorted by alltime fills desc
         self.by_market: list = []
+        # Selected markets: all token_ids chosen by MarketSelector (quoted or not)
+        self.selected_markets: list = []
 
     def update(self, snapshot: dict) -> None:
         with self._lock:
@@ -107,4 +109,5 @@ class MakerDashboardState:
                 "alltime_cash_pnl": self.alltime_cash_pnl,
                 "alltime_realized_pnl": self.alltime_realized_pnl,
                 "by_market": self.by_market,
+                "selected_markets": self.selected_markets,
             })
