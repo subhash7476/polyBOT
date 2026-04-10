@@ -788,15 +788,15 @@ function render(data) {
       const statusBadge = m.in_cooldown
           ? `<span style="background:#555;color:#aaa;padding:2px 6px;border-radius:3px;font-size:11px">COOLDOWN</span>`
           : `<span style="background:#2a5;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px">QUOTED</span>`;
-      const catBadge = m.category ? `<span style="font-size:10px;color:#aaa;display:block">${m.category}</span>` : '';
+      const catBadge = m.category ? `<span style="font-size:10px;color:#aaa;display:block">${escHtml(m.category)}</span>` : '';
 
       return `<tr>
-        <td><span title="${m.question}">${(m.question||'').slice(0,60)}</span>${catBadge}</td>
+        <td><span title="${escHtml(m.question||'')}">${escHtml((m.question||'').slice(0,60))}</span>${catBadge}</td>
         <td>${fmtDays(m.days_left)}</td>
         <td>${fmtVol(m.volume_24h)}</td>
         <td style="font-family:monospace">${(m.book_bid||0).toFixed(3)} / ${(m.book_ask||0).toFixed(3)}</td>
         <td>$${depth}</td>
-        <td style="font-family:monospace">${m.bid.toFixed(3)} / ${m.ask.toFixed(3)}</td>
+        <td style="font-family:monospace">${(m.bid||0).toFixed(3)} / ${(m.ask||0).toFixed(3)}</td>
         <td>${spread}</td>
         <td>${invBar}</td>
         <td>${statusBadge}</td>
@@ -945,8 +945,8 @@ function renderSelectedMarkets(markets) {
             : `<span style="background:#444;color:#aaa;padding:2px 6px;border-radius:3px;font-size:11px">WATCHING</span>`;
         return `<tr style="border-bottom:1px solid #222">
           <td style="padding:4px 8px">${statusBadge}</td>
-          <td style="padding:4px 8px;max-width:300px" title="${m.question}">${(m.question||'').slice(0,70)}</td>
-          <td style="padding:4px 8px;color:#aaa;font-size:11px">${m.category||'—'}</td>
+          <td style="padding:4px 8px;max-width:300px" title="${escHtml(m.question||'')}">${escHtml((m.question||'').slice(0,70))}</td>
+          <td style="padding:4px 8px;color:#aaa;font-size:11px">${escHtml(m.category||'—')}</td>
           <td style="padding:4px 8px;font-family:monospace">${(m.book_bid||0).toFixed(3)} / ${(m.book_ask||0).toFixed(3)}</td>
           <td style="padding:4px 8px">${(m.spread||0).toFixed(3)}</td>
           <td style="padding:4px 8px">${fmtVol(m.volume_24h)}</td>
