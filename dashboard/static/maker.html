@@ -447,21 +447,42 @@
       <table id="quotes-table">
         <thead>
           <tr>
-            <th>Question</th>
-            <th>Bid</th>
-            <th>Ask</th>
+            <th>Market</th>
+            <th>Resolves</th>
+            <th>Vol 24h</th>
+            <th>Book</th>
+            <th>Depth ($)</th>
+            <th>Our Quote</th>
             <th>Spread</th>
-            <th>Levels</th>
             <th>Inventory</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody id="quotes-body">
-          <tr class="empty-row"><td colspan="7">No active quotes</td></tr>
+          <tr class="empty-row"><td colspan="9">No active quotes</td></tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <!-- Selected Markets -->
+  <section class="panel panel-full" style="padding:14px">
+    <h3 style="margin-bottom:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8b949e">Selected Markets <span id="sel-count" style="font-size:12px;color:#888"></span></h3>
+    <table id="sel-tbl" style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #333">
+          <th style="padding:4px 8px">Status</th>
+          <th style="padding:4px 8px">Market</th>
+          <th style="padding:4px 8px">Cat</th>
+          <th style="padding:4px 8px">Book</th>
+          <th style="padding:4px 8px">Spread</th>
+          <th style="padding:4px 8px">Vol 24h</th>
+          <th style="padding:4px 8px">Resolves</th>
+        </tr>
+      </thead>
+      <tbody id="sel-body"></tbody>
+    </table>
+  </section>
 
   <!-- Fill History -->
   <div class="panel panel-full">
@@ -645,6 +666,22 @@ function parseAgeStr(str) {
   return total;
 }
 
+function fmtVol(v) {
+    if (v == null) return '—';
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+    if (v >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'k';
+    return '$' + v.toFixed(0);
+}
+
+function fmtDays(d) {
+    if (d == null) return '—';
+    if (Math.abs(d) < 1) {
+        const h = Math.round(d * 24);
+        return `<span style="color:#e05;">${h}h</span>`;
+    }
+    return d.toFixed(1) + 'd';
+}
+
 function fmtTime(ts) {
   if (!ts) return '—';
   const d = new Date(ts * 1000);
@@ -740,31 +777,29 @@ function render(data) {
   qCount.textContent = markets.length;
   const qBody = document.getElementById('quotes-body');
   if (markets.length === 0) {
-    qBody.innerHTML = '<tr class="empty-row"><td colspan="7">No active quotes</td></tr>';
+    qBody.innerHTML = '<tr class="empty-row"><td colspan="9">No active quotes</td></tr>';
   } else {
     qBody.innerHTML = markets.map(m => {
-      const statusTag = m.cooldown
-        ? '<span class="tag tag-cooldown">COOLDOWN</span>'
-        : '<span class="tag tag-quoted">QUOTED</span>';
-
-      const inv = m.inventory || 0;
-      const maxInv = 50; // matches MakerState.max_inventory_per_market default
-      const pct = Math.min(Math.abs(inv) / maxInv * 100, 100);
-      const barClass = inv < 0 ? 'negative' : '';
-      const invBar = `
-        <div class="inv-bar-wrap">
-          <div class="inv-bar-bg"><div class="inv-bar-fill ${barClass}" style="width:${pct}%"></div></div>
-          <span class="inv-val">${inv.toFixed(2)}</span>
-        </div>`;
+      const spread = (m.ask - m.bid).toFixed(3);
+      const bookSpread = (m.book_ask - m.book_bid).toFixed(3);
+      const depth = ((m.bid_depth || 0) + (m.ask_depth || 0)).toFixed(0);
+      const invPct = Math.min(Math.abs(m.inventory_pct || 0), 1);
+      const invBar = `<div style="background:#26a;width:${(invPct*80).toFixed(0)}px;height:8px;border-radius:2px;display:inline-block"></div>`;
+      const statusBadge = m.in_cooldown
+          ? `<span style="background:#555;color:#aaa;padding:2px 6px;border-radius:3px;font-size:11px">COOLDOWN</span>`
+          : `<span style="background:#2a5;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px">QUOTED</span>`;
+      const catBadge = m.category ? `<span style="font-size:10px;color:#aaa;display:block">${m.category}</span>` : '';
 
       return `<tr>
-        <td title="${m.question}">${escHtml(m.question || m.token_id)}</td>
-        <td>${(m.bid || 0).toFixed(4)}</td>
-        <td>${(m.ask || 0).toFixed(4)}</td>
-        <td>${(m.spread || 0).toFixed(4)}</td>
-        <td>${m.n_levels || 1}</td>
+        <td><span title="${m.question}">${(m.question||'').slice(0,60)}</span>${catBadge}</td>
+        <td>${fmtDays(m.days_left)}</td>
+        <td>${fmtVol(m.volume_24h)}</td>
+        <td style="font-family:monospace">${(m.book_bid||0).toFixed(3)} / ${(m.book_ask||0).toFixed(3)}</td>
+        <td>$${depth}</td>
+        <td style="font-family:monospace">${m.bid.toFixed(3)} / ${m.ask.toFixed(3)}</td>
+        <td>${spread}</td>
         <td>${invBar}</td>
-        <td>${statusTag}</td>
+        <td>${statusBadge}</td>
       </tr>`;
     }).join('');
   }
@@ -797,6 +832,9 @@ function render(data) {
 
   // Falcon Intelligence
   renderFalcon(data.falcon_data || {});
+
+  // Selected Markets panel
+  renderSelectedMarkets(data.selected_markets || []);
 
   // Feed status
   const clobAge = data.clob_age || '?';
@@ -890,6 +928,32 @@ function renderFalcon(f) {
       </tr>`;
     }).join('');
   }
+}
+
+function renderSelectedMarkets(markets) {
+    const count = document.getElementById('sel-count');
+    const body = document.getElementById('sel-body');
+    if (!markets || markets.length === 0) {
+        if (count) count.textContent = '';
+        if (body) body.innerHTML = '<tr><td colspan="7" style="padding:8px;color:#666">No markets selected yet</td></tr>';
+        return;
+    }
+    if (count) count.textContent = `(${markets.length})`;
+    const rows = markets.map(m => {
+        const statusBadge = m.is_quoting
+            ? `<span style="background:#2a5;color:#fff;padding:2px 6px;border-radius:3px;font-size:11px">QUOTING</span>`
+            : `<span style="background:#444;color:#aaa;padding:2px 6px;border-radius:3px;font-size:11px">WATCHING</span>`;
+        return `<tr style="border-bottom:1px solid #222">
+          <td style="padding:4px 8px">${statusBadge}</td>
+          <td style="padding:4px 8px;max-width:300px" title="${m.question}">${(m.question||'').slice(0,70)}</td>
+          <td style="padding:4px 8px;color:#aaa;font-size:11px">${m.category||'—'}</td>
+          <td style="padding:4px 8px;font-family:monospace">${(m.book_bid||0).toFixed(3)} / ${(m.book_ask||0).toFixed(3)}</td>
+          <td style="padding:4px 8px">${(m.spread||0).toFixed(3)}</td>
+          <td style="padding:4px 8px">${fmtVol(m.volume_24h)}</td>
+          <td style="padding:4px 8px">${fmtDays(m.days_left)}</td>
+        </tr>`;
+    }).join('');
+    if (body) body.innerHTML = rows;
 }
 
 function escHtml(str) {
