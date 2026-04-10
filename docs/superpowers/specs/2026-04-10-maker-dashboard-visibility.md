@@ -56,19 +56,32 @@ log message so every SHADOW FILL line names the market.
 SHADOW FILL: BUY 10.00 @ 0.090 [Will BTC exceed $100k by Apr 15?] trade@0.088
 ```
 
+**Defense-in-depth current-book check in `_check_fills`:** At the top of `_check_fills`,
+look up `cs` from `self._app.markets` (already available via `self._app`). If
+`cs is None or cs.best_bid < 0.05 or cs.best_bid > 0.95`, return `[]` immediately.
+
+**Rationale:** There is a race window between QuoteEngine reprice cycles (up to 30s) during
+which a market can collapse below 0.05. The per-token cancel from ② fires on the next
+reprice cycle; until then, stale orders remain in `live_orders`. This check closes the race:
+even if stale orders exist, fills are blocked as soon as the real book moves out of range.
+`_check_fills` already receives a reference to the market state via `self._app`.
+
 ### ② Runtime bid-range guard — `maker/quote_engine.py`
 
-**Change:** In `QuoteEngine._reprice`, immediately after fetching `cs`, skip the market if
-`cs.best_bid < 0.05 or cs.best_bid > 0.95`. Log a warning on the first skip per token_id
-per session (suppress repeats to avoid log spam).
+**Change:** In `QuoteEngine._reprice`, immediately after fetching `cs`, if
+`cs.best_bid < 0.05 or cs.best_bid > 0.95`:
+1. Emit `CancelAll(token_id=token_id)` to `self._cancel_q` to actively pull resting orders.
+2. Log a warning on first occurrence per token_id per session (suppress repeats).
+3. Return early — do not compute or emit a new ladder.
 
-**Rationale:** MarketSelector refreshes every 15 minutes. A market can resolve or collapse
-within that window. This guard is the last line of defence before a quote is computed and
-sent. It is a pure safety check — no effect on healthy markets.
+**Rationale:** Skipping reprice alone leaves stale orders in `maker_state.live_orders`, which
+`ShadowFillPoller` still reads when checking fills. The per-token cancel removes those orders
+from live state immediately. `OrderManager.handle_cancel_sync` already handles per-token
+cancel via `CancelAll(token_id=...)` at line 63 — no new infrastructure required.
 
-**Implementation detail:** Track skipped token_ids in a `_stale_skip_warned: set[str]`
-instance variable on `QuoteEngine`. Log warning on first occurrence; subsequent skips are
-silent until the market exits the selected set.
+**Implementation detail:** Track warned token_ids in `_stale_skip_warned: set[str]` on
+`QuoteEngine`. Clear the set when a token exits `_active_token_ids` so a re-entry logs
+again.
 
 ### ③ Enrich Active Quotes table — `maker/dashboard_loop.py` + `dashboard/static/maker.html`
 
@@ -81,8 +94,8 @@ silent until the market exits the selected set.
 | `volume_24h` | `cs.volume_24h or cs.volume_usd` | USD |
 | `book_bid` | `cs.best_bid` | real CLOB best bid, not bot's quote |
 | `book_ask` | `cs.best_ask` | real CLOB best ask |
-| `bid_depth` | `cs.bid_depth` | aggregate size of top-5 bid levels (shares) |
-| `ask_depth` | `cs.ask_depth` | aggregate size of top-5 ask levels (shares) |
+| `bid_depth` | `cs.bid_depth` | USDC notional depth across top-5 bid levels |
+| `ask_depth` | `cs.ask_depth` | USDC notional depth across top-5 ask levels |
 | `category` | `cs.category` | e.g. "election", "sports" |
 
 **Frontend (`maker.html`):** Remodel the Active Quotes table with these columns:
@@ -93,23 +106,31 @@ silent until the market exits the selected set.
 | Resolves | days_left formatted (e.g. "3.2d", "14h"), colored red if < 1 day |
 | Vol 24h | volume_24h formatted as "$12.4k" |
 | Book | `book_bid / book_ask` (real CLOB prices) |
-| Depth | `bid_depth + ask_depth` total shares |
+| Depth | `bid_depth + ask_depth` total USDC notional (labeled "$") |
 | Our Quote | bot's `bid / ask` |
 | Spread | bot's spread |
 | Inventory | existing bar widget |
 | Status | QUOTED / COOLDOWN badge |
 
-### ④ Selected Markets panel — `maker/state.py` + `maker/quote_engine.py` + `maker/dashboard_loop.py` + `dashboard/static/maker.html`
+### ④ Selected Markets panel — `maker/state.py` + `maker/market_selector.py` + `maker/dashboard_loop.py` + `dashboard/static/maker.html`
 
 **Problem:** The only way to know which markets are selected is to read logs. The dashboard
 shows active quotes (markets with live orders) but not the full selected set.
 
-**`MakerState`:** Add `selected_token_ids: set[str] = field(default_factory=set)` (protected
-by the existing `_lock`).
+**`MakerState`:** Add `selected_token_ids: set[str]` (protected by the existing `_lock`),
+initialised to empty set in `__init__`.
 
-**`QuoteEngine.run()`:** When draining `active_markets_q`, also write the new set to
-`maker_state.selected_token_ids` under `maker_state._lock`. No other actors need to write
-this field.
+**`MarketSelector.run()`:** After computing `selected`, acquire `maker_state._lock` and write
+`maker_state.selected_token_ids = set(selected.keys())` directly, then put to
+`active_markets_q` as before.
+
+**Rationale for MarketSelector ownership (not QuoteEngine):** QuoteEngine drains
+`active_markets_q` opportunistically during reprice cycles (up to 30s intervals). If
+QuoteEngine wrote `selected_token_ids`, the dashboard could lag up to 60s behind the
+selector's actual choice (30s queue drain + 2s dashboard tick). MarketSelector produces the
+selection; writing it directly means the dashboard reflects the new set within 2s.
+MarketSelector already holds `self._state: AppState`; passing `maker_state: MakerState` as
+an additional constructor parameter is the minimal wiring change required.
 
 **`dashboard_loop.py`:** Read `selected_token_ids` from `maker_state` snapshot. Build a
 `selected_markets` list — one dict per token — from `markets_snapshot`. Fields:
@@ -149,16 +170,19 @@ Sorted: QUOTING rows first, then by volume descending.
 
 ```
 MarketSelector.run()
+  → writes maker_state.selected_token_ids          (NEW — direct, 2s dashboard lag)
   → active_markets_q.put(set[token_ids])          (unchanged)
 
 QuoteEngine.run()
-  → reads active_markets_q
-  → writes maker_state.selected_token_ids          (NEW)
-  → _reprice(): skip if best_bid out of range      (NEW)
+  → reads active_markets_q                         (unchanged)
+  → _reprice(): if best_bid out of range:
+      emit CancelAll(token_id) to cancel_q         (NEW — pulls resting orders)
+      skip ladder computation                      (NEW)
 
 ShadowFillPoller._check_fills()
+  → return [] if cs.best_bid out of range          (NEW — closes race window)
   → _MAX_FILL_DISTANCE = 0.02                      (CHANGED from 0.10)
-  → log includes cs.question                       (NEW)
+  → log in run() includes cs.question             (NEW)
 
 maker_dashboard_loop()
   → reads selected_token_ids from maker_state      (NEW)
@@ -175,9 +199,24 @@ maker.html
 
 ## Testing
 
-- Shadow fill with trade at 0.001 and bot bid at 0.090: no fill generated (distance 0.089 > 0.02).
-- Shadow fill with trade at 0.088 and bot bid at 0.090: fill generated (distance 0.002 ≤ 0.02).
-- Market with `best_bid = 0.03` in QuoteEngine: skipped, warning logged once per session.
-- Market with `best_bid = 0.06`: quoted normally (passes guard).
-- Selected Markets panel: shows all N selected markets; markets with live orders show QUOTING badge.
-- Active Quotes table: shows `end_date_iso`-derived days_left, book_bid/ask, depth.
+**Shadow fill proximity:**
+- Trade at 0.001, bot bid at 0.090: no fill (distance 0.089 > 0.02).
+- Trade at 0.088, bot bid at 0.090: fill generated (distance 0.002 ≤ 0.02).
+
+**Shadow fill current-book check:**
+- Market `best_bid = 0.04` (below range): `_check_fills` returns `[]` regardless of trade price.
+- Market `best_bid = 0.06`: normal fill logic applies.
+
+**QuoteEngine bid-range guard:**
+- Market with `best_bid = 0.03`: CancelAll(token_id) emitted, reprice skipped, warning logged once per session.
+- Market with `best_bid = 0.06`: quoted normally.
+- After cancel, `live_orders[token_id]` is empty; subsequent shadow fill check for that market returns `[]`.
+
+**Selected Markets panel:**
+- MarketSelector writes `selected_token_ids` to MakerState at selection time.
+- Dashboard shows updated panel within 2s of selection.
+- Markets with live orders show QUOTING badge; others show WATCHING.
+
+**Active Quotes table:**
+- Shows `end_date_iso`-derived days_left, book_bid/ask, depth labeled as USDC ("$").
+- Depth column does not use "shares" label.
