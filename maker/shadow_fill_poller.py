@@ -133,6 +133,7 @@ class ShadowFillPoller:
             async with self._app._lock:
                 cs = self._app.markets.get(token_id)
                 mid = cs.mid if cs else trade_price
+                question = cs.question[:50] if cs else token_id[:8]
 
             fills = self._check_fills(token_id, trade_price, trade_size, mid)
             if not fills:
@@ -140,7 +141,6 @@ class ShadowFillPoller:
 
             FillPoller.consume_paper_fills(self._maker, fills)
             for fill in fills:
-                question = cs.question[:50] if cs else token_id[:8]
                 log.info(
                     f"SHADOW FILL: {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
                     f"[{question}] trade@{trade_price:.3f}"

@@ -216,3 +216,17 @@ async def test_fill_blocked_when_market_near_zero():
     # but real book is near-zero so fills are blocked.
     fills = poller._check_fills(token_id, 0.055, 10.0, mid=0.04)
     assert fills == []
+
+
+@pytest.mark.asyncio
+async def test_fill_blocked_when_market_near_one():
+    """If real book best_bid > 0.95, no fills (near-certain market)."""
+    token_id = "tok-near-one"
+    app = _make_app_state(token_id, bid=0.96, ask=0.98)
+    ms = _make_maker_state_with_quotes(token_id, bid_price=0.94, ask_price=0.97)
+    poller = ShadowFillPoller(app, ms, asyncio.Queue(), asyncio.Queue())
+
+    # Trade at 0.95 would cross our 0.94 bid, distance 0.01 ≤ 0.02 —
+    # but real book is near-certainty so fills are blocked.
+    fills = poller._check_fills(token_id, 0.95, 10.0, mid=0.97)
+    assert fills == []
