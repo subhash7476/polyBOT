@@ -159,3 +159,73 @@ def test_is_stale_returns_true_when_price_changed():
     old = QuoteIntent("abc", 0.45, 0.55, 10.0, 10.0, "reprice")
     new = QuoteIntent("abc", 0.47, 0.57, 10.0, 10.0, "reprice")
     assert QuoteEngine.is_stale(old, new, tick=0.01)
+
+
+import asyncio
+from maker.state import MakerState
+from maker.types import CancelAll
+from market.state import AppState, ContractState
+
+
+def _make_app_for_guard(token_id: str, best_bid: float, best_ask: float) -> AppState:
+    app = AppState()
+    cs = ContractState(
+        yes_token_id=token_id,
+        no_token_id="no-" + token_id,
+        question="Guard test market",
+        category="sports",
+        best_bid=best_bid,
+        best_ask=best_ask,
+        volume_usd=50_000.0,
+        end_date_iso="2026-05-01T12:00:00Z",
+    )
+    app.markets[token_id] = cs
+    return app
+
+
+@pytest.mark.asyncio
+async def test_reprice_emits_cancel_for_near_zero_market():
+    """_reprice emits CancelAll(token_id) and no LadderUpdate when best_bid < 0.05."""
+    token_id = "dead-tok"
+    app = _make_app_for_guard(token_id, best_bid=0.03, best_ask=0.06)
+    ms = MakerState()
+    ms.live_orders[token_id] = [{
+        "bid_price": 0.06, "ask_price": 0.10,
+        "bid_size": 10.0, "ask_size": 10.0,
+        "bid_order_id": "b1", "ask_order_id": "a1",
+    }]
+
+    quote_q = asyncio.Queue()
+    cancel_q = asyncio.Queue()
+
+    qe = QuoteEngine(app, ms, asyncio.Queue(), quote_q, asyncio.Queue(), cancel_q=cancel_q)
+    qe._active_token_ids = {token_id}
+
+    await qe._reprice({token_id}, force=True, new_ids=set())
+
+    assert quote_q.empty(), "No LadderUpdate should be emitted for near-dead market"
+    cancel = cancel_q.get_nowait()
+    assert isinstance(cancel, CancelAll)
+    assert cancel.token_id == token_id
+    assert not cancel.is_global
+
+
+@pytest.mark.asyncio
+async def test_reprice_only_warns_once_per_market():
+    """_stale_skip_warned tracks warned markets; no duplicate entries."""
+    token_id = "dead-tok-2"
+    app = _make_app_for_guard(token_id, best_bid=0.02, best_ask=0.04)
+    ms = MakerState()
+    ms.live_orders[token_id] = []
+
+    qe = QuoteEngine(app, ms, asyncio.Queue(), asyncio.Queue(), asyncio.Queue(),
+                     cancel_q=asyncio.Queue())
+    qe._active_token_ids = {token_id}
+
+    assert token_id not in qe._stale_skip_warned
+    await qe._reprice({token_id}, force=True, new_ids=set())
+    assert token_id in qe._stale_skip_warned
+
+    # Second call must not raise; warned set stays singleton
+    await qe._reprice({token_id}, force=True, new_ids=set())
+    assert qe._stale_skip_warned == {token_id}

@@ -4,7 +4,7 @@ import asyncio
 import time
 from datetime import datetime, timezone
 from maker.state import MakerState
-from maker.types import QuoteIntent, SkewUpdate, LadderUpdate
+from maker.types import QuoteIntent, SkewUpdate, LadderUpdate, CancelAll
 from market.state import AppState
 from engine.falcon_signals import compute_adverse_selection_penalty, compute_market_skew_adjustment
 from utils.logger import get_logger
@@ -93,6 +93,7 @@ class QuoteEngine:
         self._clob_stale = False  # tracks whether we already pulled quotes
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
+        self._stale_skip_warned: set[str] = set()   # markets already warned about bid-range exit
 
     @staticmethod
     def build_ladder(
@@ -149,6 +150,20 @@ class QuoteEngine:
             cs = markets.get(token_id)
             if not cs:
                 continue
+
+            # Bid-range guard: market has moved out of quotable range since last MarketSelector
+            # refresh (every 15 min). Cancel resting orders and skip repricing.
+            if cs.best_bid < 0.05 or cs.best_bid > 0.95:
+                if token_id not in self._stale_skip_warned:
+                    self._stale_skip_warned.add(token_id)
+                    log.warning(
+                        f"bid-range guard: [{token_id[:8]}] best_bid={cs.best_bid:.4f} "
+                        f"out of [0.05, 0.95] — cancelling quotes"
+                    )
+                if self._cancel_q is not None:
+                    await self._cancel_q.put(CancelAll(token_id))
+                continue
+
             if self._maker.in_cooldown(token_id):
                 continue
 
@@ -243,6 +258,8 @@ class QuoteEngine:
                 except asyncio.QueueEmpty:
                     break
             new_ids = self._active_token_ids - prev_ids
+            removed_ids = prev_ids - self._active_token_ids
+            self._stale_skip_warned -= removed_ids   # re-warn if market re-enters and is still stale
 
             while not self._skew_updates_q.empty():
                 try:
@@ -272,7 +289,6 @@ class QuoteEngine:
                         f"CLOB feed stale ({clob_age:.0f}s) — pulling all quotes"
                     )
                     if self._cancel_q is not None:
-                        from maker.types import CancelAll
                         await self._cancel_q.put(CancelAll("*"))
                 continue  # skip reprice until feed recovers
 
