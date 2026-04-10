@@ -35,7 +35,8 @@ log = get_logger(__name__)
 # Maximum distance between trade price and our quote level for a fill to trigger.
 # A trade at 0.001 cannot realistically fill our bid at 0.62 — in a real CLOB the
 # taker would hit the best bid (0.001 in that case), not walk up to ours.
-_MAX_FILL_DISTANCE = 0.10
+_MAX_FILL_DISTANCE = 0.02   # was 0.10
+_FILL_DISTANCE_EPS = 1e-9   # float-comparison tolerance
 
 
 class ShadowFillPoller:
@@ -64,6 +65,14 @@ class ShadowFillPoller:
         fills = []
         now = time.time()
 
+        # Current-book range guard: if the real book has moved out of quoting range
+        # since the last MarketSelector refresh, block all fills for this market.
+        # Lockless read is acceptable — worst case is a stale read, which only
+        # delays blocking by one trade event (negligible).
+        cs_check = self._app.markets.get(token_id)
+        if cs_check is not None and (cs_check.best_bid < 0.05 or cs_check.best_bid > 0.95):
+            return []
+
         levels = list(self._maker.live_orders.get(token_id, []))
         remaining_size = trade_size if trade_size > 0 else float("inf")
 
@@ -84,7 +93,7 @@ class ShadowFillPoller:
             # hits the best bid at the time of the trade, not a level 60¢ away.
             if (bid_order_id and bid_size > 0
                     and trade_price <= bid_price
-                    and (bid_price - trade_price) <= _MAX_FILL_DISTANCE):
+                    and (bid_price - trade_price) <= _MAX_FILL_DISTANCE + _FILL_DISTANCE_EPS):
                 fill_size = min(bid_size, remaining_size)
                 fills.append(Fill(
                     token_id=token_id,
@@ -101,7 +110,7 @@ class ShadowFillPoller:
             # Proximity guard: trade must be within _MAX_FILL_DISTANCE of our ask.
             if (ask_order_id and ask_size > 0
                     and trade_price >= ask_price
-                    and (trade_price - ask_price) <= _MAX_FILL_DISTANCE):
+                    and (trade_price - ask_price) <= _MAX_FILL_DISTANCE + _FILL_DISTANCE_EPS):
                 fill_size = min(ask_size, remaining_size)
                 fills.append(Fill(
                     token_id=token_id,
@@ -131,8 +140,9 @@ class ShadowFillPoller:
 
             FillPoller.consume_paper_fills(self._maker, fills)
             for fill in fills:
+                question = cs.question[:50] if cs else token_id[:8]
                 log.info(
                     f"SHADOW FILL: {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
-                    f"[{token_id[:8]}] trade@{trade_price:.3f}"
+                    f"[{question}] trade@{trade_price:.3f}"
                 )
                 await self._fills_q.put(fill)

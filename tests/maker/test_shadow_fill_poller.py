@@ -175,3 +175,44 @@ async def test_multi_level_ladder_partial_fill():
     bid_fills = [f for f in fills if f.side == "BUY"]
     # Only levels with bid_price >= 0.45 should fill
     assert all(f.price >= 0.45 for f in bid_fills)
+
+
+@pytest.mark.asyncio
+async def test_fill_blocked_when_trade_too_far_from_bid():
+    """Trade more than _MAX_FILL_DISTANCE (0.02) from our bid → no fill."""
+    token_id = "tok-dist"
+    app = _make_app_state(token_id, bid=0.44, ask=0.48)
+    ms = _make_maker_state_with_quotes(token_id, bid_price=0.45, ask_price=0.47)
+    poller = ShadowFillPoller(app, ms, asyncio.Queue(), asyncio.Queue())
+
+    # distance = 0.45 - 0.42 = 0.03 > 0.02 → blocked
+    fills = poller._check_fills(token_id, 0.42, 10.0, mid=0.46)
+    assert fills == []
+
+
+@pytest.mark.asyncio
+async def test_fill_allowed_when_trade_within_distance():
+    """Trade exactly _MAX_FILL_DISTANCE (0.02) from our bid → fill allowed."""
+    token_id = "tok-close"
+    app = _make_app_state(token_id, bid=0.44, ask=0.48)
+    ms = _make_maker_state_with_quotes(token_id, bid_price=0.45, ask_price=0.47)
+    poller = ShadowFillPoller(app, ms, asyncio.Queue(), asyncio.Queue())
+
+    # distance = 0.45 - 0.43 = 0.02 ≤ 0.02 → allowed
+    fills = poller._check_fills(token_id, 0.43, 10.0, mid=0.46)
+    assert len(fills) == 1
+    assert fills[0].side == "BUY"
+
+
+@pytest.mark.asyncio
+async def test_fill_blocked_when_market_near_zero():
+    """If real book best_bid < 0.05, no fills regardless of quote prices."""
+    token_id = "tok-dead"
+    app = _make_app_state(token_id, bid=0.03, ask=0.05)
+    ms = _make_maker_state_with_quotes(token_id, bid_price=0.06, ask_price=0.10)
+    poller = ShadowFillPoller(app, ms, asyncio.Queue(), asyncio.Queue())
+
+    # Trade at 0.055 would cross our 0.06 bid, distance 0.005 ≤ 0.02 —
+    # but real book is near-zero so fills are blocked.
+    fills = poller._check_fills(token_id, 0.055, 10.0, mid=0.04)
+    assert fills == []
