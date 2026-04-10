@@ -1,6 +1,7 @@
 import time
 import asyncio
-from unittest.mock import MagicMock
+import pytest
+from unittest.mock import MagicMock, AsyncMock, patch
 from datetime import datetime, timezone, timedelta
 from market.state import ContractState, FeedState, FalconMarketInsight
 from maker.market_selector import MarketSelector
@@ -252,3 +253,47 @@ def test_falcon_question_fallback_bypasses_tight_spread():
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
     assert "tightspiking" in selected, "question-based fallback should bypass tight spread filter"
+
+
+@pytest.mark.asyncio
+async def test_selector_writes_selected_token_ids_to_maker_state():
+    """MarketSelector.run() writes selected_token_ids to MakerState directly."""
+    from market.state import AppState
+    from maker.state import MakerState
+
+    # Build app_state with enough markets to pass filters
+    app_state = AppState()
+    markets = {
+        f"tok{i}": _make_market(f"tok{i}", volume=20_000.0)
+        for i in range(3)
+    }
+    async with app_state._lock:
+        app_state.markets.update(markets)
+
+    active_markets_q = asyncio.Queue()
+    maker_state = MakerState()
+
+    selector = MarketSelector(app_state, active_markets_q, maker_state=maker_state)
+
+    # Patch _discover_and_seed to be a no-op (avoids real HTTP calls)
+    async def _noop(self=None):
+        pass
+
+    with patch.object(selector, "_discover_and_seed", new=AsyncMock(return_value=None)):
+        # Run one iteration: run() loops forever with asyncio.sleep — cancel after first put
+        async def run_once():
+            task = asyncio.create_task(selector.run())
+            # Wait until the queue gets the first selection
+            result = await asyncio.wait_for(active_markets_q.get(), timeout=5.0)
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            return result
+
+        selected_set = await run_once()
+
+    # selected_token_ids must equal what was put on the queue
+    assert isinstance(maker_state.selected_token_ids, set)
+    assert maker_state.selected_token_ids == selected_set

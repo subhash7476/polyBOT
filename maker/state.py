@@ -20,6 +20,9 @@ class MakerState:
     # Per-market live order IDs: token_id → {"bid_order_id": str, "ask_order_id": str, "bid_price": float, ...}
     live_orders: dict[str, list[dict]] = field(default_factory=dict)
 
+    # Currently selected token_ids (written by MarketSelector after each selection cycle)
+    selected_token_ids: set = field(default_factory=set)
+
     # Per-market last emitted quote (for stale detection)
     last_quotes: dict[str, QuoteIntent] = field(default_factory=dict)
 

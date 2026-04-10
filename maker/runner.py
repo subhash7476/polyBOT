@@ -63,7 +63,7 @@ def build_maker_actors(
         fill_poller = FillPoller(app_state, maker_state, fills_q, clob=clob, paper=paper)
 
     actors = {
-        "selector": MarketSelector(app_state, active_markets_q),
+        "selector": MarketSelector(app_state, active_markets_q, maker_state=maker_state),
         "quote_engine": QuoteEngine(
             app_state, maker_state, active_markets_q, quote_intents_q, skew_updates_q,
             price_update_q=price_update_q,

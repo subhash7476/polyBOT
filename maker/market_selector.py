@@ -188,9 +188,11 @@ class MarketSelector:
         self,
         state: AppState,
         active_markets_q: asyncio.Queue,
+        maker_state=None,
     ):
         self._state = state
         self._active_markets_q = active_markets_q
+        self._maker_state = maker_state
 
     @staticmethod
     def filter_and_rank(
@@ -628,6 +630,10 @@ class MarketSelector:
             # Falcon overlap: shows which selected markets Falcon has data for,
             # and which Falcon spiking markets we're missing
             _falcon_overlap_report(selected, feeds)
+
+            if self._maker_state is not None:
+                async with self._maker_state._lock:
+                    self._maker_state.selected_token_ids = set(selected.keys())
 
             await self._active_markets_q.put(set(selected.keys()))
             await asyncio.sleep(self.REFRESH_INTERVAL)
