@@ -336,3 +336,74 @@ def test_market_with_valid_end_date_still_passes(monkeypatch):
     cs.end_date_iso = future
     selected = ms_mod.MarketSelector.filter_and_rank({"has_date": cs})
     assert "has_date" in selected
+
+
+# ── Fix 3: Falcon force-seed ──────────────────────────────────────────────────
+
+def test_discover_and_seed_force_seeds_falcon_spiking_markets(monkeypatch):
+    """Falcon spiking markets with tight spreads must be seeded into state
+    even if their spread*vol score falls below the normal top-60 window."""
+    import asyncio
+    import importlib
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import AsyncMock, patch
+    from market.state import AppState
+
+    monkeypatch.delenv("MAKER_REQUIRE_END_DATE", raising=False)
+    import maker.market_selector as ms_mod
+    importlib.reload(ms_mod)
+
+    # Wide-spread normal market (fills the top slot normally); give it a valid expiry
+    # so it passes the _REQUIRE_END_DATE and far-future guards in _discover_and_seed
+    expiry_soon = datetime.now(timezone.utc) + timedelta(days=2)
+    wide_meta = {
+        "condition_id": "cwide",
+        "question": "Will wide market resolve YES?",
+        "category": "event",
+        "best_bid": 0.40,
+        "best_ask": 0.60,
+        "volume": 5_000_000.0,
+        "volume_24h": 5_000_000.0,
+        "no_token_id": "no-wide",
+        "expiry": expiry_soon,
+        "neg_risk": False,
+        "fees_enabled": True,
+    }
+    # Tight-spread spiking Falcon market (score near-zero, falls below top-60)
+    tight_meta = {
+        "condition_id": "ctight",
+        "question": "US forces enter Iran by April 30?",
+        "category": "event",
+        "best_bid": 0.499,
+        "best_ask": 0.501,
+        "volume": 100_000_000.0,
+        "volume_24h": 100_000_000.0,
+        "no_token_id": "no-tight",
+        "expiry": None,
+        "neg_risk": False,
+        "fees_enabled": True,
+    }
+    token_map = {"wide-yes": wide_meta, "tight-yes": tight_meta}
+
+    app = AppState()
+    # Register a Falcon spiking insight for the tight market
+    app.feeds.falcon_market_insights["ctight"] = _fresh_insight(
+        "ctight",
+        question="US forces enter Iran by April 30?",
+        volume_trend="Spiking",
+        current_volume_24h=100_000_000.0,
+        unique_traders_7d=14668,
+        top1_wallet_pct=2.0,
+        whale_control_flag=False,
+    )
+
+    selector = ms_mod.MarketSelector.__new__(ms_mod.MarketSelector)
+    selector._state = app
+
+    with patch("maker.market_selector.fetch_active_markets", new=AsyncMock(return_value=token_map)):
+        asyncio.get_event_loop().run_until_complete(selector._discover_and_seed())
+
+    # The tight Falcon spiking market must now be in state
+    assert "tight-yes" in app.markets, "Falcon spiking market should be force-seeded"
+    # The normal wide market should also be seeded
+    assert "wide-yes" in app.markets

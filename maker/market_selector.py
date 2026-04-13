@@ -410,6 +410,35 @@ class MarketSelector:
         candidates.sort(key=lambda x: -x[2])
         top = candidates[:_MAX_ACTIVE_MARKETS * 2]  # seed 2x buffer
 
+        # Force-seed top Falcon spiking markets that fell below the spread×vol
+        # ranking window.  These enter state so filter_and_rank() can report their
+        # true exclusion reason (tight_spread) instead of NOT_IN_STATE.
+        # Cap at top-20 spiking markets by 24h volume; skip whale-controlled ones.
+        falcon_insights = self._state.feeds.falcon_market_insights
+        if falcon_insights:
+            # Build condition_id → yes_token_id reverse map from full Gamma scan
+            cid_to_yes: dict[str, str] = {
+                meta["condition_id"]: yes_id
+                for yes_id, meta in token_map.items()
+                if meta.get("condition_id")
+            }
+            top_candidate_cids = {meta["condition_id"] for _, meta, _ in top if meta.get("condition_id")}
+            spiking = sorted(
+                [
+                    ins for ins in falcon_insights.values()
+                    if ins.volume_trend == "Spiking"
+                    and not ins.whale_control_flag
+                    and ins.condition_id in cid_to_yes
+                    and ins.condition_id not in top_candidate_cids
+                    and (time.time() - ins.fetched_at) < _FALCON_STALE_SECONDS
+                ],
+                key=lambda x: -x.current_volume_24h,
+            )[:20]
+            for ins in spiking:
+                yes_id = cid_to_yes[ins.condition_id]
+                meta = token_map[yes_id]
+                top.append((yes_id, meta, 0.0))  # score=0 — included for state visibility only
+
         # Build a token_id → condition_id map from the FULL Gamma scan (all 3670+
         # markets, not just candidates).  Used below to backfill condition_ids on
         # markets already in state that were seeded with an empty condition_id — this
