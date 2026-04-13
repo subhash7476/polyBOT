@@ -401,7 +401,7 @@ def test_discover_and_seed_force_seeds_falcon_spiking_markets(monkeypatch):
     selector._state = app
 
     with patch("maker.market_selector.fetch_active_markets", new=AsyncMock(return_value=token_map)):
-        asyncio.get_event_loop().run_until_complete(selector._discover_and_seed())
+        asyncio.run(selector._discover_and_seed())
 
     # The tight Falcon spiking market must now be in state
     assert "tight-yes" in app.markets, "Falcon spiking market should be force-seeded"

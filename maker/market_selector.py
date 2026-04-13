@@ -413,8 +413,11 @@ class MarketSelector:
         # Force-seed top Falcon spiking markets that fell below the spread×vol
         # ranking window.  These enter state so filter_and_rank() can report their
         # true exclusion reason (tight_spread) instead of NOT_IN_STATE.
+        # Includes markets filtered by no-date/far-future guards — intentional,
+        # since high-volume spiking markets often lack a fixed end date.
         # Cap at top-20 spiking markets by 24h volume; skip whale-controlled ones.
-        falcon_insights = self._state.feeds.falcon_market_insights
+        async with self._state._lock:
+            falcon_insights = dict(self._state.feeds.falcon_market_insights)
         if falcon_insights:
             # Build condition_id → yes_token_id reverse map from full Gamma scan
             cid_to_yes: dict[str, str] = {
@@ -430,6 +433,7 @@ class MarketSelector:
                     and not ins.whale_control_flag
                     and ins.condition_id in cid_to_yes
                     and ins.condition_id not in top_candidate_cids
+                    and ins.current_volume_24h >= _MIN_DAILY_VOLUME
                     and (time.time() - ins.fetched_at) < _FALCON_STALE_SECONDS
                 ],
                 key=lambda x: -x.current_volume_24h,
@@ -437,6 +441,9 @@ class MarketSelector:
             for ins in spiking:
                 yes_id = cid_to_yes[ins.condition_id]
                 meta = token_map[yes_id]
+                bid = meta.get("best_bid", 0.0)
+                if bid < _MIN_BID or bid > _MAX_BID:
+                    continue
                 top.append((yes_id, meta, 0.0))  # score=0 — included for state visibility only
 
         # Build a token_id → condition_id map from the FULL Gamma scan (all 3670+
