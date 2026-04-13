@@ -20,6 +20,7 @@ _MIN_BID = 0.05      # exclude near-zero / near-resolved markets (bid < 5¢)
 _MAX_BID = 0.95      # exclude near-certain markets (bid > 95¢)
 _MAX_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE", "7"))   # near-expiry only
 _MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # ≥4h — skip imminent resolution
+_REQUIRE_END_DATE = os.getenv("MAKER_REQUIRE_END_DATE", "true").lower() == "true"
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
 # "unknown" = parse_contract() couldn't classify it — skip to avoid garbage markets.
@@ -205,7 +206,7 @@ class MarketSelector:
         falcon_log: list[str] = []
 
         # Diagnostic counters
-        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_tight_spread = n_too_soon = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_tight_spread = n_too_soon = n_no_date = 0
         cat_counts: dict[str, int] = {}
         now_ts = time.time()
 
@@ -242,6 +243,15 @@ class MarketSelector:
             if cs.best_bid < _MIN_BID or cs.best_bid > _MAX_BID:
                 n_bad_bid += 1
                 continue
+
+            # Resolve-date guard: exclude markets with no known resolution date.
+            # Empty end_date_iso = Gamma didn't provide one and contract_parser
+            # couldn't infer one (common for long-dated election markets).
+            # Treating them as quotable creates 7-month inventory traps.
+            if not cs.end_date_iso:
+                if _REQUIRE_END_DATE:
+                    n_no_date += 1
+                    continue
 
             # Near-expiry filter: only quote markets resolving within the window.
             # Too far out = frozen price, inventory trap.
@@ -300,7 +310,7 @@ class MarketSelector:
             f"(cats={cat_counts}) → "
             f"excluded_cat={n_excluded_cat} low_vol={n_low_vol} "
             f"tight_spread={n_tight_spread} bad_bid={n_bad_bid} "
-            f"far_future={n_far_future} too_soon={n_too_soon} → "
+            f"no_date={n_no_date} far_future={n_far_future} too_soon={n_too_soon} → "
             f"{len(candidates)} candidates → {min(len(candidates), max_markets)} selected"
         )
 
@@ -358,7 +368,7 @@ class MarketSelector:
             return
 
         candidates = []
-        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_no_date = 0
         now_ts = time.time()
         for yes_id, meta in token_map.items():
             if meta["category"] in _EXCLUDED_CATEGORIES:
@@ -371,7 +381,11 @@ class MarketSelector:
                 n_bad_bid += 1
                 continue
             expiry = meta.get("expiry")
-            if expiry is not None:
+            if expiry is None:
+                if _REQUIRE_END_DATE:
+                    n_no_date += 1
+                    continue
+            else:
                 exp_ts = expiry.timestamp() if hasattr(expiry, "timestamp") else float(expiry)
                 days_left = (exp_ts - now_ts) / 86400.0
                 if days_left > _MAX_DAYS_TO_RESOLVE:
@@ -389,7 +403,7 @@ class MarketSelector:
         log.info(
             f"_discover_and_seed: {len(token_map)} Gamma markets scanned "
             f"(excluded={n_excluded_cat} low_vol={n_low_vol} "
-            f"bad_bid={n_bad_bid} far_future={n_far_future}) "
+            f"bad_bid={n_bad_bid} no_date={n_no_date} far_future={n_far_future}) "
             f"→ {len(candidates)} candidates"
         )
 
