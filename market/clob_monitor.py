@@ -604,7 +604,18 @@ class CLOBMonitor(BaseFeed):
                     pass  # QuoteEngine is behind; drop the nudge, force-reprice will catch it
 
     def _handle_trade(self, msg: dict) -> None:
-        """Route last_trade_price events to trades_q for shadow fill simulation."""
+        """Route last_trade_price events to trades_q for shadow fill simulation.
+
+        Also updates cs.best_ask / cs.best_bid as a directional bound when the
+        trade price lies outside the current spread.  This keeps the markout
+        tracker's mid reading accurate on thin markets where price_change events
+        don't arrive between trades.
+
+        Lockless update follows the _handle_book() pattern — acceptable because
+        Python's GIL prevents torn writes on float attributes and a stale read
+        is at worst one tick old.  The update happens BEFORE put_nowait so the
+        shadow fill poller reads the corrected mid immediately on dequeue.
+        """
         if self._trades_q is None:
             return
         token_id = msg.get("asset_id", "")
@@ -614,6 +625,13 @@ class CLOBMonitor(BaseFeed):
         try:
             price = float(price_raw)
             size = float(msg.get("size", 0.0))
+            cs = self._state.markets.get(token_id)
+            if cs is None:
+                return
+            if price > cs.best_ask:
+                cs.best_ask = price   # taker cleared ask — ask moved up at minimum
+            elif price < cs.best_bid:
+                cs.best_bid = price   # taker hit bid — bid moved down at most
             self._trades_q.put_nowait((token_id, price, size))
         except (ValueError, asyncio.QueueFull):
             pass  # drop if queue full — ShadowFillPoller will catch next trade
