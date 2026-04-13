@@ -12,9 +12,12 @@ def _make_market(
     category: str = "sports",
     bid: float = 0.40,
     ask: float = 0.60,
-    volume: float = 5_000.0,
+    volume: float = 50_000.0,
     condition_id: str = "",
+    end_date_iso: str = "",
 ) -> ContractState:
+    from datetime import datetime, timezone, timedelta
+    _end_date = end_date_iso or (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
     return ContractState(
         yes_token_id=token_id,
         no_token_id=f"no-{token_id}",
@@ -23,6 +26,8 @@ def _make_market(
         best_bid=bid,
         best_ask=ask,
         volume_usd=volume,
+        volume_24h=volume,
+        end_date_iso=_end_date,
         condition_id=condition_id or token_id,
     )
 
@@ -49,7 +54,7 @@ def test_only_unknown_category_excluded():
 def test_filters_low_volume():
     markets = {
         "thin": _make_market("thin", volume=50.0),
-        "ok":   _make_market("ok",   volume=2_000.0),
+        "ok":   _make_market("ok",   volume=15_000.0),
     }
     selected = MarketSelector.filter_and_rank(markets)
     assert "ok" in selected
@@ -68,8 +73,8 @@ def test_filters_tight_spread():
 
 def test_ranks_by_spread_times_volume():
     markets = {
-        "a": _make_market("a", bid=0.40, ask=0.50, volume=1_000.0),  # score=100
-        "b": _make_market("b", bid=0.40, ask=0.60, volume=2_000.0),  # score=400
+        "a": _make_market("a", bid=0.40, ask=0.50, volume=10_000.0),  # score=1000
+        "b": _make_market("b", bid=0.40, ask=0.60, volume=20_000.0),  # score=4000
     }
     selected = MarketSelector.filter_and_rank(markets)
     keys = list(selected.keys())
@@ -78,7 +83,7 @@ def test_ranks_by_spread_times_volume():
 
 def test_caps_at_max_active():
     markets = {
-        f"m{i}": _make_market(f"m{i}", volume=float(10_000 - i))
+        f"m{i}": _make_market(f"m{i}", volume=float(100_000 - i))
         for i in range(30)
     }
     selected = MarketSelector.filter_and_rank(markets, max_markets=20)
@@ -105,8 +110,8 @@ def _fresh_insight(condition_id: str, **kwargs) -> FalconMarketInsight:
 def test_falcon_no_feeds_uses_base_score():
     """Without feeds, ranking is pure spread × volume — no Falcon adjustment."""
     markets = {
-        "a": _make_market("a", bid=0.40, ask=0.50, volume=1_000.0),  # base=100
-        "b": _make_market("b", bid=0.40, ask=0.60, volume=2_000.0),  # base=400
+        "a": _make_market("a", bid=0.40, ask=0.50, volume=10_000.0),  # base=1000
+        "b": _make_market("b", bid=0.40, ask=0.60, volume=20_000.0),  # base=4000
     }
     selected = MarketSelector.filter_and_rank(markets, feeds=None)
     assert list(selected.keys())[0] == "b"
@@ -115,8 +120,8 @@ def test_falcon_no_feeds_uses_base_score():
 def test_falcon_whale_control_demotes_market():
     """A whale-controlled market (×0.3) should rank below a normal market."""
     markets = {
-        "whale": _make_market("whale", bid=0.40, ask=0.60, volume=10_000.0, condition_id="cwhale"),
-        "clean": _make_market("clean", bid=0.40, ask=0.60, volume=5_000.0, condition_id="cclean"),
+        "whale": _make_market("whale", bid=0.40, ask=0.60, volume=20_000.0, condition_id="cwhale"),
+        "clean": _make_market("clean", bid=0.40, ask=0.60, volume=10_000.0, condition_id="cclean"),
     }
     feeds = FeedState()
     feeds.falcon_market_insights["cwhale"] = _fresh_insight("cwhale", whale_control_flag=True)
@@ -124,15 +129,15 @@ def test_falcon_whale_control_demotes_market():
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
     keys = list(selected.keys())
-    # whale has 2× volume but 0.3× Falcon mult → score=600; clean → score=1000
+    # whale has 2× volume but 0.3× Falcon mult → score=1200; clean → score=2000
     assert keys[0] == "clean"
 
 
 def test_falcon_spiking_trend_boosts_market():
     """Spiking volume trend (×1.5) should lift a market above a larger normal one."""
     markets = {
-        "spike": _make_market("spike", bid=0.40, ask=0.60, volume=5_000.0, condition_id="cspike"),
-        "normal": _make_market("normal", bid=0.40, ask=0.60, volume=6_000.0, condition_id="cnorm"),
+        "spike": _make_market("spike", bid=0.40, ask=0.60, volume=10_000.0, condition_id="cspike"),
+        "normal": _make_market("normal", bid=0.40, ask=0.60, volume=12_000.0, condition_id="cnorm"),
     }
     feeds = FeedState()
     feeds.falcon_market_insights["cspike"] = _fresh_insight("cspike", volume_trend="Spiking")
@@ -140,7 +145,7 @@ def test_falcon_spiking_trend_boosts_market():
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
     keys = list(selected.keys())
-    # spike: 5000 × 0.20 × 1.5 = 1500; normal: 6000 × 0.20 × 1.0 = 1200
+    # spike: 10000 × 0.20 × 1.5 = 3000; normal: 12000 × 0.20 × 1.0 = 2400
     assert keys[0] == "spike"
 
 
@@ -148,7 +153,7 @@ def test_falcon_dying_interest_strongly_demotes():
     """Dying Interest (×0.2) drops a high-volume market far down."""
     markets = {
         "dying": _make_market("dying", bid=0.40, ask=0.60, volume=20_000.0, condition_id="cdying"),
-        "ok":    _make_market("ok",    bid=0.40, ask=0.60, volume=5_000.0, condition_id="cok"),
+        "ok":    _make_market("ok",    bid=0.40, ask=0.60, volume=10_000.0, condition_id="cok"),
     }
     feeds = FeedState()
     feeds.falcon_market_insights["cdying"] = _fresh_insight("cdying", volume_trend="Dying Interest")
@@ -156,14 +161,14 @@ def test_falcon_dying_interest_strongly_demotes():
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
     keys = list(selected.keys())
-    # dying: 20000 × 0.20 × 0.2 = 800; ok: 5000 × 0.20 × 1.0 = 1000
+    # dying: 20000 × 0.20 × 0.2 = 800; ok: 10000 × 0.20 × 1.0 = 2000
     assert keys[0] == "ok"
 
 
 def test_falcon_stale_insight_ignored():
     """Stale Falcon data returns neutral (1.0×), so base score is used unchanged."""
     markets = {
-        "m": _make_market("m", bid=0.40, ask=0.60, volume=5_000.0, condition_id="cm"),
+        "m": _make_market("m", bid=0.40, ask=0.60, volume=50_000.0, condition_id="cm"),
     }
     feeds = FeedState()
     feeds.falcon_market_insights["cm"] = _fresh_insight(
@@ -174,14 +179,18 @@ def test_falcon_stale_insight_ignored():
 
 
 def test_falcon_spiking_bypasses_tight_spread_filter():
-    """A Falcon-spiking market with tight spread should be included (bypass _MIN_SPREAD)."""
+    """Falcon-spiking markets with tight spread are excluded by filter_and_rank().
+
+    Force 3 seeds them into state for diagnostic visibility (DIAG log), but
+    filter_and_rank() still enforces _MIN_SPREAD — no bypass is implemented.
+    """
     markets = {
         "tight_spiking": _make_market(
-            "tight_spiking", bid=0.498, ask=0.502,  # 0.4c spread — below 1c threshold, normally filtered
+            "tight_spiking", bid=0.498, ask=0.502,  # 0.4c spread — below 1c threshold
             volume=50_000.0, condition_id="cspike",
         ),
         "wide_normal": _make_market(
-            "wide_normal", bid=0.40, ask=0.60, volume=5_000.0, condition_id="cnorm",
+            "wide_normal", bid=0.40, ask=0.60, volume=50_000.0, condition_id="cnorm",
         ),
     }
     feeds = FeedState()
@@ -191,7 +200,7 @@ def test_falcon_spiking_bypasses_tight_spread_filter():
     feeds.falcon_market_insights["cnorm"] = _fresh_insight("cnorm", volume_trend="Normal")
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
-    assert "tight_spiking" in selected    # bypassed spread filter via Falcon Spiking
+    assert "tight_spiking" not in selected  # excluded by tight_spread filter; no bypass in filter_and_rank
     assert "wide_normal" in selected
 
 
@@ -214,8 +223,8 @@ def test_falcon_spiking_bypass_blocked_for_whale_controlled():
 def test_falcon_diverse_flow_boosts():
     """unique_traders_7d > 1000 applies ×1.3 boost."""
     markets = {
-        "diverse": _make_market("diverse", bid=0.40, ask=0.60, volume=5_000.0, condition_id="cdiv"),
-        "sparse":  _make_market("sparse",  bid=0.40, ask=0.60, volume=5_000.0, condition_id="cspa"),
+        "diverse": _make_market("diverse", bid=0.40, ask=0.60, volume=50_000.0, condition_id="cdiv"),
+        "sparse":  _make_market("sparse",  bid=0.40, ask=0.60, volume=50_000.0, condition_id="cspa"),
     }
     feeds = FeedState()
     feeds.falcon_market_insights["cdiv"] = _fresh_insight("cdiv", unique_traders_7d=2000)
@@ -227,18 +236,18 @@ def test_falcon_diverse_flow_boosts():
 
 
 def test_falcon_question_fallback_bypasses_tight_spread():
-    """Spiking bypass works even when condition_ids don't match (question-based fallback).
+    """Tight-spread spiking markets are excluded even via question-based fallback.
 
-    Polymarket's Gamma conditionId and Falcon's condition_id are often different
-    identifiers for the same market.  The question-based fallback ensures we still
-    get the bypass for high-volume spiking markets.
+    filter_and_rank() enforces _MIN_SPREAD unconditionally — no bypass is implemented.
+    Force 3 seeds such markets into state for DIAG visibility; they are still excluded
+    at the tight_spread filter regardless of how the Falcon insight is matched.
     """
     # Market in state has condition_id "gamma-cid"; Falcon insight has "falcon-cid"
     # — two different IDs for the same market, matched only via question text.
     question = "Will Israel launch a major ground offensive in Lebanon?"
     markets = {
         "tightspiking": _make_market(
-            "tightspiking", bid=0.498, ask=0.502,  # 0.4c spread — below 1c threshold, normally filtered
+            "tightspiking", bid=0.498, ask=0.502,  # 0.4c spread — below 1c threshold
             volume=50_000.0, condition_id="gamma-cid",
         ),
     }
@@ -252,7 +261,7 @@ def test_falcon_question_fallback_bypasses_tight_spread():
     feeds.falcon_insights_by_question[question.strip().lower()] = ins
 
     selected = MarketSelector.filter_and_rank(markets, feeds=feeds)
-    assert "tightspiking" in selected, "question-based fallback should bypass tight spread filter"
+    assert "tightspiking" not in selected, "tight spread still excludes even with Spiking Falcon match"
 
 
 @pytest.mark.asyncio
@@ -307,8 +316,9 @@ def test_no_end_date_excluded_by_default(monkeypatch):
     monkeypatch.delenv("MAKER_REQUIRE_END_DATE", raising=False)  # ensure default
     import maker.market_selector as ms_mod
     importlib.reload(ms_mod)
-    # end_date_iso is "" by default in ContractState
-    cs = _make_market("no_date", bid=0.40, ask=0.60, volume=50_000.0)
+    # Explicitly pass empty end_date_iso to test the no-date filter
+    cs = _make_market("no_date", bid=0.40, ask=0.60, volume=50_000.0, end_date_iso="")
+    cs.end_date_iso = ""  # ensure it's cleared (belt-and-suspenders)
     selected = ms_mod.MarketSelector.filter_and_rank({"no_date": cs})
     assert "no_date" not in selected
 
@@ -319,7 +329,9 @@ def test_no_end_date_allowed_when_require_disabled(monkeypatch):
     monkeypatch.setenv("MAKER_REQUIRE_END_DATE", "false")
     import maker.market_selector as ms_mod
     importlib.reload(ms_mod)
-    cs = _make_market("no_date", bid=0.40, ask=0.60, volume=50_000.0)
+    # Explicitly pass empty end_date_iso to test the no-date filter being disabled
+    cs = _make_market("no_date", bid=0.40, ask=0.60, volume=50_000.0, end_date_iso="")
+    cs.end_date_iso = ""  # ensure it's cleared (belt-and-suspenders)
     selected = ms_mod.MarketSelector.filter_and_rank({"no_date": cs})
     assert "no_date" in selected
 
