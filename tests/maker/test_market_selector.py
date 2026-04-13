@@ -301,12 +301,13 @@ async def test_selector_writes_selected_token_ids_to_maker_state():
 
 # ── Fix 2: no-date exclusion ──────────────────────────────────────────────────
 
-def test_no_end_date_excluded_by_default():
-    """Market with empty end_date_iso must be excluded when MAKER_REQUIRE_END_DATE=true (default)."""
-    import os, importlib
-    os.environ["MAKER_REQUIRE_END_DATE"] = "true"
+def test_no_end_date_excluded_by_default(monkeypatch):
+    """Market with empty end_date_iso must be excluded by default (env var absent)."""
+    import importlib
+    monkeypatch.delenv("MAKER_REQUIRE_END_DATE", raising=False)  # ensure default
     import maker.market_selector as ms_mod
     importlib.reload(ms_mod)
+    # end_date_iso is "" by default in ContractState
     cs = _make_market("no_date", bid=0.40, ask=0.60, volume=50_000.0)
     selected = ms_mod.MarketSelector.filter_and_rank({"no_date": cs})
     assert "no_date" not in selected
@@ -314,7 +315,7 @@ def test_no_end_date_excluded_by_default():
 
 def test_no_end_date_allowed_when_require_disabled(monkeypatch):
     """Market with empty end_date_iso passes when MAKER_REQUIRE_END_DATE=false."""
-    import os, importlib
+    import importlib
     monkeypatch.setenv("MAKER_REQUIRE_END_DATE", "false")
     import maker.market_selector as ms_mod
     importlib.reload(ms_mod)
@@ -323,11 +324,11 @@ def test_no_end_date_allowed_when_require_disabled(monkeypatch):
     assert "no_date" in selected
 
 
-def test_market_with_valid_end_date_still_passes():
+def test_market_with_valid_end_date_still_passes(monkeypatch):
     """Market with end_date_iso within the 7-day window must still be selected."""
-    import os, importlib
     from datetime import datetime, timezone, timedelta
-    os.environ["MAKER_REQUIRE_END_DATE"] = "true"
+    import importlib
+    monkeypatch.delenv("MAKER_REQUIRE_END_DATE", raising=False)
     import maker.market_selector as ms_mod
     importlib.reload(ms_mod)
     future = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
