@@ -2,6 +2,7 @@
 
 import asyncio
 import time
+from datetime import datetime, timezone
 from maker.state import MakerState
 from maker.types import Fill, SkewUpdate, CancelAll
 from market.state import AppState
@@ -104,8 +105,8 @@ class InventoryManager:
             await self._cancel_q.put(CancelAll(fill.token_id))
             self._maker.cooldowns[fill.token_id] = time.time() + COOLDOWN_SECONDS
             log.warning(
-                f"INVENTORY CAP: [{fill.token_id[:8]}] at ${abs_pos:.0f} "
-                f"— quotes pulled for {COOLDOWN_SECONDS}s"
+                f"INVENTORY CAP: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
+                f" — quotes pulled for {COOLDOWN_SECONDS}s"
             )
 
         # 6. Check total inventory cap
@@ -114,7 +115,7 @@ class InventoryManager:
             await self._cancel_q.put(CancelAll("*"))
             self._maker.global_cooldown_until = time.time() + COOLDOWN_SECONDS
             log.warning(
-                f"TOTAL INVENTORY CAP: ${total:.0f} — ALL quotes pulled for {COOLDOWN_SECONDS}s"
+                f"TOTAL INVENTORY CAP: {total:.0f} shares — ALL quotes pulled for {COOLDOWN_SECONDS}s"
             )
 
         # 7. Check daily loss — use MTM P&L so net-long inventory doesn't false-trigger
@@ -124,14 +125,15 @@ class InventoryManager:
             mtm = self._maker.cash_pnl  # fallback if app_state not wired
         if mtm <= -self._max_daily_loss:
             await self._cancel_q.put(CancelAll("*"))
+            self._maker.global_cooldown_until = time.time() + ADVERSE_COOLDOWN_SECONDS
             log.warning(
-                f"DAILY LOSS LIMIT: MTM=${mtm:.2f} — ALL quotes pulled"
+                f"DAILY LOSS LIMIT: MTM=${mtm:.2f} — ALL quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s"
             )
 
         log.info(
             f"INVENTORY: [{fill.token_id[:8]}] {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
             f"→ net={self._maker.get_inventory(fill.token_id):.2f} "
-            f"total_abs=${self._maker.total_abs_inventory:.0f} skew={skew:.2f}"
+            f"total_abs={self._maker.total_abs_inventory:.0f} shares skew={skew:.2f}"
         )
 
     async def _check_rapid_fill(self, fill: Fill) -> None:
@@ -179,6 +181,85 @@ class InventoryManager:
                 f"ADVERSE SELECTION: [{fill.token_id[:8]}] {dominant}/{n} fills are "
                 f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
             )
+
+    async def _expire_paper_positions(self) -> int:
+        """Zero out inventory for markets whose resolution date has passed.
+
+        In paper/shadow mode positions never settle via on-chain redemption, so
+        resolved markets accumulate in self._maker.inventory indefinitely.  This
+        inflates total_abs_inventory, which causes the global inventory cap to
+        fire on every fill — generating a cancel-all storm and starving active
+        markets of quotes.
+
+        We do NOT book synthetic P&L for expired positions: the paper fills were
+        already recorded in the fill ledger and any realized P&L was computed at
+        fill time.  We simply zero the leftover inventory entry so it no longer
+        distorts total_abs_inventory.
+
+        Returns the number of markets whose inventory was zeroed.
+        """
+        if self._app is None:
+            return 0
+
+        now = time.time()
+
+        # Snapshot markets under lock so we read a consistent view.
+        async with self._app._lock:
+            markets = dict(self._app.markets)
+
+        expired_count = 0
+        for token_id, inv in list(self._maker.inventory.items()):
+            if inv == 0.0:
+                continue  # already zeroed — skip
+
+            cs = markets.get(token_id)
+            if cs is None:
+                # Market absent from app state: could mean "not yet selected" rather
+                # than "resolved".  Don't expire — we can't distinguish the two cases.
+                continue
+
+            if not cs.end_date_iso:
+                continue  # no end date recorded, cannot determine expiry
+
+            try:
+                end_dt = datetime.fromisoformat(cs.end_date_iso.replace("Z", "+00:00"))
+            except ValueError:
+                continue  # malformed date string, skip
+
+            if end_dt.timestamp() > now:
+                continue  # market still active
+
+            # Market has passed its resolution date — zero the stale position.
+            old_inv = self._maker.inventory[token_id]
+            self._maker.inventory[token_id] = 0.0
+            expired_count += 1
+            log.warning(
+                f"EXPIRED POSITION: [{token_id[:8]}] {old_inv:+.2f} shares zeroed "
+                f"(market ended {cs.end_date_iso})"
+            )
+
+        return expired_count
+
+    async def cleanup_loop(self) -> None:
+        """Periodic cleanup of stale paper positions.
+
+        The first run is delayed 60 s so CLOBMonitor has time to seed
+        app_state.markets before we inspect end dates.  Subsequent runs
+        happen every 5 minutes — frequent enough to prevent total_abs_inventory
+        from staying inflated across session boundaries.
+        """
+        await asyncio.sleep(60)  # wait for CLOBMonitor to populate markets
+        while True:
+            try:
+                expired = await self._expire_paper_positions()
+                if expired:
+                    log.info(
+                        f"Expired {expired} stale paper position(s); "
+                        f"total_abs_inventory now {self._maker.total_abs_inventory:.0f} shares"
+                    )
+            except Exception as exc:
+                log.exception(f"cleanup_loop error: {exc}")
+            await asyncio.sleep(300)  # re-check every 5 minutes
 
     async def run(self):
         """Main loop — process fills from queue."""

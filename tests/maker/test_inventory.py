@@ -4,6 +4,7 @@ import pytest
 from maker.inventory import InventoryManager
 from maker.state import MakerState
 from maker.types import Fill, SkewUpdate, CancelAll
+from market.state import AppState, ContractState
 
 
 @pytest.fixture
@@ -100,3 +101,142 @@ async def test_daily_pnl_recorded(setup):
 
     # After round-trip, inventory is zero
     assert maker_state.get_inventory("tok1") == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Bug-fix tests: paper position expiry
+# ---------------------------------------------------------------------------
+
+def _expired_cs(token_id: str) -> ContractState:
+    """ContractState for a market that ended in the past."""
+    return ContractState(
+        yes_token_id=token_id, no_token_id="no-" + token_id,
+        question="Old market", category="sports",
+        best_bid=0.99, best_ask=1.0,
+        volume_usd=100.0, end_date_iso="2020-01-01T00:00:00Z",
+    )
+
+
+def _active_cs(token_id: str) -> ContractState:
+    """ContractState for a market that expires far in the future."""
+    return ContractState(
+        yes_token_id=token_id, no_token_id="no-" + token_id,
+        question="Live market", category="sports",
+        best_bid=0.45, best_ask=0.55,
+        volume_usd=5000.0, end_date_iso="2030-06-01T00:00:00Z",
+    )
+
+
+@pytest.mark.asyncio
+async def test_expire_clears_stale_inventory(setup):
+    """_expire_paper_positions zeros inventory for a market whose end date has passed.
+
+    Bug: paper/shadow mode never settles positions, so resolved markets accumulate
+    in inventory indefinitely, inflating total_abs_inventory and causing the global
+    cap to fire on every fill.
+    """
+    im, maker_state, _, _, _ = setup
+    token_id = "expired-tok"
+    maker_state.inventory[token_id] = 30.0
+
+    app = AppState()
+    app.markets[token_id] = _expired_cs(token_id)
+    im._app = app
+
+    expired = await im._expire_paper_positions()
+
+    assert expired == 1, "should have expired one market"
+    assert maker_state.inventory[token_id] == 0.0, "stale inventory must be zeroed"
+
+
+@pytest.mark.asyncio
+async def test_expire_preserves_active_inventory(setup):
+    """_expire_paper_positions leaves active (future-expiry) markets untouched."""
+    im, maker_state, _, _, _ = setup
+    expired_tok = "old-tok"
+    active_tok = "live-tok"
+    maker_state.inventory[expired_tok] = 25.0
+    maker_state.inventory[active_tok] = 15.0
+
+    app = AppState()
+    app.markets[expired_tok] = _expired_cs(expired_tok)
+    app.markets[active_tok] = _active_cs(active_tok)
+    im._app = app
+
+    expired = await im._expire_paper_positions()
+
+    assert expired == 1
+    assert maker_state.inventory[expired_tok] == 0.0, "expired market must be zeroed"
+    assert maker_state.inventory[active_tok] == 15.0, "active market must be preserved"
+
+
+@pytest.mark.asyncio
+async def test_total_cap_no_longer_fires_after_cleanup(setup):
+    """After expiring stale positions the global inventory cap stops firing.
+
+    Scenario: five yesterday-markets each with 50-share positions push
+    total_abs_inventory to 250 (above the 200-share cap).  After cleanup the
+    total drops to 0 and a new fill on a fresh market should NOT trigger a
+    global CancelAll.
+    """
+    im, maker_state, _, _, cancel_q = setup
+
+    # Stale positions from yesterday — total = 250, above the 200-share cap
+    for i in range(5):
+        maker_state.inventory[f"old-tok-{i}"] = 50.0
+
+    app = AppState()
+    for i in range(5):
+        app.markets[f"old-tok-{i}"] = _expired_cs(f"old-tok-{i}")
+    im._app = app
+
+    assert maker_state.total_abs_inventory >= maker_state.max_total_inventory
+
+    expired = await im._expire_paper_positions()
+    assert expired == 5
+    assert maker_state.total_abs_inventory == 0.0
+
+    # A new fill on a fresh market should not trigger a global cancel
+    fill = Fill("new-tok", "BUY", 0.45, 10.0, "order-x", time.time())
+    await im.handle_fill(fill)
+
+    cancels = []
+    while not cancel_q.empty():
+        cancels.append(cancel_q.get_nowait())
+    assert not any(c.is_global for c in cancels), (
+        "Global cancel must NOT fire after stale positions are expired"
+    )
+
+
+@pytest.mark.asyncio
+async def test_daily_loss_limit_sets_global_cooldown(setup):
+    """Daily loss limit must set global_cooldown_until so QuoteEngine stops re-quoting.
+
+    Bug: handle_fill() fired CancelAll('*') when MTM crossed the daily loss threshold
+    but did NOT set global_cooldown_until. QuoteEngine would re-place quotes within 30s
+    on the next force-reprice, producing more fills, which re-fired the limit — a
+    CANCEL ALL storm every 30s with no effective quoting pause.
+    """
+    im, maker_state, _, _, cancel_q = setup
+
+    # Bankroll $500, MAX_DAILY_LOSS_PCT=3% → max_daily_loss=$15.
+    # Simulate a realized cash loss large enough to breach the threshold.
+    # cash_pnl alone: bought 50 shares at 0.80 → cash_pnl = -40 (no positions value added
+    # because app_state is None, so mtm falls back to cash_pnl).
+    maker_state.cash_pnl = -20.0  # well below -$15 threshold
+
+    assert not maker_state.global_in_cooldown(), "should start with no global cooldown"
+
+    fill = Fill("tok1", "BUY", 0.45, 1.0, "order-loss", time.time())
+    await im.handle_fill(fill)
+
+    # Global cancel must have fired
+    cancels = []
+    while not cancel_q.empty():
+        cancels.append(cancel_q.get_nowait())
+    assert any(c.is_global for c in cancels), "daily loss must fire a global CancelAll"
+
+    # Global cooldown must be set so QuoteEngine skips the next reprice cycle
+    assert maker_state.global_in_cooldown(), (
+        "global_cooldown_until must be set after daily loss limit fires"
+    )

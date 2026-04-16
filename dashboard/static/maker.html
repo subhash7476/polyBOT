@@ -484,6 +484,29 @@
     </table>
   </section>
 
+  <!-- Arb Scanner -->
+  <section class="panel panel-full" style="padding:14px">
+    <h3 style="margin-bottom:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#8b949e">
+      Arbitrage Scanner
+      <span id="arb-total" style="margin-left:8px;background:#21262d;border:1px solid #30363d;border-radius:10px;padding:1px 8px;font-size:11px;color:#c9d1d9">0 events</span>
+      <span id="arb-live-badge" style="display:none;margin-left:6px;background:#d29922;color:#000;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.06em">LIVE OPP</span>
+    </h3>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid #333">
+          <th style="padding:4px 8px">Market</th>
+          <th style="padding:4px 8px">YES Ask</th>
+          <th style="padding:4px 8px">NO Ask</th>
+          <th style="padding:4px 8px">Sum</th>
+          <th style="padding:4px 8px">Gap</th>
+        </tr>
+      </thead>
+      <tbody id="arb-body">
+        <tr><td colspan="5" style="padding:8px;color:#666">Scanning… (requires YES+NO tokens both tracked)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
   <!-- Fill History -->
   <div class="panel panel-full">
     <div class="panel-header">
@@ -835,6 +858,30 @@ function render(data) {
 
   // Selected Markets panel
   renderSelectedMarkets(data.selected_markets || []);
+
+  // Arb scanner panel
+  const arbTotal = document.getElementById('arb-total');
+  const arbLiveBadge = document.getElementById('arb-live-badge');
+  const arbBody = document.getElementById('arb-body');
+  const arbCurrent = data.arb_current || [];
+  const arbTotalEvents = data.arb_total_events || 0;
+  arbTotal.textContent = arbTotalEvents + ' events';
+  if (arbCurrent.length > 0) {
+    arbLiveBadge.style.display = '';
+    arbBody.innerHTML = arbCurrent.map(o => `
+      <tr style="border-bottom:1px solid #222;background:#1a1200">
+        <td style="padding:4px 8px" title="${escHtml(o.question)}">${escHtml(o.question)}</td>
+        <td style="padding:4px 8px;font-family:monospace">${o.ask_a.toFixed(4)}</td>
+        <td style="padding:4px 8px;font-family:monospace">${o.ask_b.toFixed(4)}</td>
+        <td style="padding:4px 8px;font-family:monospace;color:#d29922">${o.ask_sum.toFixed(4)}</td>
+        <td style="padding:4px 8px;font-weight:700;color:#3fb950">+${(o.gap * 100).toFixed(2)}%</td>
+      </tr>`).join('');
+  } else {
+    arbLiveBadge.style.display = 'none';
+    arbBody.innerHTML = arbTotalEvents > 0
+      ? `<tr><td colspan="5" style="padding:8px;color:#666">No live opportunities right now (${arbTotalEvents} seen this session)</td></tr>`
+      : `<tr><td colspan="5" style="padding:8px;color:#666">Scanning… (requires YES+NO tokens both tracked per market)</td></tr>`;
+  }
 
   // Feed status
   const clobAge = data.clob_age || '?';

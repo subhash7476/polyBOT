@@ -43,6 +43,7 @@ async def maker_dashboard_loop(
 ) -> None:
     _uptime_samples = 0
     _quoted_samples = 0
+    _arb_total_events = 0
 
     while True:
         try:
@@ -176,6 +177,10 @@ async def maker_dashboard_loop(
                 session_by_market,
             )
 
+            # ── Arb scanner: find condition_id pairs where YES_ask + NO_ask < 1.0 ─
+            arb_current, n_new_arb = _scan_arb(markets_snapshot)
+            _arb_total_events += n_new_arb
+
             # ── Falcon intelligence snapshot ──────────────────────────────
             falcon_data = _build_falcon_snapshot(feeds, markets_snapshot, now)
 
@@ -210,6 +215,8 @@ async def maker_dashboard_loop(
                 "alltime_realized_pnl": round(alltime_realized, 4),
                 "by_market": by_market,
                 "selected_markets": selected_markets,
+                "arb_total_events": _arb_total_events,
+                "arb_current": arb_current,
             })
         except Exception as exc:
             import logging
@@ -330,6 +337,41 @@ def _merge_market_stats(
         row["alltime_realized_pnl"] = round(row["alltime_realized_pnl"], 4)
 
     return sorted(merged.values(), key=lambda r: r["alltime_fills"], reverse=True)[:50]
+
+
+def _scan_arb(markets_snapshot: dict) -> tuple[list, int]:
+    """Scan for arbitrage: group by condition_id, find pairs where YES_ask + NO_ask < 1.0.
+
+    Requires CLOBMonitor to track both YES and NO tokens for the same market.
+    Each pair in markets_snapshot with the same condition_id is treated as YES/NO sides.
+    Returns (opportunities_list, n_new_events).
+    """
+    from collections import defaultdict
+    groups: dict[str, list] = defaultdict(list)
+    for token_id, cs in markets_snapshot.items():
+        if cs.condition_id and cs.best_ask > 0 and cs.best_bid > 0:
+            groups[cs.condition_id].append(cs)
+
+    opps = []
+    n_events = 0
+    for cid, tokens in groups.items():
+        if len(tokens) == 2:
+            cs_a, cs_b = tokens[0], tokens[1]
+            ask_sum = cs_a.best_ask + cs_b.best_ask
+            if 0 < ask_sum < 1.0:
+                gap = round(1.0 - ask_sum, 4)
+                question = cs_a.question or cs_b.question or cid
+                opps.append({
+                    "question": question[:60],
+                    "condition_id": cid[:16],
+                    "ask_a": round(cs_a.best_ask, 4),
+                    "ask_b": round(cs_b.best_ask, 4),
+                    "ask_sum": round(ask_sum, 4),
+                    "gap": gap,
+                })
+                n_events += 1
+    opps.sort(key=lambda x: -x["gap"])
+    return opps, n_events
 
 
 def _fmt_age(seconds: float) -> str:

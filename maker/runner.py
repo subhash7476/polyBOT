@@ -181,6 +181,11 @@ async def run_maker():
     for actor in actors.values():
         coros.append(actor.run())
 
+    # Expired-position cleanup: zeroes stale paper inventory every 5 min.
+    # Must run as a separate coroutine so it fires even when the fills queue
+    # is idle.  Delayed 60 s to let CLOBMonitor seed app_state.markets first.
+    coros.append(actors["inventory"].cleanup_loop())
+
     # Dashboard snapshot loop — pass markout_tracker for live-validation stats
     coros.append(
         maker_dashboard_loop(

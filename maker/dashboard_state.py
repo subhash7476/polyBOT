@@ -65,6 +65,9 @@ class MakerDashboardState:
         self.by_market: list = []
         # Selected markets: all token_ids chosen by MarketSelector (quoted or not)
         self.selected_markets: list = []
+        # Arb scanner: total events seen (YES_ask + NO_ask < 1.0) and current live opps
+        self.arb_total_events: int = 0
+        self.arb_current: list = []
 
     def update(self, snapshot: dict) -> None:
         with self._lock:
@@ -110,4 +113,6 @@ class MakerDashboardState:
                 "alltime_realized_pnl": self.alltime_realized_pnl,
                 "by_market": self.by_market,
                 "selected_markets": self.selected_markets,
+                "arb_total_events": self.arb_total_events,
+                "arb_current": self.arb_current,
             })

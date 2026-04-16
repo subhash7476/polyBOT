@@ -229,3 +229,36 @@ async def test_reprice_only_warns_once_per_market():
     # Second call must not raise; warned set stays singleton
     await qe._reprice({token_id}, force=True, new_ids=set())
     assert qe._stale_skip_warned == {token_id}
+
+
+@pytest.mark.asyncio
+async def test_reprice_skips_market_at_inventory_cap():
+    """_reprice emits no LadderUpdate when position is at or above max_inventory_per_market.
+
+    Bug: previously the only gate was in_cooldown() (time-based). After the 300s cooldown
+    expired, _reprice would immediately re-quote and produce new fills, growing inventory
+    indefinitely. The fix adds a hard position-size gate regardless of cooldown state.
+    """
+    from market.state import ContractState
+
+    token_id = "capped-tok"
+    app = AppState()
+    app.markets[token_id] = ContractState(
+        yes_token_id=token_id, no_token_id="no-capped",
+        question="Capped market", category="sports",
+        best_bid=0.45, best_ask=0.55,
+        volume_usd=5000.0, end_date_iso="2026-05-01T12:00:00Z",
+    )
+
+    maker = MakerState(max_inventory_per_market=50.0)
+    maker.inventory[token_id] = 50.0  # exactly at cap
+
+    quote_q = asyncio.Queue()
+    qe = QuoteEngine(app, maker, asyncio.Queue(), quote_q, asyncio.Queue())
+    qe._active_token_ids = {token_id}
+
+    await qe._reprice({token_id}, force=True, new_ids={token_id})
+
+    assert quote_q.empty(), (
+        "No LadderUpdate should be emitted when inventory is at or above the per-market cap"
+    )

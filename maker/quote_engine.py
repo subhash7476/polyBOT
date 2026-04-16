@@ -153,18 +153,28 @@ class QuoteEngine:
 
             # Bid-range guard: market has moved out of quotable range since last MarketSelector
             # refresh (every 15 min). Cancel resting orders and skip repricing.
-            if cs.best_bid < 0.05 or cs.best_bid > 0.95:
+            # Check both best_bid and best_ask: near-resolved markets have best_ask > 0.95
+            # even when best_bid is still within range (e.g. bid=0.93, ask=0.97).
+            if (cs.best_bid < 0.05 or cs.best_bid > 0.95
+                    or cs.best_ask < 0.05 or cs.best_ask > 0.95):
                 if token_id not in self._stale_skip_warned:
                     self._stale_skip_warned.add(token_id)
                     log.warning(
                         f"bid-range guard: [{token_id[:8]}] best_bid={cs.best_bid:.4f} "
-                        f"out of [0.05, 0.95] — cancelling quotes"
+                        f"best_ask={cs.best_ask:.4f} out of [0.05, 0.95] — cancelling quotes"
                     )
                 if self._cancel_q is not None:
                     await self._cancel_q.put(CancelAll(token_id))
                 continue
 
             if self._maker.in_cooldown(token_id):
+                continue
+
+            # Hard inventory gate: never re-quote a market whose position is already
+            # at or above the per-market cap, regardless of cooldown state.
+            # Without this gate, cooldown expiry → re-quote → fill → cap fires again
+            # → repeat indefinitely, growing positions without bound.
+            if abs(self._maker.get_inventory(token_id)) >= self._maker.max_inventory_per_market:
                 continue
 
             skew = self._maker.skew_factor(token_id)

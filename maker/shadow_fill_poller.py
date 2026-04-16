@@ -70,7 +70,10 @@ class ShadowFillPoller:
         # Lockless read is acceptable — worst case is a stale read, which only
         # delays blocking by one trade event (negligible).
         cs_check = self._app.markets.get(token_id)
-        if cs_check is not None and (cs_check.best_bid < 0.05 or cs_check.best_bid > 0.95):
+        if cs_check is not None and (
+            cs_check.best_bid < 0.05 or cs_check.best_bid > 0.95
+            or cs_check.best_ask < 0.05 or cs_check.best_ask > 0.95
+        ):
             return []
 
         levels = list(self._maker.live_orders.get(token_id, []))
