@@ -419,3 +419,52 @@ def test_discover_and_seed_force_seeds_falcon_spiking_markets(monkeypatch):
     assert "tight-yes" in app.markets, "Falcon spiking market should be force-seeded"
     # The normal wide market should also be seeded
     assert "wide-yes" in app.markets
+
+
+def test_discover_seed_uses_volume_24h_for_filter(monkeypatch):
+    """_discover_and_seed must seed markets with high volume_24h even when
+    all-time CLOB volume is zero.
+
+    Bug: line 377 used meta.get("volume", 0) — all-time CLOB volume.
+    A new esports market with volume=0 but volume_24h=$50k was silently
+    excluded and never entered state.
+    """
+    import asyncio
+    import importlib
+    from datetime import datetime, timezone, timedelta
+    from unittest.mock import AsyncMock, patch
+    from market.state import AppState
+
+    monkeypatch.delenv("MAKER_REQUIRE_END_DATE", raising=False)
+    import maker.market_selector as ms_mod
+    importlib.reload(ms_mod)
+
+    expiry_soon = datetime.now(timezone.utc) + timedelta(days=2)
+    new_market_meta = {
+        "condition_id": "cnew",
+        "question": "Will FURIA win IEM Rio 2026?",
+        "category": "sports",
+        "best_bid": 0.45,
+        "best_ask": 0.52,       # 7c spread — passes spread filter
+        "volume": 0.0,           # zero all-time CLOB volume → fails OLD filter
+        "volume_24h": 50_000.0,  # $50k 24h volume → must pass NEW filter
+        "no_token_id": "no-furia",
+        "expiry": expiry_soon,
+        "neg_risk": False,
+        "fees_enabled": True,
+    }
+
+    app = AppState()
+    selector = ms_mod.MarketSelector.__new__(ms_mod.MarketSelector)
+    selector._state = app
+
+    with patch(
+        "maker.market_selector.fetch_active_markets",
+        new=AsyncMock(return_value={"furia-yes": new_market_meta}),
+    ):
+        asyncio.run(selector._discover_and_seed())
+
+    assert "furia-yes" in app.markets, (
+        "Market with volume_24h=$50k but volume=0 must be seeded. "
+        "Fix: use (meta.get('volume_24h', 0) or meta.get('volume', 0)) at line 377."
+    )

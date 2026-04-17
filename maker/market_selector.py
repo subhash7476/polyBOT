@@ -374,7 +374,7 @@ class MarketSelector:
             if meta["category"] in _EXCLUDED_CATEGORIES:
                 n_excluded_cat += 1
                 continue
-            if meta.get("volume", 0) < _MIN_DAILY_VOLUME:
+            if (meta.get("volume_24h", 0) or meta.get("volume", 0)) < _MIN_DAILY_VOLUME:
                 n_low_vol += 1
                 continue
             if meta["best_bid"] < _MIN_BID or meta["best_bid"] > _MAX_BID:
