@@ -181,3 +181,19 @@ def test_select_markets_reserves_parseable_slots(monkeypatch):
     selected = cm.select_markets(token_map)
 
     assert list(selected) == ["c", "d", "a"]
+
+
+def test_default_subscription_cap_is_500():
+    """The default MAX_SUBSCRIBED_MARKETS must be 500 to cover all qualifying maker markets.
+
+    Before the fix: cm.MAX_SUBSCRIBED_MARKETS == 250 → this test FAILS.
+    After the fix:  cm.MAX_SUBSCRIBED_MARKETS == 500 → this test PASSES.
+    """
+    import importlib
+    import market.clob_monitor as cm_fresh
+    # Reload to ensure we read the module default, not a monkeypatched value
+    importlib.reload(cm_fresh)
+    assert cm_fresh.MAX_SUBSCRIBED_MARKETS == 500, (
+        f"Expected MAX_SUBSCRIBED_MARKETS=500, got {cm_fresh.MAX_SUBSCRIBED_MARKETS}. "
+        "Raise the default in config.py line 124."
+    )

@@ -512,7 +512,11 @@ class CLOBMonitor(BaseFeed):
             while asyncio.get_event_loop().time() < discovery_deadline:
                 try:
                     time_remaining = discovery_deadline - asyncio.get_event_loop().time()
-                    async with websockets.connect(POLYMARKET_WS_URL, ping_interval=20) as ws:
+                    async with websockets.connect(
+                        POLYMARKET_WS_URL,
+                        ping_interval=20,
+                        max_size=10 * 1024 * 1024,   # 10 MB — handles 500-market book snapshots
+                    ) as ws:
                         await ws.send(json.dumps(subscribe_msg))
                         self.log.info(
                             f"subscribed to {len(token_ids)} markets on Polymarket CLOB WebSocket "
