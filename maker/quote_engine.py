@@ -12,7 +12,7 @@ from utils.logger import get_logger
 log = get_logger(__name__)
 
 BASE_SPREAD = 0.06
-MIN_SPREAD = 0.04
+MIN_SPREAD = 0.02  # tightened from 0.04 to quote inside thinner books
 MAX_SPREAD = 0.15
 QUOTE_SIZE_USDC = 10.0
 MAX_SKEW_ADJ = 0.03

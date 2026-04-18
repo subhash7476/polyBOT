@@ -28,6 +28,19 @@ log = get_logger(__name__)
 MARKOUT_INTERVALS = (5, 30, 60)  # seconds post-fill
 _ROLLING_WINDOW = 500            # fills kept in rolling stats per interval
 
+# Live-mode adverse-selection kill switch.
+# After this many fills have rolled through the 30s deque, if the rolling mean
+# is worse than the threshold, the tracker raises MakerKillSwitchError, which
+# propagates through asyncio.gather() and triggers the clean shutdown path in
+# runner.run_maker() (checkpoint saved, fill ledger closed).
+# Disabled in paper/shadow modes where markouts are synthetic.
+KILL_SWITCH_MIN_FILLS = 50
+KILL_SWITCH_MAX_AVG_MARKOUT_30S = -0.002   # -20 bps
+
+
+class MakerKillSwitchError(RuntimeError):
+    """Raised when live-mode markouts breach the adverse-selection threshold."""
+
 
 @dataclass
 class _PendingCheck:
@@ -53,11 +66,13 @@ class MarkoutTracker:
         app_state: AppState,
         markout_q: asyncio.Queue,
         log_path: str = "fills_markout.jsonl",
+        kill_switch_enabled: bool = False,
     ):
         self._app = app_state
         self._markout_q = markout_q
         self._log_path = log_path
         self._heap: list[_PendingCheck] = []  # min-heap ordered by check_at
+        self._kill_switch_enabled = kill_switch_enabled
 
         # Rolling deques of markout values per interval
         self._markouts: dict[int, deque] = {
@@ -144,6 +159,25 @@ class MarkoutTracker:
             f"{check.side} markout={markout:+.4f} "
             f"mid {check.mid_at_fill:.4f}→{mid_now:.4f}"
         )
+
+        if (
+            self._kill_switch_enabled
+            and check.interval == 30
+            and len(self._markouts[30]) >= KILL_SWITCH_MIN_FILLS
+        ):
+            data = self._markouts[30]
+            avg30 = sum(data) / len(data)
+            if avg30 < KILL_SWITCH_MAX_AVG_MARKOUT_30S:
+                log.error(
+                    f"KILL SWITCH: avg_markout_30s={avg30:+.5f} over "
+                    f"{len(data)} fills < {KILL_SWITCH_MAX_AVG_MARKOUT_30S:+.5f} — "
+                    f"shutting down maker bot to stop adverse-selection bleed"
+                )
+                raise MakerKillSwitchError(
+                    f"avg_markout_30s={avg30:+.5f} < "
+                    f"{KILL_SWITCH_MAX_AVG_MARKOUT_30S:+.5f} after "
+                    f"{len(data)} fills"
+                )
 
     # ------------------------------------------------------------------
     # Main loop

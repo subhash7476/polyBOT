@@ -32,8 +32,9 @@ def _make_market(
     )
 
 
-def test_only_unknown_category_excluded():
-    """MarketSelector is category-agnostic — only 'unknown' is excluded."""
+def test_no_category_excluded():
+    """MarketSelector is fully category-agnostic — every category (including
+    'unknown' from parse_contract() misses) is eligible to quote."""
     markets = {
         "crypto1":    _make_market("crypto1",    category="crypto"),
         "sports1":    _make_market("sports1",    category="sports"),
@@ -48,7 +49,7 @@ def test_only_unknown_category_excluded():
     assert "event1"    in selected
     assert "election1" in selected
     assert "politics1" in selected
-    assert "unknown1"  not in selected   # only 'unknown' is excluded
+    assert "unknown1"  in selected
 
 
 def test_filters_low_volume():

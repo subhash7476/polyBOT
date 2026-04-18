@@ -80,7 +80,10 @@ def build_maker_actors(
             bankroll=bankroll, app_state=app_state, markout_q=markout_q,
             fill_ledger=fill_ledger,
         ),
-        "markout_tracker": MarkoutTracker(app_state, markout_q),
+        "markout_tracker": MarkoutTracker(
+            app_state, markout_q,
+            kill_switch_enabled=(not paper and not shadow),
+        ),
     }
 
     return actors, queues

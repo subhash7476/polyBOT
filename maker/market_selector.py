@@ -13,9 +13,9 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-_MIN_DAILY_VOLUME = 10_000.0    # meaningful taker activity required
+_MIN_DAILY_VOLUME = 3_000.0     # widened from 10k to sample broader universe during live-validation
 _MAX_ACTIVE_MARKETS = 30        # focus on best opportunities, not thin spread
-_MIN_SPREAD = 0.02              # need ≥2¢ spread to capture any edge
+_MIN_SPREAD = 0.01              # widened from 2¢ to 1¢; QuoteEngine.MIN_SPREAD=0.02 still protects edge
 _MIN_BID = 0.10      # exclude near-zero / near-resolved markets (bid < 10¢)
 _MAX_BID = 0.90      # exclude near-certain markets (bid > 90¢)
 _MAX_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE", "7"))   # near-expiry only
@@ -23,10 +23,11 @@ _MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # 
 _REQUIRE_END_DATE = os.getenv("MAKER_REQUIRE_END_DATE", "true").lower() == "true"
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
-# "unknown" = parse_contract() couldn't classify it — skip to avoid garbage markets.
-# Maker bot is category-agnostic otherwise: election, sports, event, politics,
+# Maker bot is category-agnostic — election, sports, event, politics,
 # entertainment, technology are all fair game if the spread/volume is there.
-_EXCLUDED_CATEGORIES = frozenset({"unknown"})
+# "unknown" (parse_contract miss) is now allowed: empirically ~35% of state-filter
+# rejects, includes high-volume geopolitical/policy markets we want to quote.
+_EXCLUDED_CATEGORIES = frozenset()
 
 # Falcon insight freshness gate (3× poll interval = 6 min at default 120s)
 _FALCON_STALE_SECONDS = 360.0
