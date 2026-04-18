@@ -144,7 +144,6 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 "active": "true", "closed": "false",
                 "enableOrderBook": "true",
                 "limit": _PAGE_LIMIT, "offset": offset,
-                "sort": "volume24hr", "order": "DESC",
             }, timeout=20.0)
             resp.raise_for_status()
             markets = resp.json()
@@ -152,13 +151,6 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 markets = markets.get("data", [])
         except Exception as exc:
             log.warning(f"Gamma fetch error (page {page+1}): {exc}")
-            # For HTTP errors on a single page (e.g. 422 on sort params at offset=0),
-            # skip this page and continue — don't abort the entire fetch.
-            # For connection-level failures, stop pagination to avoid infinite retries.
-            import httpx as _httpx
-            if isinstance(exc, _httpx.HTTPStatusError):
-                offset += _PAGE_LIMIT
-                continue
             break
 
         if not markets:
