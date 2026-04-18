@@ -1,25 +1,26 @@
 """Tests for setup/allowances.py — all using mocked web3, no real network calls."""
 from unittest.mock import MagicMock
-from setup.allowances import build_approve_tx, SPENDERS, MAX_UINT256, USDC_BRIDGED
+from setup.allowances import build_approve_tx, SPENDERS, MAX_UINT256, PMCT_TOKEN
 
 
-def test_spenders_has_three_entries():
-    assert len(SPENDERS) == 3
+def test_spenders_has_four_entries():
+    assert len(SPENDERS) == 4
 
 
 def test_spender_names():
     names = [s[0] for s in SPENDERS]
-    assert "CTF Exchange" in names
-    assert "NegRisk CTF Exchange" in names
+    assert "CTF Exchange V2" in names
+    assert "NegRisk CTF Exchange V2" in names
     assert "NegRisk Adapter" in names
+    assert "Collateral Onramp" in names
 
 
 def test_max_uint256():
     assert MAX_UINT256 == 2**256 - 1
 
 
-def test_usdc_bridged_address():
-    assert USDC_BRIDGED == "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+def test_pmct_token_address():
+    assert PMCT_TOKEN == "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
 
 
 def test_build_approve_tx_returns_dict():
