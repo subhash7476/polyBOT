@@ -227,6 +227,47 @@ def test_gamma_fetch_sorts_by_volume24h_desc():
     )
 
 
+def test_gamma_422_on_page1_continues_to_page2():
+    """A 422 on page 1 must skip that page and continue fetching — not abort.
+
+    Bug: `break` on any exception stopped pagination entirely when page 1 returned 422.
+    Fix: HTTPStatusError triggers `continue` (skip page, advance offset) instead of `break`.
+    """
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+    import httpx
+    import market.clob_monitor as cm_mod
+
+    call_count = [0]
+
+    async def _fake_get(url, params=None, timeout=None):
+        call_count[0] += 1
+        resp = MagicMock()
+        if call_count[0] == 1:
+            # Simulate 422 on first page
+            resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+                "422", request=MagicMock(), response=MagicMock()
+            )
+        else:
+            resp.raise_for_status = MagicMock()
+            resp.json.return_value = []  # empty → stop after second call
+        return resp
+
+    async def _run():
+        client = AsyncMock()
+        client.get.side_effect = _fake_get
+        with patch.object(cm_mod, "_fetch_weather_event_markets", new=AsyncMock(return_value={})), \
+             patch.object(cm_mod, "_fetch_crypto_event_markets", new=AsyncMock(return_value={})):
+            await cm_mod.fetch_active_markets(client)
+
+    asyncio.run(_run())
+
+    assert call_count[0] >= 2, (
+        f"Expected at least 2 HTTP calls (page 1 skipped + page 2 tried), got {call_count[0]}. "
+        "Change `break` to `continue` for HTTPStatusError in fetch_active_markets."
+    )
+
+
 def test_default_subscription_cap_is_500():
     """The default MAX_SUBSCRIBED_MARKETS must be 500 to cover all qualifying maker markets.
 

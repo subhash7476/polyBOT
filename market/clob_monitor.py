@@ -152,6 +152,13 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 markets = markets.get("data", [])
         except Exception as exc:
             log.warning(f"Gamma fetch error (page {page+1}): {exc}")
+            # For HTTP errors on a single page (e.g. 422 on sort params at offset=0),
+            # skip this page and continue — don't abort the entire fetch.
+            # For connection-level failures, stop pagination to avoid infinite retries.
+            import httpx as _httpx
+            if isinstance(exc, _httpx.HTTPStatusError):
+                offset += _PAGE_LIMIT
+                continue
             break
 
         if not markets:
@@ -510,6 +517,7 @@ class CLOBMonitor(BaseFeed):
             # Inner loop: handle WS messages until 15-minute re-discovery window elapses
             # or a connection error forces a reconnect (which stays in the inner loop).
             discovery_deadline = asyncio.get_event_loop().time() + self._REDISCOVERY_INTERVAL
+            _reconnect_delay = 10  # seconds; doubles on each consecutive failure (max 60s)
             while asyncio.get_event_loop().time() < discovery_deadline:
                 try:
                     time_remaining = discovery_deadline - asyncio.get_event_loop().time()
@@ -523,6 +531,7 @@ class CLOBMonitor(BaseFeed):
                             f"subscribed to {len(token_ids)} markets on Polymarket CLOB WebSocket "
                             f"(re-discovery in {time_remaining/60:.0f}m)"
                         )
+                        _reconnect_delay = 10  # reset backoff on successful connection
                         async for raw in ws:
                             payload = json.loads(raw)
                             events = payload if isinstance(payload, list) else [payload]
@@ -532,12 +541,15 @@ class CLOBMonitor(BaseFeed):
                             if asyncio.get_event_loop().time() >= discovery_deadline:
                                 break
                 except Exception as exc:
-                    self.log.warning(f"WS error: {exc} — reconnecting in 10s")
+                    self.log.warning(
+                        f"WS error: {exc} — reconnecting in {_reconnect_delay}s"
+                    )
                     # HEARTBEAT SAFETY: if disconnect > 60s, consider cancelling open orders.
                     # Currently handled by reconnect loop + paper mode position TTL.
                     # TODO (Phase 4D): on live mode, call executor.cancel_all_open_orders()
                     # if time since last stamp_feed("clob") > 60 seconds.
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(_reconnect_delay)
+                    _reconnect_delay = min(_reconnect_delay * 2, 60)  # exponential backoff, cap 60s
 
     async def _handle(self, msg: dict):
         event_type = msg.get("event_type", "")
