@@ -222,11 +222,18 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
     new_crypto = {k: v for k, v in crypto_event_markets.items() if k not in token_map}
     token_map.update(new_crypto)
 
+    # Supplement with high-volume sports/esports markets from the events endpoint.
+    # Sports markets (soccer, NBA, NFL, esports, etc.) have deep pagination offsets
+    # in the default /markets ordering and are unreachable within the 3000-market budget.
+    sports_event_markets = await _fetch_sports_event_markets(client)
+    new_sports = {k: v for k, v in sports_event_markets.items() if k not in token_map}
+    token_map.update(new_sports)
+
     parseable_count = sum(1 for meta in token_map.values() if meta["parseable"])
     log.info(
         f"found {len(token_map)} active order-book markets from Gamma API "
         f"({parseable_count} parseable by strategy, {len(new_weather)} weather + "
-        f"{len(new_crypto)} crypto event markets added)"
+        f"{len(new_crypto)} crypto event markets added, {len(new_sports)} sports/esports added)"
     )
     return token_map
 
@@ -395,6 +402,94 @@ async def _fetch_crypto_event_markets(client: httpx.AsyncClient) -> dict:
     log.debug(
         f"crypto events: found {len(token_map)} price markets ({skipped_expired} expired skipped)"
     )
+    return token_map
+
+
+async def _fetch_sports_event_markets(client: httpx.AsyncClient) -> dict:
+    """
+    Fetch sports and esports markets from the events endpoint.
+
+    Sports/esports markets sit at deep pagination offsets in the default /markets
+    ordering and are never reached within the 3000-market budget.  The events
+    endpoint surfaces them directly by tag regardless of offset.
+
+    Markets are assigned category "sports" so they pass filter_and_rank() in the
+    maker — the maker quotes on spread+volume alone and needs no signal model.
+    The parseable flag is set False; the trading bot will not attempt to model them.
+    """
+    token_map: dict = {}
+    now = datetime.now(timezone.utc)
+
+    for tag_slug in ("sports", "esports"):
+        try:
+            resp = await client.get(_GAMMA_EVENTS_URL, params={
+                "tag_slug": tag_slug,
+                "active": "true",
+                "closed": "false",
+                "limit": 100,
+            }, timeout=20.0)
+            resp.raise_for_status()
+            events = resp.json()
+            if isinstance(events, dict):
+                events = events.get("data", [])
+        except Exception as exc:
+            log.warning(f"sports events fetch error (tag={tag_slug}): {exc}")
+            continue
+
+        for event in events:
+            for m in event.get("markets", []):
+                if not m.get("acceptingOrders") or not m.get("enableOrderBook"):
+                    continue
+                token_ids_raw = m.get("clobTokenIds", "[]")
+                try:
+                    token_ids = json.loads(token_ids_raw) if isinstance(token_ids_raw, str) else token_ids_raw
+                except Exception:
+                    continue
+                if len(token_ids) < 2:
+                    continue
+
+                api_expiry = _parse_datetime(m.get("endDateIso") or m.get("endDate"))
+                if api_expiry is not None:
+                    exp = api_expiry if api_expiry.tzinfo else api_expiry.replace(tzinfo=timezone.utc)
+                    if exp < now:
+                        continue  # skip already-resolved markets
+
+                yes_id, no_id = token_ids[0], token_ids[1]
+                if yes_id in token_map:
+                    continue  # de-duplicate across tag fetches
+
+                question = m.get("question", "")
+                outcome_prices_raw = m.get("outcomePrices") or []
+                if isinstance(outcome_prices_raw, str):
+                    try:
+                        outcome_prices_raw = json.loads(outcome_prices_raw)
+                    except Exception:
+                        outcome_prices_raw = []
+                yes_price = float(outcome_prices_raw[0]) if outcome_prices_raw else None
+
+                raw_bid = float(m.get("bestBid") or 0)
+                raw_ask = float(m.get("bestAsk") or 1)
+                if (raw_ask - raw_bid) > 0.5 and yes_price is not None and 0.03 < yes_price < 0.97:
+                    raw_bid = round(yes_price - 0.02, 4)
+                    raw_ask = round(yes_price + 0.02, 4)
+
+                token_map[yes_id] = {
+                    "question":    question,
+                    "category":    "sports",
+                    "expiry":      api_expiry,
+                    "parseable":   False,   # no signal model — maker quotes on spread+volume
+                    "no_token_id": no_id,
+                    "condition_id": m.get("conditionId", "") or "",
+                    "volume":      float(m.get("volumeClob") or m.get("volume") or 0),
+                    "volume_24h":  float(m.get("volume24hrClob") or m.get("volume24hr") or 0),
+                    "liquidity":   float(m.get("liquidityClob") or m.get("liquidity") or 0),
+                    "best_bid":    raw_bid,
+                    "best_ask":    raw_ask,
+                    "neg_risk":    m.get("negRisk", False),
+                    "fees_enabled": True,
+                }
+
+    log.debug(f"sports events: found {len(token_map)} CLOB sports/esports markets")
     return token_map
 
 

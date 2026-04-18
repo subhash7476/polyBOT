@@ -223,6 +223,66 @@ def test_gamma_fetch_uses_required_params():
     )
 
 
+def test_sports_events_supplement_assigns_sports_category():
+    """Sports markets fetched via events endpoint must get category='sports'.
+
+    Bug: sports/esports markets sit at deep pagination offsets (offset 5000+) in the
+    default Gamma /markets ordering, unreachable within the 3000-market budget.
+    Fix: _fetch_sports_event_markets() uses tag_slug=sports/esports on /events endpoint
+    and assigns category='sports' so filter_and_rank() in the maker lets them through.
+    (category='unknown' would exclude them via _EXCLUDED_CATEGORIES.)
+    """
+    import asyncio
+    import json
+    from unittest.mock import AsyncMock, MagicMock, patch
+    from datetime import datetime, timezone, timedelta
+    import market.clob_monitor as cm_mod
+
+    future_expiry = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
+
+    def _fake_market(question, yes_id, no_id):
+        return {
+            "question": question,
+            "clobTokenIds": json.dumps([yes_id, no_id]),
+            "acceptingOrders": True,
+            "enableOrderBook": True,
+            "endDateIso": future_expiry,
+            "bestBid": "0.45",
+            "bestAsk": "0.55",
+            "volumeClob": 500000,
+            "volume24hrClob": 20000,
+            "liquidityClob": 10000,
+            "outcomePrices": ["0.5", "0.5"],
+        }
+
+    fake_events = [
+        {"markets": [_fake_market("Will Real Madrid win?", "sports_yes_1", "sports_no_1")]},
+    ]
+
+    async def _fake_get(url, params=None, timeout=None):
+        resp = MagicMock()
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = fake_events
+        return resp
+
+    async def _run():
+        client = AsyncMock()
+        client.get.side_effect = _fake_get
+        result = await cm_mod._fetch_sports_event_markets(client)
+        return result
+
+    result = asyncio.run(_run())
+
+    assert "sports_yes_1" in result, "Sports market token ID not found in result"
+    market = result["sports_yes_1"]
+    assert market["category"] == "sports", (
+        f"Expected category='sports', got '{market['category']}'. "
+        "Sports markets need a non-unknown category to pass maker filter_and_rank()."
+    )
+    assert market["parseable"] is False, "Sports markets should not be parseable (no signal model)"
+    assert market["volume_24h"] == 20000.0
+
+
 def test_default_subscription_cap_is_500():
     """The default MAX_SUBSCRIBED_MARKETS must be 500 to cover all qualifying maker markets.
 
