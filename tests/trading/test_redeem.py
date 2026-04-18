@@ -1,7 +1,7 @@
 """Tests for trading/redeem.py — all mocked, no real web3 calls."""
 import pytest
 from unittest.mock import MagicMock, patch
-from trading.redeem import check_oracle_resolved, CTF_EXCHANGE, USDC_BRIDGED, INDEX_SETS
+from trading.redeem import check_oracle_resolved, CTF_EXCHANGE, PMCT_TOKEN, INDEX_SETS
 from trading.redeem_lock import RedeemLock
 import trading.redeem_lock as rl
 
@@ -56,7 +56,7 @@ def test_oracle_check_returns_false_on_exception():
 # --- constants ---
 
 def test_ctf_exchange_address():
-    assert CTF_EXCHANGE == "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
+    assert CTF_EXCHANGE == "0xE111180000d2663C0091e4f400237545B87B996B"
 
 
 def test_index_sets():

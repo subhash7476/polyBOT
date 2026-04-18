@@ -11,8 +11,8 @@ from utils.logger import get_logger
 
 log = get_logger("redeem")
 
-CTF_EXCHANGE  = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
-USDC_BRIDGED  = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+CTF_EXCHANGE  = "0xE111180000d2663C0091e4f400237545B87B996B"  # V2
+PMCT_TOKEN    = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"  # replaces USDC_BRIDGED
 ZERO_BYTES32  = b"\x00" * 32
 INDEX_SETS    = [1, 2]   # redeem both YES and NO positions
 
@@ -82,7 +82,7 @@ def redeem_position(
         try:
             nonce = w3.eth.get_transaction_count(account.address)
             tx = ctf.functions.redeemPositions(
-                Web3.to_checksum_address(USDC_BRIDGED),
+                Web3.to_checksum_address(PMCT_TOKEN),
                 ZERO_BYTES32,
                 condition_bytes,
                 INDEX_SETS,
