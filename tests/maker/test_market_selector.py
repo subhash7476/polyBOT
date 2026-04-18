@@ -468,3 +468,28 @@ def test_discover_seed_uses_volume_24h_for_filter(monkeypatch):
         "Market with volume_24h=$50k but volume=0 must be seeded. "
         "Fix: use (meta.get('volume_24h', 0) or meta.get('volume', 0)) at line 377."
     )
+
+
+def test_min_bid_excludes_low_probability_markets():
+    """filter_and_rank must exclude markets with best_bid < 0.10.
+
+    Bug: _MIN_BID=0.05 allowed markets priced at 7-8¢ to enter the active set.
+    These near-zero markets attract one-directional taker flow (adverse selection)
+    because takers have strong information about the near-certain NO outcome.
+    Raising to 0.10 keeps a safe buffer from the resolution boundary.
+    """
+    import importlib
+    import maker.market_selector as ms_mod
+    importlib.reload(ms_mod)
+
+    markets = {
+        "low_prob":  _make_market("low_prob",  bid=0.08, ask=0.12),   # bid=0.08 < 0.10 → excluded
+        "borderline": _make_market("borderline", bid=0.10, ask=0.14), # bid=0.10 = new floor → included
+        "normal":    _make_market("normal",    bid=0.40, ask=0.60),   # well within range → included
+    }
+    selected = ms_mod.MarketSelector.filter_and_rank(markets)
+    assert "low_prob" not in selected, (
+        "Market with bid=0.08 must be excluded. Raise _MIN_BID to 0.10."
+    )
+    assert "borderline" in selected, "Market with bid=0.10 must be included."
+    assert "normal" in selected, "Normal market must be included."
