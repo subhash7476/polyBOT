@@ -183,6 +183,50 @@ def test_select_markets_reserves_parseable_slots(monkeypatch):
     assert list(selected) == ["c", "d", "a"]
 
 
+def test_gamma_fetch_sorts_by_volume24h_desc():
+    """fetch_active_markets must pass sort=volume24hr&order=DESC to the Gamma API.
+
+    Bug: no sort param was sent, so the API returned markets in arbitrary internal
+    order (by creation date / ID). High-volume sports/event markets at offset 5000+
+    were never reached within the 3000-market pagination budget.
+
+    Fix: add "sort": "volume24hr", "order": "DESC" to the params dict.
+    """
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+    import market.clob_monitor as cm_mod
+
+    captured_params = []
+
+    async def _fake_get(url, params=None, timeout=None):
+        captured_params.append(dict(params or {}))
+        resp = MagicMock()
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = []   # empty → stops pagination after first page
+        return resp
+
+    async def _run():
+        client = AsyncMock()
+        client.get.side_effect = _fake_get
+        # Patch supplement endpoints so they don't make real HTTP calls
+        with patch.object(cm_mod, "_fetch_weather_event_markets", new=AsyncMock(return_value={})), \
+             patch.object(cm_mod, "_fetch_crypto_event_markets", new=AsyncMock(return_value={})):
+            await cm_mod.fetch_active_markets(client)
+
+    asyncio.run(_run())
+
+    assert captured_params, "fetch_active_markets made no HTTP calls"
+    first = captured_params[0]
+    assert first.get("sort") == "volume24hr", (
+        f"Expected sort=volume24hr in Gamma API params, got: {first}. "
+        "Add 'sort': 'volume24hr' to the params dict in fetch_active_markets."
+    )
+    assert first.get("order") == "DESC", (
+        f"Expected order=DESC in Gamma API params, got: {first}. "
+        "Add 'order': 'DESC' to the params dict in fetch_active_markets."
+    )
+
+
 def test_default_subscription_cap_is_500():
     """The default MAX_SUBSCRIBED_MARKETS must be 500 to cover all qualifying maker markets.
 

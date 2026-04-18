@@ -144,6 +144,7 @@ async def fetch_active_markets(client: httpx.AsyncClient) -> dict:
                 "active": "true", "closed": "false",
                 "enableOrderBook": "true",
                 "limit": _PAGE_LIMIT, "offset": offset,
+                "sort": "volume24hr", "order": "DESC",
             }, timeout=20.0)
             resp.raise_for_status()
             markets = resp.json()
