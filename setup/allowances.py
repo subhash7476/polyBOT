@@ -4,8 +4,9 @@ setup/allowances.py — Set Polymarket contract USDC spending allowances.
 Run once before live trading:
     python -m setup.allowances
 
-Approves CTF Exchange, NegRisk CTF Exchange, and NegRisk Adapter to spend
-bridged USDC (max uint256) from your wallet on Polygon.
+Approves CTF Exchange V2, NegRisk CTF Exchange V2, NegRisk Adapter, and
+Collateral Onramp to spend PMCT (Polymarket collateral token, max uint256)
+from your wallet on Polygon.
 
 Requirements: POLY_PRIVATE_KEY and RPC_URL in .env
 """
