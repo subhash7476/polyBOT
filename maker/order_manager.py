@@ -70,7 +70,7 @@ class OrderManager:
         if self._paper:
             return f"paper-{token_id[:8]}-{side.lower()}-{price:.4f}"
 
-        from py_clob_client.clob_types import OrderArgs, OrderType
+        from trading.clob_factory import OrderArgs, OrderType
         order_args = OrderArgs(token_id=token_id, price=price, size=size, side=side)
         signed = self._clob.create_order(order_args)
         result = self._clob.post_order(signed, orderType=OrderType.GTC, post_only=True)
