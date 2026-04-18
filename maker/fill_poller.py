@@ -159,7 +159,7 @@ class FillPoller:
             await asyncio.sleep(self.POLL_INTERVAL)
 
     async def _run_live(self):
-        from py_clob_client.clob_types import OpenOrderParams
+        from trading.clob_factory import OpenOrderParams
 
         while True:
             try:
