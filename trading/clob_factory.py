@@ -56,9 +56,8 @@ def build_clob_client(
     Note: host and chain_id are positional; key is keyword-only.
     """
     from config import POLYMARKET_CLOB_URL
-    _import_sdk()
-    from py_clob_client_v2 import ClobClient
-    return ClobClient(
+    sdk = _import_sdk()
+    return sdk.ClobClient(
         POLYMARKET_CLOB_URL,
         chain_id,
         key=private_key,
@@ -68,12 +67,28 @@ def build_clob_client(
 
 
 # ---------------------------------------------------------------------------
-# Type re-exports — None when SDK not installed (keeps paper-mode tests fast)
+# Type re-exports — sentinel when SDK not installed (keeps paper-mode tests fast)
 # ---------------------------------------------------------------------------
+
+
+class _MissingSDK:
+    def __init__(self, name):
+        self._name = name
+
+    def __call__(self, *a, **kw):
+        raise ImportError(
+            f"{self._name} unavailable — run: pip install py-clob-client-v2"
+        )
+
+    def __getattr__(self, item):
+        raise ImportError(
+            f"{self._name}.{item} unavailable — run: pip install py-clob-client-v2"
+        )
+
 
 try:
     from py_clob_client_v2 import OrderArgs, OrderType, OpenOrderParams
 except ImportError:
-    OrderArgs = None
-    OrderType = None
-    OpenOrderParams = None
+    OrderArgs = _MissingSDK("OrderArgs")        # type: ignore[assignment]
+    OrderType = _MissingSDK("OrderType")        # type: ignore[assignment]
+    OpenOrderParams = _MissingSDK("OpenOrderParams")  # type: ignore[assignment]

@@ -35,6 +35,9 @@ def test_v2_exchange_differs_from_v1():
 def test_import_guard_raises_clear_error(monkeypatch):
     """If SDK not installed, ImportError has actionable message."""
     import builtins
+    import importlib
+    from trading import clob_factory
+
     real_import = builtins.__import__
 
     def mock_import(name, *args, **kwargs):
@@ -43,10 +46,51 @@ def test_import_guard_raises_clear_error(monkeypatch):
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", mock_import)
-
-    from trading import clob_factory
-    import importlib
     importlib.reload(clob_factory)
 
     with pytest.raises(ImportError, match="pip install py-clob-client-v2"):
         clob_factory._import_sdk()
+
+    monkeypatch.undo()
+    importlib.reload(clob_factory)
+
+
+import sys
+import types
+
+
+def test_build_clob_client_forwards_args(monkeypatch):
+    """build_clob_client forwards all args correctly to ClobClient."""
+    calls = []
+
+    class FakeClobClient:
+        def __init__(self, host, chain_id, key=None, signature_type=None, funder=None, **kw):
+            calls.append(dict(host=host, chain_id=chain_id, key=key,
+                              signature_type=signature_type, funder=funder))
+
+    fake_sdk = types.ModuleType("py_clob_client_v2")
+    fake_sdk.ClobClient = FakeClobClient
+    fake_sdk.OrderArgs = None
+    fake_sdk.OrderType = None
+    fake_sdk.OpenOrderParams = None
+    monkeypatch.setitem(sys.modules, "py_clob_client_v2", fake_sdk)
+
+    import importlib
+    from trading import clob_factory
+    importlib.reload(clob_factory)
+
+    clob_factory.build_clob_client(
+        private_key="0x" + "a" * 64,
+        chain_id=137,
+        sig_type=1,
+        funder="0x" + "b" * 40,
+    )
+
+    assert len(calls) == 1
+    assert calls[0]["chain_id"] == 137
+    assert calls[0]["key"] == "0x" + "a" * 64
+    assert calls[0]["signature_type"] == 1
+    assert calls[0]["funder"] == "0x" + "b" * 40
+
+    monkeypatch.undo()
+    importlib.reload(clob_factory)
