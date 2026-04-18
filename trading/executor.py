@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 from eth_account import Account
-from config import POLYMARKET_CLOB_URL, POLY_PRIVATE_KEY, SIGNATURE_TYPE, FUNDER_ADDRESS
+from config import POLY_PRIVATE_KEY, SIGNATURE_TYPE, FUNDER_ADDRESS
 from utils.logger import get_logger
 
 _MAX_RETRIES = 3
@@ -88,12 +88,11 @@ class CLOBExecutor:
             self.wallet_address = Account.from_key(private_key).address
 
         if not paper:
-            from py_clob_client.client import ClobClient  # type: ignore
-            self._clob = ClobClient(
-                host=POLYMARKET_CLOB_URL,
-                key=private_key,
-                chain_id=137,  # Polygon mainnet
-                signature_type=sig_type,
+            from trading.clob_factory import build_clob_client
+            self._clob = build_clob_client(
+                private_key=private_key,
+                chain_id=137,
+                sig_type=sig_type,
                 funder=funder or None,
             )
 
