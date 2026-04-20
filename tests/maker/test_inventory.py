@@ -240,3 +240,21 @@ async def test_daily_loss_limit_sets_global_cooldown(setup):
     assert maker_state.global_in_cooldown(), (
         "global_cooldown_until must be set after daily loss limit fires"
     )
+
+
+# ---------------------------------------------------------------------------
+# Tests for cap thresholds and reduce_only_markets field (Task 1)
+# ---------------------------------------------------------------------------
+
+def test_default_cap_thresholds():
+    s = MakerState()
+    assert s.max_inventory_per_market == 20.0
+    assert s.max_total_inventory == 700.0
+
+
+def test_reduce_only_markets_field_exists():
+    s = MakerState()
+    assert hasattr(s, "reduce_only_markets")
+    assert isinstance(s.reduce_only_markets, set)
+    s.reduce_only_markets.add("tok1")
+    assert "tok1" in s.reduce_only_markets

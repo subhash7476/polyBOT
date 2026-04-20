@@ -11,11 +11,15 @@ from maker.types import QuoteIntent
 class MakerState:
     """Thread-safe state shared across all maker actors."""
 
-    max_inventory_per_market: float = 50.0
-    max_total_inventory: float = 200.0
+    max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
+    max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
 
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)
+
+    # Markets in reduce-only mode: position must shrink before new exposure allowed.
+    # Populated by MarketSelector when a market exits selection with open inventory.
+    reduce_only_markets: set = field(default_factory=set)
 
     # Per-market live order IDs: token_id → {"bid_order_id": str, "ask_order_id": str, "bid_price": float, ...}
     live_orders: dict[str, list[dict]] = field(default_factory=dict)
