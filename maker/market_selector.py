@@ -668,6 +668,7 @@ class MarketSelector:
 
         _falcon_overlap_report(selected, feeds)
 
+        reduce_only_snapshot: set = set()
         if self._maker_state is not None:
             async with self._maker_state._lock:
                 prev_selected = set(self._maker_state.selected_token_ids)
@@ -687,8 +688,9 @@ class MarketSelector:
                 self._maker_state.reduce_only_markets -= closed
                 if closed:
                     log.info(f"Closed {len(closed)} orphaned position(s) — removed from reduce_only")
+                reduce_only_snapshot = set(self._maker_state.reduce_only_markets)
 
-        await self._active_markets_q.put(set(selected.keys()))
+        await self._active_markets_q.put(set(selected.keys()) | reduce_only_snapshot)
 
     async def run(self):
         """Main loop — re-evaluate market selection every REFRESH_INTERVAL."""

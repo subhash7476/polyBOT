@@ -174,7 +174,9 @@ class QuoteEngine:
             # at or above the per-market cap, regardless of cooldown state.
             # Without this gate, cooldown expiry → re-quote → fill → cap fires again
             # → repeat indefinitely, growing positions without bound.
-            if abs(self._maker.get_inventory(token_id)) >= self._maker.max_inventory_per_market:
+            # Bypass for reduce_only_markets — they need to quote the closing side to drain.
+            if (token_id not in self._maker.reduce_only_markets
+                    and abs(self._maker.get_inventory(token_id)) >= self._maker.max_inventory_per_market):
                 continue
 
             skew = self._maker.skew_factor(token_id)
