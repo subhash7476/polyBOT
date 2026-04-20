@@ -290,7 +290,7 @@ async def test_cleanup_extends_cooldown_when_above_resume_threshold():
     assert not maker_state.global_in_cooldown()
 
     # Call the internal hysteresis check
-    await im._extend_cooldown_if_needed()
+    await im._engage_cooldown_if_above_threshold()
 
     # Cooldown should now be set
     assert maker_state.global_in_cooldown()

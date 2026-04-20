@@ -186,7 +186,7 @@ class InventoryManager:
                 f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
             )
 
-    async def _extend_cooldown_if_needed(self) -> None:
+    async def _engage_cooldown_if_above_threshold(self) -> None:
         """Re-engage global cooldown if inventory is still above the resume threshold.
 
         Called from cleanup_loop after position expiry. Prevents the ratchet where
@@ -199,7 +199,7 @@ class InventoryManager:
             self._maker.global_cooldown_until = time.time() + COOLDOWN_SECONDS
             log.warning(
                 f"INVENTORY RESUME BLOCKED: {total:.0f} > {resume_threshold:.0f} "
-                f"(80% of {self._maker.max_total_inventory:.0f}) — "
+                f"({TOTAL_INV_RESUME_RATIO * 100:.0f}% of {self._maker.max_total_inventory:.0f}) — "
                 f"extending global cooldown {COOLDOWN_SECONDS}s"
             )
 
@@ -278,7 +278,7 @@ class InventoryManager:
                         f"Expired {expired} stale paper position(s); "
                         f"total_abs_inventory now {self._maker.total_abs_inventory:.0f} shares"
                     )
-                await self._extend_cooldown_if_needed()
+                await self._engage_cooldown_if_above_threshold()
             except Exception as exc:
                 log.exception(f"cleanup_loop error: {exc}")
             await asyncio.sleep(300)  # re-check every 5 minutes
