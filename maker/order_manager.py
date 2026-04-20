@@ -67,6 +67,8 @@ class OrderManager:
             log.info(f"CANCEL [{cancel.token_id[:8]}] — {len(levels)} levels")
 
     def _place_one(self, token_id: str, price: float, size: float, side: str) -> str:
+        if size <= 0:
+            return ""
         if self._paper:
             return f"paper-{token_id[:8]}-{side.lower()}-{price:.4f}"
 

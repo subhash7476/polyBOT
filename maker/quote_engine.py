@@ -222,6 +222,21 @@ class QuoteEngine:
                 size=QUOTE_SIZE_USDC,
                 reason="reprice",
             )
+
+            if token_id in self._maker.reduce_only_markets:
+                inv = self._maker.get_inventory(token_id)
+                if inv != 0.0:
+                    new_levels = tuple(
+                        QuoteIntent(
+                            l.token_id, l.bid_price, l.ask_price,
+                            0.0 if inv > 0 else l.bid_size,
+                            0.0 if inv < 0 else l.ask_size,
+                            "reduce_only",
+                        )
+                        for l in ladder.levels
+                    )
+                    ladder = LadderUpdate(token_id, new_levels, "reduce_only")
+
             old_center = self._maker.last_quotes.get(token_id)
             is_new = token_id in new_ids or old_center is None
             if is_new or force or self.is_stale(old_center, ladder.center):

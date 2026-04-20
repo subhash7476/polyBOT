@@ -648,6 +648,50 @@ class MarketSelector:
                 f"backfilled={backfilled} condition_ids on existing markets"
             )
 
+    async def _run_one_cycle(self) -> None:
+        """One selection cycle: discover, rank, update state, emit to queue."""
+        await self._discover_and_seed()
+
+        async with self._state._lock:
+            markets = dict(self._state.markets)
+            feeds = self._state.feeds
+
+        selected = self.filter_and_rank(markets, feeds=feeds)
+        by_cat: dict[str, int] = {}
+        for cs in selected.values():
+            by_cat[cs.category] = by_cat.get(cs.category, 0) + 1
+
+        log.info(
+            f"MarketSelector: {len(selected)} markets selected "
+            f"(from {len(markets)} total) — by_cat={by_cat}"
+        )
+
+        _falcon_overlap_report(selected, feeds)
+
+        if self._maker_state is not None:
+            async with self._maker_state._lock:
+                prev_selected = set(self._maker_state.selected_token_ids)
+                self._maker_state.selected_token_ids = set(selected.keys())
+
+            deselected = prev_selected - set(selected.keys())
+            async with self._maker_state._lock:
+                for token_id in deselected:
+                    inv = self._maker_state.get_inventory(token_id)
+                    if inv != 0.0:
+                        self._maker_state.reduce_only_markets.add(token_id)
+                        log.info(
+                            f"Orphaned: [{token_id[:8]}] {inv:+.1f}sh — added to reduce_only"
+                        )
+                closed = {
+                    t for t in self._maker_state.reduce_only_markets
+                    if self._maker_state.get_inventory(t) == 0.0
+                }
+                self._maker_state.reduce_only_markets -= closed
+                if closed:
+                    log.info(f"Closed {len(closed)} orphaned position(s) — removed from reduce_only")
+
+        await self._active_markets_q.put(set(selected.keys()))
+
     async def run(self):
         """Main loop — re-evaluate market selection every REFRESH_INTERVAL."""
         # Wait for CLOBMonitor to seed initial markets before first selection
@@ -659,32 +703,5 @@ class MarketSelector:
             await asyncio.sleep(2.0)
 
         while True:
-            # Top-up state with wide-spread markets the CLOBMonitor may have missed.
-            # Also backfills condition_ids on existing markets (prerequisite for
-            # Falcon spiking bypass and scoring to work).
-            await self._discover_and_seed()
-
-            async with self._state._lock:
-                markets = dict(self._state.markets)
-                feeds = self._state.feeds   # Falcon market insights live here
-
-            selected = self.filter_and_rank(markets, feeds=feeds)
-            by_cat: dict[str, int] = {}
-            for cs in selected.values():
-                by_cat[cs.category] = by_cat.get(cs.category, 0) + 1
-
-            log.info(
-                f"MarketSelector: {len(selected)} markets selected "
-                f"(from {len(markets)} total) — by_cat={by_cat}"
-            )
-
-            # Falcon overlap: shows which selected markets Falcon has data for,
-            # and which Falcon spiking markets we're missing
-            _falcon_overlap_report(selected, feeds)
-
-            if self._maker_state is not None:
-                async with self._maker_state._lock:
-                    self._maker_state.selected_token_ids = set(selected.keys())
-
-            await self._active_markets_q.put(set(selected.keys()))
+            await self._run_one_cycle()
             await asyncio.sleep(self.REFRESH_INTERVAL)

@@ -494,3 +494,54 @@ def test_min_bid_excludes_low_probability_markets():
     )
     assert "borderline" in selected, "Market with bid=0.10 must be included."
     assert "normal" in selected, "Normal market must be included."
+
+
+@pytest.mark.asyncio
+async def test_orphaned_market_added_to_reduce_only():
+    """When a market leaves selection and has non-zero inventory, it goes to reduce_only_markets."""
+    from maker.market_selector import MarketSelector
+    from maker.state import MakerState
+    from market.state import AppState, FeedState
+
+    maker_state = MakerState()
+    maker_state.update_inventory("tok_old", "BUY", 10.0)
+
+    app_state = AppState()
+    app_state.feeds = FeedState()
+    # Seed one market in state so MarketSelector can run
+    app_state.markets["tok_new"] = _make_market("tok_new")
+
+    active_q = asyncio.Queue()
+    sel = MarketSelector(app_state, active_q, maker_state=maker_state)
+
+    # Simulate previous selection containing tok_old
+    maker_state.selected_token_ids = {"tok_old"}
+
+    # Run one iteration — tok_old won't be in app_state.markets so it won't be selected
+    await sel._run_one_cycle()
+
+    assert "tok_old" in maker_state.reduce_only_markets
+
+
+@pytest.mark.asyncio
+async def test_closed_orphan_removed_from_reduce_only():
+    """When orphaned position reaches zero inventory, it is removed from reduce_only_markets."""
+    from maker.market_selector import MarketSelector
+    from maker.state import MakerState
+    from market.state import AppState, FeedState
+
+    maker_state = MakerState()
+    maker_state.reduce_only_markets.add("tok_closed")
+    # inventory is already zero for tok_closed
+
+    app_state = AppState()
+    app_state.feeds = FeedState()
+    app_state.markets["tok_new"] = _make_market("tok_new")
+
+    active_q = asyncio.Queue()
+    sel = MarketSelector(app_state, active_q, maker_state=maker_state)
+    maker_state.selected_token_ids = set()
+
+    await sel._run_one_cycle()
+
+    assert "tok_closed" not in maker_state.reduce_only_markets
