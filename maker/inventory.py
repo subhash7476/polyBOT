@@ -19,6 +19,10 @@ ADVERSE_COOLDOWN_SECONDS = 1800  # 30 minutes — adverse selection detected
 RAPID_FILL_WINDOW = 5.0        # seconds
 MAX_DAILY_LOSS_PCT = 0.03      # 3% of bankroll
 
+# Hysteresis: after global cooldown expires, re-engage if inventory still above this
+# fraction of max_total_inventory. Prevents the ratchet where expiry → fill → cap fires.
+TOTAL_INV_RESUME_RATIO = 0.80
+
 # Adverse-selection detector: if >= ADVERSE_MIN_FILLS fills seen and
 # >= ADVERSE_DIRECTION_PCT are the same side, trigger extended cooldown.
 ADVERSE_MIN_FILLS = 5
@@ -182,6 +186,23 @@ class InventoryManager:
                 f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
             )
 
+    async def _extend_cooldown_if_needed(self) -> None:
+        """Re-engage global cooldown if inventory is still above the resume threshold.
+
+        Called from cleanup_loop after position expiry. Prevents the ratchet where
+        the 300-s cooldown expires, quotes resume, a fill arrives, and the cap fires
+        again — repeating indefinitely without draining inventory.
+        """
+        total = self._maker.total_abs_inventory
+        resume_threshold = self._maker.max_total_inventory * TOTAL_INV_RESUME_RATIO
+        if total > resume_threshold and not self._maker.global_in_cooldown():
+            self._maker.global_cooldown_until = time.time() + COOLDOWN_SECONDS
+            log.warning(
+                f"INVENTORY RESUME BLOCKED: {total:.0f} > {resume_threshold:.0f} "
+                f"(80% of {self._maker.max_total_inventory:.0f}) — "
+                f"extending global cooldown {COOLDOWN_SECONDS}s"
+            )
+
     async def _expire_paper_positions(self) -> int:
         """Zero out inventory for markets whose resolution date has passed.
 
@@ -257,6 +278,7 @@ class InventoryManager:
                         f"Expired {expired} stale paper position(s); "
                         f"total_abs_inventory now {self._maker.total_abs_inventory:.0f} shares"
                     )
+                await self._extend_cooldown_if_needed()
             except Exception as exc:
                 log.exception(f"cleanup_loop error: {exc}")
             await asyncio.sleep(300)  # re-check every 5 minutes

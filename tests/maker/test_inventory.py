@@ -258,3 +258,39 @@ def test_reduce_only_markets_field_exists():
     assert isinstance(s.reduce_only_markets, set)
     s.reduce_only_markets.add("tok1")
     assert "tok1" in s.reduce_only_markets
+
+
+# ---------------------------------------------------------------------------
+# Tests for hysteresis in cleanup_loop (Task 2)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_cleanup_extends_cooldown_when_above_resume_threshold():
+    """cleanup_loop extends global cooldown when inventory stays above 80% of cap.
+
+    Scenario: After position expiry, if total inventory is still above 80% of cap,
+    we should extend the global cooldown another 300s. This prevents the ratchet
+    where cooldown expires → quote resumes → fill arrives → cap fires again.
+    """
+    from maker.inventory import InventoryManager, TOTAL_INV_RESUME_RATIO
+
+    maker_state = MakerState(max_inventory_per_market=20.0, max_total_inventory=100.0)
+    fills_q = asyncio.Queue()
+    skew_q = asyncio.Queue()
+    cancel_q = asyncio.Queue()
+    im = InventoryManager(maker_state, fills_q, skew_q, cancel_q)
+
+    # Load inventory above resume threshold (80% of 100 = 80 shares)
+    for i in range(9):
+        maker_state.update_inventory(f"tok{i}", "BUY", 9.0)  # total_abs = 81
+
+    assert maker_state.total_abs_inventory == 81.0
+
+    # Cooldown is not active now
+    assert not maker_state.global_in_cooldown()
+
+    # Call the internal hysteresis check
+    await im._extend_cooldown_if_needed()
+
+    # Cooldown should now be set
+    assert maker_state.global_in_cooldown()
