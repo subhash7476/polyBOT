@@ -672,9 +672,7 @@ class MarketSelector:
             async with self._maker_state._lock:
                 prev_selected = set(self._maker_state.selected_token_ids)
                 self._maker_state.selected_token_ids = set(selected.keys())
-
-            deselected = prev_selected - set(selected.keys())
-            async with self._maker_state._lock:
+                deselected = prev_selected - set(selected.keys())
                 for token_id in deselected:
                     inv = self._maker_state.get_inventory(token_id)
                     if inv != 0.0:
