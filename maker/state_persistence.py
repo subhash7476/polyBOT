@@ -76,7 +76,15 @@ class LifetimeStatsCache:
     def load(self) -> dict:
         if self._path.exists():
             try:
-                return json.loads(self._path.read_text(encoding="utf-8"))
+                data = json.loads(self._path.read_text(encoding="utf-8"))
+                # Normalize: older files may be missing keys or have null last_date
+                data.setdefault("by_market", {})
+                data.setdefault("by_date", {})
+                data.setdefault("total_fills", 0)
+                data.setdefault("total_cash_pnl", 0.0)
+                data.setdefault("total_realized_pnl", 0.0)
+                data["last_date"] = data.get("last_date") or ""
+                return data
             except Exception:
                 pass
         return {"last_date": "", "total_fills": 0, "total_realized_pnl": 0.0,
@@ -95,7 +103,7 @@ class LifetimeStatsCache:
         """
         stats = self.load()
         today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
-        last_date = stats.get("last_date", "")
+        last_date = stats.get("last_date") or ""
 
         new_dates = [d for d in fill_ledger.all_dates() if last_date < d < today]
         if not new_dates:

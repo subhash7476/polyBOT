@@ -135,7 +135,7 @@ FALCON_BASE_URL = os.getenv("FALCON_BASE_URL", "https://narrative.agent.heisenbe
 GLASSNODE_API_KEY = os.getenv("GLASSNODE_API_KEY", "")
 SIGNATURE_TYPE      = int(os.getenv("SIGNATURE_TYPE", "0"))   # 0=EOA, 1=POLY_PROXY, 2=GNOSIS_SAFE
 FUNDER_ADDRESS      = os.getenv("FUNDER_ADDRESS", "")
-RPC_URL             = os.getenv("RPC_URL", "https://polygon-rpc.com")
+RPC_URL             = os.getenv("RPC_URL", "https://1rpc.io/matic")
 TELEGRAM_BOT_TOKEN  = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID    = os.getenv("TELEGRAM_CHAT_ID", "")
 MAX_TRADE_SIZE_USDC = float(os.getenv("MAX_TRADE_SIZE_USDC", "50"))
