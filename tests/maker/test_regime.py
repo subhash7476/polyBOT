@@ -26,7 +26,8 @@ def test_high_vpin_sets_toxic_flow_flag():
 
 
 def test_bad_markout_sets_defensive_flag():
-    d = compute_regime_score(vpin=0.5, markout_30s=-0.06, inv_signed=0.0,
+    # vpin=0.85 (vpin_score=1.0, w=0.35) + markout=-0.06 (markout_score=1.0, w=0.25) -> score=0.60
+    d = compute_regime_score(vpin=0.85, markout_30s=-0.06, inv_signed=0.0,
                              hours_to_resolution=48.0, category="crypto")
     assert "defensive" in d.flags
     assert d.spread_multiplier > 1.0

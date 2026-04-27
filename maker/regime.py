@@ -84,7 +84,7 @@ def compute_regime_score(
 
     # Flags
     flags: set[str] = set()
-    if score > 0.4 or markout_30s <= -0.05:
+    if score > 0.4:
         flags.add("defensive")
     if score > 0.8:
         flags.add("extreme")
