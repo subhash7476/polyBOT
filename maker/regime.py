@@ -17,10 +17,6 @@ CATEGORY_SPREAD_MULTIPLIER: dict[str, float] = {
     "default":       1.5,
 }
 
-MIN_SPREAD = 0.005   # 0.5c floor
-MAX_SPREAD = 0.15    # 15c ceiling
-
-
 def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
@@ -31,7 +27,7 @@ class RegimeDecision:
     spread_multiplier: float  # 1.0-2.5x dynamic factor (category baseline applied separately)
     size_multiplier: float    # 0.25-1.0x
     skew_adjustment: float    # +/-0-0.02, applied to fair_value BEFORE spread derivation
-    flags: frozenset          # {"defensive", "unwind", "extreme", "toxic_flow"}
+    flags: frozenset[str]     # {"defensive", "unwind", "extreme", "toxic_flow"}
 
 
 def compute_regime_score(
@@ -47,8 +43,10 @@ def compute_regime_score(
         vpin: Size-weighted order flow imbalance 0-1. 0.5 = neutral/stale.
         markout_30s: Rolling avg post-fill price movement at T+30s. Negative = adverse.
         inv_signed: Net inventory as signed fraction of per-market cap (-1 to +1).
-        hours_to_resolution: Hours until market resolves, clamped [0, 168].
-        category: Market category string for flag context.
+        hours_to_resolution: Hours until market resolves. Values <= 0 clamped to 0.
+            Values >= 24 produce time_score=0 (no urgency contribution).
+        category: Reserved. Callers apply CATEGORY_SPREAD_MULTIPLIER[category] to
+            spread_multiplier externally; not used inside this function.
 
     Returns:
         RegimeDecision with spread_multiplier, size_multiplier, skew_adjustment, flags.
