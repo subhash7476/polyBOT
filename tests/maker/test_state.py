@@ -1,4 +1,5 @@
 import asyncio
+import pytest
 from maker.state import MakerState
 
 
@@ -68,3 +69,15 @@ def test_live_orders_is_list_per_market():
     ]
     assert len(s.live_orders["tok1"]) == 2
     assert s.live_orders["tok1"][0]["bid_price"] == 0.44
+
+
+def test_skew_factor_uses_category_cap():
+    ms = MakerState()
+    ms.category_inventory_caps = {"weather": 10.0}
+    ms.max_inventory_per_market = 20.0
+    ms.inventory["tok1"] = 8.0
+
+    # With category cap=10, inv=8 -> 0.8
+    assert ms.skew_factor("tok1", category="weather") == pytest.approx(0.8)
+    # Without category -> uses global cap=20, inv=8 -> 0.4
+    assert ms.skew_factor("tok1") == pytest.approx(0.4)

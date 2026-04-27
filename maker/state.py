@@ -14,8 +14,16 @@ class MakerState:
     max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
     max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
 
+    # Optional per-category cap overrides: {"weather": 15.0}.  Falls back to
+    # max_inventory_per_market for any category not listed here.
+    category_inventory_caps: dict = field(default_factory=dict)
+
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)
+
+    # Unix timestamp when each market first received non-zero inventory this session.
+    # Used by _expire_paper_positions to age-out markets absent from app_state.
+    inventory_entry_time: dict[str, float] = field(default_factory=dict)
 
     # Markets in reduce-only mode: position must shrink before new exposure allowed.
     # Populated by MarketSelector when a market exits selection with open inventory.
@@ -30,7 +38,10 @@ class MakerState:
     # Per-market last emitted quote (for stale detection)
     last_quotes: dict[str, QuoteIntent] = field(default_factory=dict)
 
-    # Per-market cooldown: token_id → resume_at (unix timestamp)
+    # Per-market rolling markouts: token_id -> {interval: avg_markout}
+    rolling_markouts: dict[str, dict[int, float]] = field(default_factory=dict)
+
+    # Per-market cooldown: token_id -> resume_at (unix timestamp)
     cooldowns: dict[str, float] = field(default_factory=dict)
 
     # Global cooldown: set when total inventory cap fires; blocks ALL quoting
@@ -94,18 +105,33 @@ class MakerState:
         else:
             current -= size
         self.inventory[token_id] = current
+        if current != 0.0:
+            self.inventory_entry_time.setdefault(token_id, time.time())
+        else:
+            self.inventory_entry_time.pop(token_id, None)
 
     @property
     def total_abs_inventory(self) -> float:
         return sum(abs(v) for v in self.inventory.values())
 
-    def skew_factor(self, token_id: str) -> float:
-        """Normalized skew: [-1.0, +1.0]. Positive = holding YES."""
+    def skew_factor(self, token_id: str, category: str = "") -> float:
+        """Normalized skew: [-1.0, +1.0]. Positive = holding YES.
+
+        Uses per-category cap when category is provided; falls back to
+        max_inventory_per_market for unknown or unspecified categories.
+        """
         inv = self.get_inventory(token_id)
-        if self.max_inventory_per_market == 0:
+        cap = (self.max_inventory_for_category(category)
+               if category else self.max_inventory_per_market)
+        if cap == 0:
             return 0.0
-        raw = inv / self.max_inventory_per_market
-        return max(-1.0, min(1.0, raw))
+        return max(-1.0, min(1.0, inv / cap))
+
+    def max_inventory_for_category(self, category: str) -> float:
+        """Per-category cap, falling back to max_inventory_per_market."""
+        return self.category_inventory_caps.get(
+            category.lower() if category else "", self.max_inventory_per_market
+        )
 
     def in_cooldown(self, token_id: str) -> bool:
         """True if market is in cooldown (circuit breaker fired recently)."""
