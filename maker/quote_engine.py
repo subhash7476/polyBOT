@@ -1,12 +1,19 @@
 """QuoteEngine actor — computes fair value and bid/ask quotes."""
 
 import asyncio
+import re
 import time
 from datetime import datetime, timezone
 from maker.state import MakerState
 from maker.types import QuoteIntent, SkewUpdate, LadderUpdate, CancelAll
 from market.state import AppState
 from engine.falcon_signals import compute_adverse_selection_penalty, compute_market_skew_adjustment
+from engine.contract_parser import parse_contract
+from engine.probability import build_model_probability
+from engine.weather_probability import build_weather_probability
+from engine.macro_probability import build_macro_probability
+from engine.orderbook_imbalance import compute_obi_signal
+from config import SIGNAL_WEIGHTS
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -15,22 +22,42 @@ BASE_SPREAD = 0.06
 MIN_SPREAD = 0.02  # tightened from 0.04 to quote inside thinner books
 MAX_SPREAD = 0.15
 QUOTE_SIZE_USDC = 10.0
-MAX_SKEW_ADJ = 0.03
+SKEW_PER_SHARE = 0.004   # fv shift per share of net position
+MAX_SKEW_ABS = 0.10      # hard cap on total inventory adjustment
 LADDER_LEVELS = 3    # bid+ask pairs per market
 LEVEL_STEP = 0.01    # price offset between ladder levels
+
+# NegRisk weather sibling guard: group buckets by city+date via question-text regex.
+# When one bucket moves into resolution territory (mid > NEGRISK_SIBLING_THRESHOLD),
+# the remaining buckets will resolve 0 — cancel their quotes immediately.
+_WEATHER_GROUP_RE = re.compile(
+    r"Will the highest temperature in (.+?) be .+? on (.+?)(?:\?|$)",
+    re.IGNORECASE,
+)
+NEGRISK_SIBLING_THRESHOLD = 0.80
+
+
+def _negrisk_group_key(question: str) -> "str | None":
+    """Return city|date key for NegRisk weather buckets, or None if not parseable."""
+    m = _WEATHER_GROUP_RE.match(question.strip())
+    if m:
+        return f"{m.group(1).strip().lower()}|{m.group(2).strip().rstrip('?').strip().lower()}"
+    return None
 
 
 def _clamp(value: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, value))
 
 
-def compute_fair_value(mid: float, skew: float, model_adj: float) -> float:
+def compute_fair_value(mid: float, inventory: float, model_adj: float) -> float:
     """
     Hybrid fair value: market mid + inventory skew + model adjustment.
-    skew: [-1, +1] from MakerState.skew_factor(). Positive = holding YES.
-    model_adj: 0.0 until Bayesian calibration is ready (Phase 2+).
+    inventory: raw net position (positive = long YES, negative = short YES).
+    Long position lowers fv to lean against the book and encourage selling.
+    Short position raises fv to encourage buying and close the position.
+    model_adj: Falcon/external model adjustment.
     """
-    inventory_adj = skew * MAX_SKEW_ADJ
+    inventory_adj = _clamp(-inventory * SKEW_PER_SHARE, -MAX_SKEW_ABS, MAX_SKEW_ABS)
     return _clamp(mid + inventory_adj + model_adj, 0.05, 0.95)
 
 
@@ -38,8 +65,9 @@ def compute_spread(
     volume_usd: float,
     abs_inventory: float,
     hours_to_expiry: float,
+    dvol: float = 60.0,
 ) -> float:
-    """Dynamic spread based on volume, inventory, and time to resolution.
+    """Dynamic spread based on volume, inventory, time to resolution, and volatility.
 
     Spread schedule (we only quote 4h–7d markets):
       < 4h : MAX_SPREAD — imminent resolution, stop quoting (MarketSelector excludes these)
@@ -49,6 +77,13 @@ def compute_spread(
       3–7d : BASE_SPREAD — normal window
     """
     spread = BASE_SPREAD
+
+    # Volatility scaling (Phase 2)
+    # Baseline vol is 60%. If DVOL is 120%, spread doubles (multiplier=2.0).
+    # Clamped [1.0, 2.0] to prevent narrowing below BASE_SPREAD heuristic.
+    vol_baseline = 60.0
+    vol_mult = _clamp(dvol / vol_baseline, 1.0, 2.0)
+    spread *= vol_mult
 
     if volume_usd < 500.0:
         spread += 0.02
@@ -152,20 +187,46 @@ class QuoteEngine:
                 continue
 
             # Bid-range guard: market has moved out of quotable range since last MarketSelector
-            # refresh (every 15 min). Cancel resting orders and skip repricing.
-            # Check both best_bid and best_ask: near-resolved markets have best_ask > 0.95
-            # even when best_bid is still within range (e.g. bid=0.93, ask=0.97).
-            if (cs.best_bid < 0.05 or cs.best_bid > 0.95
-                    or cs.best_ask < 0.05 or cs.best_ask > 0.95):
+            # refresh (every 15 min). Weather uses tighter 0.10/0.90 — NegRisk buckets
+            # resolve near 0 once a sibling wins, and resolution-territory spreads are toxic.
+            _bid_lo = 0.10 if cs.category == "weather" else 0.05
+            _bid_hi = 0.90 if cs.category == "weather" else 0.95
+            if (cs.best_bid < _bid_lo or cs.best_bid > _bid_hi
+                    or cs.best_ask < _bid_lo or cs.best_ask > _bid_hi):
                 if token_id not in self._stale_skip_warned:
                     self._stale_skip_warned.add(token_id)
                     log.warning(
                         f"bid-range guard: [{token_id[:8]}] best_bid={cs.best_bid:.4f} "
-                        f"best_ask={cs.best_ask:.4f} out of [0.05, 0.95] — cancelling quotes"
+                        f"best_ask={cs.best_ask:.4f} out of [{_bid_lo:.2f}, {_bid_hi:.2f}] "
+                        f"(cat={cs.category}) — cancelling quotes"
                     )
                 if self._cancel_q is not None:
                     await self._cancel_q.put(CancelAll(token_id))
                 continue
+
+            # NegRisk sibling guard: if another bucket for the same city+date has moved
+            # into resolution territory, the remaining buckets resolve 0 — cancel them.
+            if cs.neg_risk and cs.category == "weather":
+                group_key = _negrisk_group_key(cs.question)
+                if group_key is not None:
+                    sibling_resolved = False
+                    for sib_id, sib_cs in markets.items():
+                        if sib_id == token_id or not sib_cs.neg_risk:
+                            continue
+                        if (_negrisk_group_key(sib_cs.question) == group_key
+                                and sib_cs.mid > NEGRISK_SIBLING_THRESHOLD):
+                            sibling_resolved = True
+                            if token_id not in self._stale_skip_warned:
+                                self._stale_skip_warned.add(token_id)
+                                log.warning(
+                                    f"negrisk_sibling_guard [{token_id[:8]}]: sibling "
+                                    f"[{sib_id[:8]}] at mid={sib_cs.mid:.3f} — cancelling losers"
+                                )
+                            break
+                    if sibling_resolved:
+                        if self._cancel_q is not None:
+                            await self._cancel_q.put(CancelAll(token_id))
+                        continue
 
             if self._maker.in_cooldown(token_id):
                 continue
@@ -176,11 +237,11 @@ class QuoteEngine:
             # → repeat indefinitely, growing positions without bound.
             # Bypass for reduce_only_markets — they need to quote the closing side to drain.
             if (token_id not in self._maker.reduce_only_markets
-                    and abs(self._maker.get_inventory(token_id)) >= self._maker.max_inventory_per_market):
+                    and abs(self._maker.get_inventory(token_id)) >= self._maker.max_inventory_for_category(cs.category)):
                 continue
 
-            skew = self._maker.skew_factor(token_id)
-            abs_inv = abs(self._maker.get_inventory(token_id))
+            inv = self._maker.get_inventory(token_id)
+            abs_inv = abs(inv)
 
             # Per-market Falcon adjustments (condition_id matches Market Insights data)
             spread_multiplier = compute_adverse_selection_penalty(cs.condition_id, feeds)
@@ -195,12 +256,66 @@ class QuoteEngine:
                 except ValueError:
                     pass
 
-            fv = compute_fair_value(mid=cs.mid, skew=skew, model_adj=model_adj)
+            fv = compute_fair_value(mid=cs.mid, inventory=inv, model_adj=model_adj)
+
+            # Phase 1: External Price Discovery (Anchor Model)
+            # Phase 2: Volatility-Adaptive Spreading
+            # Phase 4: Bayesian Model Mapping (Weather/Macro)
+            # Use external feeds (Binance, Deribit, Weather, FRED) to anchor fair value.
+            anchor_fv = fv
+            asset_dvol = 60.0
+            contract = parse_contract(token_id, cs.question)
+            if contract.parseable:
+                model_prob = None
+                sig_count = 0
+
+                if contract.category == "crypto":
+                    asset_dvol = feeds.dvol.get(contract.asset, 60.0)
+                    model_prob, sig_count, _ = build_model_probability(contract, feeds, SIGNAL_WEIGHTS)
+                elif contract.category == "weather":
+                    model_prob, sig_count, _ = build_weather_probability(contract, feeds, SIGNAL_WEIGHTS)
+                elif contract.category in ("macro", "rates"):
+                    model_prob, sig_count, _ = build_macro_probability(contract, feeds, SIGNAL_WEIGHTS)
+
+                if model_prob is not None and sig_count > 0:
+                    if contract.category == "weather":
+                        # Weather forecast is the primary signal for temperature bucket markets.
+                        # Blend 70% model, 30% inventory-adjusted fv to anchor directly.
+                        anchor_fv = _clamp(0.70 * model_prob + 0.30 * fv, 0.05, 0.95)
+                        log.debug(
+                            f"weather_anchor [{token_id[:8]}]: mid={cs.mid:.3f} "
+                            f"model={model_prob:.3f} fv→{anchor_fv:.3f}"
+                        )
+                    else:
+                        prob_delta = model_prob - cs.mid
+                        # If model deviates from mid, nudge fv toward model (max 3¢)
+                        model_anchor_adj = _clamp(prob_delta, -0.03, 0.03)
+                        anchor_fv = _clamp(fv + model_anchor_adj, 0.05, 0.95)
+                        if abs(model_anchor_adj) >= 0.01:
+                            log.debug(
+                                f"model_anchor [{token_id[:8]}] cat={contract.category}: "
+                                f"mid={cs.mid:.3f} model={model_prob:.3f} "
+                                f"adj={model_anchor_adj:+.3f} fv={fv:.3f}→{anchor_fv:.3f}"
+                            )
+
             base_spread = compute_spread(
                 volume_usd=cs.volume_usd,
                 abs_inventory=abs_inv,
                 hours_to_expiry=hours_to_expiry,
+                dvol=asset_dvol,
             )
+
+            # Phase 3: Orderbook Imbalance (OBI) Micro-Skew
+            # Nudge fair value by up to 1¢ if there's a persistent depth imbalance.
+            obi_signal = compute_obi_signal(token_id)
+            if obi_signal and abs(obi_signal.strength) > 0.1:
+                obi_adj = _clamp(obi_signal.strength * 0.01, -0.01, 0.01)
+                anchor_fv = _clamp(anchor_fv + obi_adj, 0.05, 0.95)
+                log.debug(
+                    f"obi_skew [{token_id[:8]}]: strength={obi_signal.strength:.2f} "
+                    f"adj={obi_adj:+.3f} fv→{anchor_fv:.3f}"
+                )
+
             spread = min(base_spread * spread_multiplier, MAX_SPREAD)
 
             # Book-relative quoting: compress toward book spread but never below
@@ -212,9 +327,9 @@ class QuoteEngine:
             if book_spread > 0 and spread > book_spread:
                 eff_spread = max(book_spread, floor)
                 eff_half = eff_spread / 2.0
-                eff_fv = _clamp(fv, cs.best_bid + eff_half, cs.best_ask - eff_half)
+                eff_fv = _clamp(anchor_fv, cs.best_bid + eff_half, cs.best_ask - eff_half)
             else:
-                eff_fv = fv
+                eff_fv = anchor_fv
                 eff_spread = spread
 
             ladder = self.build_ladder(
@@ -228,16 +343,49 @@ class QuoteEngine:
             if token_id in self._maker.reduce_only_markets:
                 inv = self._maker.get_inventory(token_id)
                 if inv != 0.0:
+                    # Resolution-territory skip: closing a short at 0.85+ locks in a
+                    # large loss with no recovery. Cancel resting quotes and wait —
+                    # the market selector will deselect once the MarketSelector next runs,
+                    # and the bid-range guard will fire on subsequent reprice ticks.
+                    if (inv > 0 and cs.mid < 0.15) or (inv < 0 and cs.mid > 0.85):
+                        if self._cancel_q is not None:
+                            await self._cancel_q.put(CancelAll(token_id))
+                        log.info(
+                            f"reduce_only resolution skip [{token_id[:8]}]: "
+                            f"inv={inv:+.2f} mid={cs.mid:.3f} — not chasing resolution"
+                        )
+                        continue
+
+                    # Phase 5: Aggressive Inventory Liquidation
+                    # If 30s markout is worse than -10 bps, cross the spread to exit.
+                    # This prevents holding toxic inventory in a fast-moving market.
+                    m_stats = self._maker.rolling_markouts.get(token_id, {})
+                    avg_30s = m_stats.get(30, 0.0)
+                    
+                    reason = "reduce_only"
+                    exit_bid_adj = 0.0
+                    exit_ask_adj = 0.0
+                    
+                    if avg_30s < -0.001:  # -10 bps threshold
+                        reason = "aggressive_exit"
+                        # Lean 2¢ into the book to ensure immediate fill
+                        if inv > 0: # Long YES, need to SELL
+                            exit_ask_adj = -0.02
+                        else: # Short YES (Long NO), need to BUY
+                            exit_bid_adj = 0.02
+
                     new_levels = tuple(
                         QuoteIntent(
-                            l.token_id, l.bid_price, l.ask_price,
+                            l.token_id, 
+                            round(_clamp(l.bid_price + exit_bid_adj, 0.01, 0.99), 4),
+                            round(_clamp(l.ask_price + exit_ask_adj, 0.01, 0.99), 4),
                             0.0 if inv > 0 else l.bid_size,
                             0.0 if inv < 0 else l.ask_size,
-                            "reduce_only",
+                            reason,
                         )
                         for l in ladder.levels
                     )
-                    ladder = LadderUpdate(token_id, new_levels, "reduce_only")
+                    ladder = LadderUpdate(token_id, new_levels, reason)
 
             old_center = self._maker.last_quotes.get(token_id)
             is_new = token_id in new_ids or old_center is None
@@ -287,6 +435,10 @@ class QuoteEngine:
             new_ids = self._active_token_ids - prev_ids
             removed_ids = prev_ids - self._active_token_ids
             self._stale_skip_warned -= removed_ids   # re-warn if market re-enters and is still stale
+            if removed_ids and self._cancel_q is not None:
+                for _tid in removed_ids:
+                    await self._cancel_q.put(CancelAll(_tid))
+                    log.info(f"DESELECTED [{_tid[:8]}] — cancelling resting quotes")
 
             while not self._skew_updates_q.empty():
                 try:
@@ -325,7 +477,12 @@ class QuoteEngine:
 
             if tokens_to_check:
                 if self._maker.global_in_cooldown():
-                    log.debug("global inventory cooldown active — skipping reprice")
+                    # During global cooldown, still drain reduce_only positions (over-cap or orphaned).
+                    drain = [t for t in tokens_to_check if t in self._maker.reduce_only_markets]
+                    if drain:
+                        await self._reprice(drain, force=force or bool(new_ids), new_ids=new_ids)
+                    else:
+                        log.debug("global inventory cooldown active — skipping reprice")
                 else:
                     await self._reprice(tokens_to_check, force=force or bool(new_ids), new_ids=new_ids)
 

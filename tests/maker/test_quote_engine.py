@@ -4,19 +4,30 @@ from maker.types import LadderUpdate, QuoteIntent
 
 
 def test_fair_value_at_midpoint_no_skew():
-    fv = compute_fair_value(mid=0.50, skew=0.0, model_adj=0.0)
+    fv = compute_fair_value(mid=0.50, inventory=0.0, model_adj=0.0)
     assert fv == 0.50
 
 
-def test_fair_value_with_positive_skew():
-    fv = compute_fair_value(mid=0.50, skew=0.5, model_adj=0.0)
-    assert fv > 0.50
-    assert fv == 0.515
+def test_long_position_lowers_fair_value():
+    """Long inventory must lower fv to lean against the book and encourage selling."""
+    fv_flat = compute_fair_value(mid=0.50, inventory=0.0, model_adj=0.0)
+    fv_long = compute_fair_value(mid=0.50, inventory=10.0, model_adj=0.0)
+    assert fv_long < fv_flat
+    assert fv_long == pytest.approx(0.46)   # 0.50 - 10*0.004
+
+
+def test_short_position_raises_fair_value():
+    """Short inventory must raise fv to attract buyers and close the position."""
+    fv_flat = compute_fair_value(mid=0.50, inventory=0.0, model_adj=0.0)
+    fv_short = compute_fair_value(mid=0.50, inventory=-10.0, model_adj=0.0)
+    assert fv_short > fv_flat
+    assert fv_short == pytest.approx(0.54)  # 0.50 + 10*0.004
 
 
 def test_fair_value_clamped():
-    fv = compute_fair_value(mid=0.98, skew=1.0, model_adj=0.0)
-    assert fv <= 0.95
+    # Large short position hits MAX_SKEW_ABS=0.10 cap then clamps to 0.95
+    fv = compute_fair_value(mid=0.87, inventory=-50.0, model_adj=0.0)
+    assert fv == pytest.approx(0.95)
 
 
 def test_spread_base():
@@ -30,13 +41,15 @@ def test_spread_widens_low_volume():
 
 
 def test_spread_widens_with_inventory():
-    s = compute_spread(volume_usd=1000.0, abs_inventory=10.0, hours_to_expiry=100.0)
-    assert s == 0.16
+    # dvol=60 (baseline) -> vol_mult=1.0. spread = 0.06 + 10*0.01 = 0.16. Max spread is 0.15.
+    s = compute_spread(volume_usd=1000.0, abs_inventory=10.0, hours_to_expiry=100.0, dvol=60.0)
+    assert s == 0.15
 
 
 def test_spread_widens_near_expiry():
-    s = compute_spread(volume_usd=1000.0, abs_inventory=0.0, hours_to_expiry=24.0)
-    assert s == 0.09
+    # dvol=60 -> vol_mult=1.0. spread = 0.06 + 0.02 (24h) = 0.08.
+    s = compute_spread(volume_usd=1000.0, abs_inventory=0.0, hours_to_expiry=24.0, dvol=60.0)
+    assert s == 0.08
 
 
 def test_spread_max_very_near_expiry():

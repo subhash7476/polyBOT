@@ -18,6 +18,7 @@ COOLDOWN_SECONDS = 300         # 5 minutes
 ADVERSE_COOLDOWN_SECONDS = 1800  # 30 minutes — adverse selection detected
 RAPID_FILL_WINDOW = 5.0        # seconds
 MAX_DAILY_LOSS_PCT = 0.03      # 3% of bankroll
+ABSENT_MARKET_EXPIRY_HOURS = 4.0  # zero inventory for markets absent from state this long
 
 # Hysteresis: after global cooldown expires, re-engage if inventory still above this
 # fraction of max_total_inventory. Prevents the ratchet where expiry → fill → cap fires.
@@ -57,6 +58,7 @@ class InventoryManager:
         # 0. Snapshot market metadata and state in one lock acquisition
         question = ""
         end_date_iso = ""
+        category = ""
         markets: dict = {}
         if self._app is not None:
             async with self._app._lock:
@@ -65,6 +67,7 @@ class InventoryManager:
                 if cs:
                     question = cs.question
                     end_date_iso = cs.end_date_iso
+                    category = cs.category
 
         # 1. Update inventory and record fill (capture realized delta for ledger)
         _realized_before = self._maker.realized_pnl
@@ -103,15 +106,17 @@ class InventoryManager:
         # 4b. Check adverse-selection (one-directional fills)
         await self._check_adverse_selection(fill)
 
-        # 5. Check per-market inventory cap
+        # 5. Check per-market inventory cap (category-specific if configured)
         abs_pos = abs(self._maker.get_inventory(fill.token_id))
-        if abs_pos >= self._maker.max_inventory_per_market:
+        mkt_cap = self._maker.max_inventory_for_category(category)
+        if abs_pos >= mkt_cap:
             await self._cancel_q.put(CancelAll(fill.token_id))
             self._maker.cooldowns[fill.token_id] = time.time() + COOLDOWN_SECONDS
             log.warning(
-                f"INVENTORY CAP: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
-                f" — quotes pulled for {COOLDOWN_SECONDS}s"
+                f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
+                f" (cap={mkt_cap:.0f}) — quotes pulled for {COOLDOWN_SECONDS}s"
             )
+            self._promote_over_cap_to_reduce_only()
 
         # 6. Check total inventory cap
         total = self._maker.total_abs_inventory
@@ -186,6 +191,46 @@ class InventoryManager:
                 f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
             )
 
+    def _promote_over_cap_to_reduce_only(self) -> None:
+        """Add over-cap positions to reduce_only_markets so quote_engine quotes the closing side.
+
+        Runs each cleanup cycle so recently-lowered cap limits are enforced even on
+        positions that predate the cap change.  Tokens are removed once drained below
+        cap — but only if they are still selected (orphaned tokens are managed by
+        MarketSelector which will remove them when inventory reaches zero).
+        """
+        if self._maker.max_inventory_per_market <= 0:
+            return
+
+        # Snapshot categories — safe because this sync method runs atomically within
+        # the asyncio event loop tick; no other coroutine can mutate app.markets here.
+        categories: dict[str, str] = (
+            {tid: cs.category for tid, cs in self._app.markets.items()}
+            if self._app is not None else {}
+        )
+
+        added: list[str] = []
+        removed: list[str] = []
+        for token_id, inv in list(self._maker.inventory.items()):
+            if inv == 0.0:
+                continue
+            category = categories.get(token_id, "")
+            cap = self._maker.max_inventory_for_category(category)
+            over_cap = abs(inv) >= cap
+            in_reduce = token_id in self._maker.reduce_only_markets
+            if over_cap and not in_reduce:
+                self._maker.reduce_only_markets.add(token_id)
+                added.append(token_id)
+            elif not over_cap and in_reduce and token_id in self._maker.selected_token_ids:
+                # Only remove if still selected — MarketSelector manages orphaned tokens.
+                self._maker.reduce_only_markets.discard(token_id)
+                removed.append(token_id)
+        if added:
+            log.info(f"Over-cap: promoted {len(added)} token(s) to reduce_only — "
+                     f"{', '.join(t[:8] for t in added[:5])}")
+        if removed:
+            log.info(f"Over-cap: {len(removed)} token(s) drained below cap — removed from reduce_only")
+
     async def _engage_cooldown_if_above_threshold(self) -> None:
         """Re-engage global cooldown if inventory is still above the resume threshold.
 
@@ -235,8 +280,24 @@ class InventoryManager:
 
             cs = markets.get(token_id)
             if cs is None:
-                # Market absent from app state: could mean "not yet selected" rather
-                # than "resolved".  Don't expire — we can't distinguish the two cases.
+                # Market absent from app state — could be "not yet selected" or "resolved".
+                # Use inventory_entry_time to distinguish: if we've held a position for
+                # longer than ABSENT_MARKET_EXPIRY_HOURS without the market reappearing,
+                # treat it as resolved and zero the stale inventory.
+                # Default to epoch (0) so positions with no tracked entry time
+                # are treated as old — happens after first restart with old checkpoint.
+                entry = self._maker.inventory_entry_time.get(token_id, 0.0)
+                age_hours = (now - entry) / 3600
+                if age_hours < ABSENT_MARKET_EXPIRY_HOURS:
+                    continue  # too recent — may just not be selected yet
+                old_inv = self._maker.inventory[token_id]
+                self._maker.inventory[token_id] = 0.0
+                self._maker.inventory_entry_time.pop(token_id, None)
+                expired_count += 1
+                log.warning(
+                    f"ABSENT MARKET EXPIRY: [{token_id[:8]}] {old_inv:+.2f} shares zeroed "
+                    f"(absent from state for {age_hours:.1f}h)"
+                )
                 continue
 
             if not cs.end_date_iso:
@@ -278,6 +339,7 @@ class InventoryManager:
                         f"Expired {expired} stale paper position(s); "
                         f"total_abs_inventory now {self._maker.total_abs_inventory:.0f} shares"
                     )
+                self._promote_over_cap_to_reduce_only()
                 await self._engage_cooldown_if_above_threshold()
             except Exception as exc:
                 log.exception(f"cleanup_loop error: {exc}")

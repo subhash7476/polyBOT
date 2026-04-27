@@ -19,15 +19,18 @@ _MIN_SPREAD = 0.01              # widened from 2¢ to 1¢; QuoteEngine.MIN_SPREA
 _MIN_BID = 0.10      # exclude near-zero / near-resolved markets (bid < 10¢)
 _MAX_BID = 0.90      # exclude near-certain markets (bid > 90¢)
 _MAX_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE", "7"))   # near-expiry only
-_MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # ≥4h — skip imminent resolution
+_MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # >=4h — skip imminent resolution
+_MIN_DAYS_TO_RESOLVE_WEATHER = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE_WEATHER", "0.33"))  # >=8h for weather buckets
 _REQUIRE_END_DATE = os.getenv("MAKER_REQUIRE_END_DATE", "true").lower() == "true"
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
-# Maker bot is category-agnostic — election, sports, event, politics,
-# entertainment, technology are all fair game if the spread/volume is there.
-# "unknown" (parse_contract miss) is now allowed: empirically ~35% of state-filter
-# rejects, includes high-volume geopolitical/policy markets we want to quote.
-_EXCLUDED_CATEGORIES = frozenset()
+# Configure via MAKER_EXCLUDED_CATEGORIES env var (comma-separated, e.g. "weather,sports").
+# Example: to pause weather markets, set MAKER_EXCLUDED_CATEGORIES=weather in .env.
+_EXCLUDED_CATEGORIES = frozenset(
+    c.strip().lower()
+    for c in os.getenv("MAKER_EXCLUDED_CATEGORIES", "").split(",")
+    if c.strip()
+)
 
 # Falcon insight freshness gate (3× poll interval = 6 min at default 120s)
 _FALCON_STALE_SECONDS = 360.0
@@ -264,7 +267,8 @@ class MarketSelector:
                     if days_left > _MAX_DAYS_TO_RESOLVE:
                         n_far_future += 1
                         continue
-                    if days_left < _MIN_DAYS_TO_RESOLVE:
+                    min_days = _MIN_DAYS_TO_RESOLVE_WEATHER if cs.category == "weather" else _MIN_DAYS_TO_RESOLVE
+                    if days_left < min_days:
                         n_too_soon += 1
                         continue
                 except ValueError:
@@ -392,7 +396,8 @@ class MarketSelector:
                 if days_left > _MAX_DAYS_TO_RESOLVE:
                     n_far_future += 1
                     continue
-                if days_left < _MIN_DAYS_TO_RESOLVE:
+                min_days = _MIN_DAYS_TO_RESOLVE_WEATHER if meta["category"] == "weather" else _MIN_DAYS_TO_RESOLVE
+                if days_left < min_days:
                     continue
             # Spread filter — same as filter_and_rank
             spread = meta["best_ask"] - meta["best_bid"]
@@ -442,9 +447,6 @@ class MarketSelector:
             for ins in spiking:
                 yes_id = cid_to_yes[ins.condition_id]
                 meta = token_map[yes_id]
-                bid = meta.get("best_bid", 0.0)
-                if bid < _MIN_BID or bid > _MAX_BID:
-                    continue
                 top.append((yes_id, meta, 0.0))  # score=0 — included for state visibility only
 
         # Build a token_id → condition_id map from the FULL Gamma scan (all 3670+
