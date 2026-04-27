@@ -1,6 +1,7 @@
 import asyncio
 import time
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Optional
 
 from feeds.weather_types import WeatherForecast
@@ -186,12 +187,11 @@ class ContractState:
         """Hours until market resolves. Defaults to 48h if end_date_iso unset."""
         if not self.end_date_iso:
             return 48.0
-        from datetime import datetime, timezone
         try:
             end = datetime.fromisoformat(self.end_date_iso.replace("Z", "+00:00"))
             hours = (end - datetime.now(timezone.utc)).total_seconds() / 3600
             return max(0.0, min(168.0, hours))
-        except ValueError:
+        except (ValueError, TypeError):
             return 48.0
 
 

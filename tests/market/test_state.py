@@ -25,3 +25,16 @@ def test_hours_to_resolution_past_clamps_to_zero():
     cs = ContractState(yes_token_id="a", no_token_id="b", question="q", category="crypto",
                        end_date_iso=past)
     assert cs.hours_to_resolution == 0.0
+
+
+def test_hours_to_resolution_malformed_date_returns_default():
+    cs = ContractState(yes_token_id="a", no_token_id="b", question="q", category="crypto",
+                       end_date_iso="not-a-date")
+    assert cs.hours_to_resolution == 48.0
+
+
+def test_hours_to_resolution_caps_at_168():
+    far_future = (datetime.now(timezone.utc) + timedelta(days=14)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    cs = ContractState(yes_token_id="a", no_token_id="b", question="q", category="crypto",
+                       end_date_iso=far_future)
+    assert cs.hours_to_resolution == 168.0
