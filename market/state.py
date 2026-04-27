@@ -169,6 +169,9 @@ class ContractState:
     neg_risk: bool = False       # negRisk market (temperature buckets, etc.)
     fees_enabled: bool = True    # False for negRisk weather markets
     end_date_iso: str = ""       # ISO 8601 resolution date from Gamma API (e.g. "2026-05-01T12:00:00Z")
+    # Regime score inputs — written by VPINPoller
+    vpin: float = 0.5             # size-weighted EMA-smoothed order flow imbalance; 0.5 = neutral
+    vpin_updated_at: float = 0.0  # unix timestamp of last VPINPoller write
 
     @property
     def mid(self) -> float:
@@ -177,6 +180,19 @@ class ContractState:
     @property
     def no_best_ask(self) -> float:
         return 1 - self.best_bid  # NO ask = 1 - YES bid
+
+    @property
+    def hours_to_resolution(self) -> float:
+        """Hours until market resolves. Defaults to 48h if end_date_iso unset."""
+        if not self.end_date_iso:
+            return 48.0
+        from datetime import datetime, timezone
+        try:
+            end = datetime.fromisoformat(self.end_date_iso.replace("Z", "+00:00"))
+            hours = (end - datetime.now(timezone.utc)).total_seconds() / 3600
+            return max(0.0, min(168.0, hours))
+        except ValueError:
+            return 48.0
 
 
 class AppState:
