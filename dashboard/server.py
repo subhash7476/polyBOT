@@ -48,6 +48,10 @@ def create_app(dash: DashboardState, maker_dash=None) -> Flask:
         def maker_index():
             return send_file(_STATIC_DIR / "maker.html")
 
+        @app.get("/dashboard.js")
+        def maker_js():
+            return send_file(_STATIC_DIR / "dashboard.js", mimetype="application/javascript")
+
         @app.get("/api/maker-snapshot")
         def maker_snapshot():
             return Response(maker_dash.to_json(), content_type="application/json")
