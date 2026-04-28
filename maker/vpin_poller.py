@@ -17,7 +17,7 @@ VPIN_STALE_SECONDS = 180.0   # reset to neutral if no update within this window
 MIN_VPIN_TRADES = 10         # minimum trades in buffer before computing VPIN
 VPIN_EMA_ALPHA = 0.3         # weight on new observation; 0.7 on previous smoothed value
 _BUFFER_SIZE = 100           # rolling buffer depth per token
-_LOG_HEARTBEAT_CYCLES = 50   # log liveness every N poll cycles
+_LOG_HEARTBEAT_CYCLES = 10   # log liveness every N poll cycles (~5 min)
 
 
 def _ema(prev: float, raw: float, alpha: float = VPIN_EMA_ALPHA) -> float:
@@ -141,6 +141,7 @@ class VPINPoller:
 
     async def run(self) -> None:
         """Main loop — poll all active markets every VPIN_POLL_INTERVAL seconds."""
+        log.info(f"VPINPoller started (poll_interval={VPIN_POLL_INTERVAL}s, stale={VPIN_STALE_SECONDS}s)")
         async with httpx.AsyncClient() as client:
             while True:
                 try:

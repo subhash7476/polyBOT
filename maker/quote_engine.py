@@ -132,6 +132,7 @@ class QuoteEngine:
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
         self._stale_skip_warned: set[str] = set()   # markets already warned about bid-range exit
+        self._last_regime_log: float = 0.0           # throttle regime summary to 1/min
 
     @staticmethod
     def build_ladder(
@@ -184,6 +185,7 @@ class QuoteEngine:
             markets = dict(self._app.markets)
             feeds = self._app.feeds  # reference — Falcon lookups only read, never mutate
 
+        _regime_scores: list[float] = []
         for token_id in tokens_to_check:
             cs = markets.get(token_id)
             if not cs:
@@ -280,6 +282,7 @@ class QuoteEngine:
                 f"skew={regime.skew_adjustment:+.4f} "
                 f"flags={','.join(sorted(regime.flags)) or 'none'}"
             )
+            _regime_scores.append(regime.score)
             if "extreme" in regime.flags:
                 log.warning(f"extreme regime [{token_id[:8]}] score={regime.score:.2f}")
             if "toxic_flow" in regime.flags:
@@ -434,6 +437,17 @@ class QuoteEngine:
                     f"center={ladder.center.bid_price:.3f}/{ladder.center.ask_price:.3f} "
                     f"force={force} new={is_new}"
                 )
+
+        # Throttled regime summary — visible at INFO level once per minute
+        now = time.time()
+        if _regime_scores and now - self._last_regime_log >= 60.0:
+            avg = sum(_regime_scores) / len(_regime_scores)
+            peak = max(_regime_scores)
+            log.info(
+                f"regime cycle: {len(_regime_scores)} markets "
+                f"avg_score={avg:.3f} peak_score={peak:.3f}"
+            )
+            self._last_regime_log = now
 
     async def run(self):
         while True:
