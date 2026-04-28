@@ -2,6 +2,7 @@
 """Maker bot entrypoint — wires actors, queues, and reused feeds."""
 
 import asyncio
+import os
 import config
 from market.state import AppState
 from maker.state import MakerState
@@ -13,7 +14,7 @@ from maker.shadow_fill_poller import ShadowFillPoller
 from maker.inventory import InventoryManager
 from maker.markout_tracker import MarkoutTracker
 from maker.fill_ledger import FillLedger
-from maker.state_persistence import MakerCheckpointer, MakerStateLoader
+from maker.state_persistence import MakerCheckpointer, MakerStateLoader, LifetimeStatsCache
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
@@ -62,12 +63,18 @@ def build_maker_actors(
     else:
         fill_poller = FillPoller(app_state, maker_state, fills_q, clob=clob, paper=paper)
 
+    markout_tracker = MarkoutTracker(
+        app_state, maker_state, markout_q,
+        kill_switch_enabled=(not paper and not shadow),
+    )
+
     actors = {
         "selector": MarketSelector(app_state, active_markets_q, maker_state=maker_state),
         "quote_engine": QuoteEngine(
             app_state, maker_state, active_markets_q, quote_intents_q, skew_updates_q,
             price_update_q=price_update_q,
             cancel_q=cancel_q,
+            markout_tracker=markout_tracker,
         ),
         "order_manager": OrderManager(
             maker_state, clob=clob,
@@ -80,10 +87,7 @@ def build_maker_actors(
             bankroll=bankroll, app_state=app_state, markout_q=markout_q,
             fill_ledger=fill_ledger,
         ),
-        "markout_tracker": MarkoutTracker(
-            app_state, markout_q,
-            kill_switch_enabled=(not paper and not shadow),
-        ),
+        "markout_tracker": markout_tracker,
     }
 
     return actors, queues
@@ -132,8 +136,13 @@ async def run_maker():
 
     # Persistence: fill ledger + state loader + checkpointer
     fill_ledger = FillLedger(base_dir="maker_data")
+    lifetime_cache = LifetimeStatsCache(base_dir="maker_data")
     preloaded_state = MakerState()
     MakerStateLoader(preloaded_state, fill_ledger, paper=paper).load()
+
+    # Per-category inventory caps — weather is more directional so use a tighter cap
+    weather_cap = float(os.getenv("MAKER_WEATHER_INV_CAP", "15"))
+    preloaded_state.category_inventory_caps = {"weather": weather_cap}
 
     actors, queues = build_maker_actors(
         app_state=app_state,
@@ -148,8 +157,12 @@ async def run_maker():
     # Expose MakerState for dashboard loop via order_manager
     maker_state_ref = actors["order_manager"]._maker
 
-    # Checkpointer — saves state every 60s
-    checkpointer = MakerCheckpointer(maker_state_ref)
+    # Checkpointer — saves state every 60s, detects midnight to update lifetime cache
+    checkpointer = MakerCheckpointer(
+        maker_state_ref,
+        fill_ledger=fill_ledger,
+        lifetime_cache=lifetime_cache,
+    )
 
     from feeds.falcon import FalconFeed
 
