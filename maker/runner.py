@@ -14,11 +14,22 @@ from maker.shadow_fill_poller import ShadowFillPoller
 from maker.inventory import InventoryManager
 from maker.markout_tracker import MarkoutTracker
 from maker.fill_ledger import FillLedger
+from maker.vpin_poller import VPINPoller
 from maker.state_persistence import MakerCheckpointer, MakerStateLoader, LifetimeStatsCache
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
 log = get_logger(__name__)
+
+
+async def _run_vpin_poller(poller: VPINPoller) -> None:
+    """Isolated wrapper — VPINPoller crash does not propagate to asyncio.gather."""
+    while True:
+        try:
+            await poller.run()
+        except Exception as exc:
+            log.exception(f"VPINPoller crashed (restarting in 30s): {exc}")
+            await asyncio.sleep(30.0)
 
 
 def build_maker_actors(
@@ -209,6 +220,9 @@ async def run_maker():
             markout_tracker=actors["markout_tracker"],
         )
     )
+
+    vpin_poller = VPINPoller(app_state)
+    coros.append(_run_vpin_poller(vpin_poller))
 
     log.info(f"Maker bot running with {len(actors)} actors")
     try:
