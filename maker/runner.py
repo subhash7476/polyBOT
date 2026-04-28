@@ -133,8 +133,9 @@ async def run_maker():
     maker_dash = MakerDashboardState()
     maker_dash.update({"paper": paper, "shadow": shadow})
     dash = DashboardState()
-    start_dashboard_server(dash, port=5050, maker_dash=maker_dash)
-    log.info("Maker dashboard at http://127.0.0.1:5050/maker")
+    dashboard_port = int(os.getenv("DASHBOARD_PORT", "5050"))
+    start_dashboard_server(dash, port=dashboard_port, maker_dash=maker_dash)
+    log.info(f"Maker dashboard at http://127.0.0.1:{dashboard_port}/maker")
 
     # Build CLOB client for live mode
     clob = None
