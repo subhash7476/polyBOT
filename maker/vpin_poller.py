@@ -124,7 +124,7 @@ class VPINPoller:
             self._last_trade_id[token_id] = new_trades[0].get("id", "")
 
         buf = self._buffers.setdefault(token_id, deque(maxlen=_BUFFER_SIZE))
-        buf.extend(new_trades)
+        buf.extend(reversed(new_trades))  # API returns newest-first; store oldest-first for tick rule
 
         raw_vpin = _compute_raw_vpin(list(buf))
         prev_vpin = self._vpin_cache.get(token_id, (0.5, 0.0))[0]
