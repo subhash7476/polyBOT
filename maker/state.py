@@ -14,6 +14,9 @@ class MakerState:
     max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
     max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
 
+    # Per-category inventory caps — overrides max_inventory_per_market for named categories.
+    category_inventory_caps: dict = field(default_factory=dict)
+
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)
 
@@ -98,6 +101,12 @@ class MakerState:
     @property
     def total_abs_inventory(self) -> float:
         return sum(abs(v) for v in self.inventory.values())
+
+    def max_inventory_for_category(self, category: str) -> float:
+        """Per-category cap, falling back to max_inventory_per_market."""
+        return self.category_inventory_caps.get(
+            category.lower() if category else "", self.max_inventory_per_market
+        )
 
     def skew_factor(self, token_id: str) -> float:
         """Normalized skew: [-1.0, +1.0]. Positive = holding YES."""
