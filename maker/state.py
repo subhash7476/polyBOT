@@ -17,6 +17,9 @@ class MakerState:
     # Per-category inventory caps — overrides max_inventory_per_market for named categories.
     category_inventory_caps: dict = field(default_factory=dict)
 
+    # Per-market rolling markout stats: token_id → {interval_s → avg_markout}
+    rolling_markouts: dict[str, dict[int, float]] = field(default_factory=dict)
+
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)
 
