@@ -14,6 +14,7 @@ from engine.weather_probability import build_weather_probability
 from engine.macro_probability import build_macro_probability
 from engine.orderbook_imbalance import compute_obi_signal
 from config import SIGNAL_WEIGHTS
+from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -117,6 +118,7 @@ class QuoteEngine:
         skew_updates_q: asyncio.Queue,
         price_update_q: asyncio.Queue | None = None,
         cancel_q: asyncio.Queue | None = None,
+        markout_tracker=None,  # MarkoutTracker | None — avoids circular import
     ):
         self._app = app_state
         self._maker = maker_state
@@ -125,6 +127,7 @@ class QuoteEngine:
         self._skew_updates_q = skew_updates_q
         self._price_update_q = price_update_q
         self._cancel_q = cancel_q
+        self._markout_tracker = markout_tracker
         self._clob_stale = False  # tracks whether we already pulled quotes
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
@@ -256,6 +259,32 @@ class QuoteEngine:
                 except ValueError:
                     pass
 
+            # Regime score — single call per market per cycle; result reused for all outputs
+            _inv_signed = self._maker.skew_factor(token_id, cs.category)
+            _markout_30s = (
+                self._markout_tracker.get_markout_30s(token_id, cs.category)
+                if self._markout_tracker is not None else 0.0
+            )
+            regime = compute_regime_score(
+                vpin=cs.vpin,
+                markout_30s=_markout_30s,
+                inv_signed=_inv_signed,
+                hours_to_resolution=cs.hours_to_resolution,
+                category=cs.category,
+            )
+            log.debug(
+                f"regime[{token_id[:8]}] score={regime.score:.3f} "
+                f"vpin={cs.vpin:.3f} markout={_markout_30s:.4f} "
+                f"inv={_inv_signed:.2f} hours={cs.hours_to_resolution:.1f} "
+                f"spread_x={regime.spread_multiplier:.2f} size_x={regime.size_multiplier:.2f} "
+                f"skew={regime.skew_adjustment:+.4f} "
+                f"flags={','.join(sorted(regime.flags)) or 'none'}"
+            )
+            if "extreme" in regime.flags:
+                log.warning(f"extreme regime [{token_id[:8]}] score={regime.score:.2f}")
+            if "toxic_flow" in regime.flags:
+                log.info(f"toxic_flow [{token_id[:8]}] vpin={cs.vpin:.2f}")
+
             fv = compute_fair_value(mid=cs.mid, inventory=inv, model_adj=model_adj)
 
             # Phase 1: External Price Discovery (Anchor Model)
@@ -316,7 +345,15 @@ class QuoteEngine:
                     f"adj={obi_adj:+.3f} fv→{anchor_fv:.3f}"
                 )
 
-            spread = min(base_spread * spread_multiplier, MAX_SPREAD)
+            # Apply regime skew to anchor_fv BEFORE spread derivation
+            anchor_fv = _clamp(anchor_fv + regime.skew_adjustment, 0.05, 0.95)
+
+            # Category baseline × Falcon adverse-selection × regime dynamic multiplier
+            cat_mult = CATEGORY_SPREAD_MULTIPLIER.get(cs.category, 1.5)
+            spread = _clamp(
+                base_spread * spread_multiplier * cat_mult * regime.spread_multiplier,
+                MIN_SPREAD, MAX_SPREAD,
+            )
 
             # Book-relative quoting: compress toward book spread but never below
             # MIN_SPREAD — we need at least that much to capture edge after fees.
@@ -336,7 +373,7 @@ class QuoteEngine:
                 token_id=token_id,
                 fair_value=eff_fv,
                 spread=eff_spread,
-                size=QUOTE_SIZE_USDC,
+                size=max(1.0, QUOTE_SIZE_USDC * regime.size_multiplier),
                 reason="reprice",
             )
 
