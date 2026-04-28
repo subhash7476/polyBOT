@@ -20,6 +20,7 @@ from collections import deque
 from dataclasses import dataclass
 
 from market.state import AppState
+from maker.state import MakerState
 from maker.types import Fill
 from utils.logger import get_logger
 
@@ -27,6 +28,9 @@ log = get_logger(__name__)
 
 MARKOUT_INTERVALS = (5, 30, 60)  # seconds post-fill
 _ROLLING_WINDOW = 500            # fills kept in rolling stats per interval
+
+MIN_MARKET_FILLS = 20     # min per-market fills to trust per-market avg
+MIN_CATEGORY_FILLS = 100  # min fills to trust per-category avg
 
 # Live-mode adverse-selection kill switch.
 # After this many fills have rolled through the 30s deque, if the rolling mean
@@ -64,21 +68,26 @@ class MarkoutTracker:
     def __init__(
         self,
         app_state: AppState,
+        maker_state: MakerState,
         markout_q: asyncio.Queue,
         log_path: str = "fills_markout.jsonl",
         kill_switch_enabled: bool = False,
     ):
         self._app = app_state
+        self._maker = maker_state
         self._markout_q = markout_q
         self._log_path = log_path
         self._heap: list[_PendingCheck] = []  # min-heap ordered by check_at
         self._kill_switch_enabled = kill_switch_enabled
 
-        # Rolling deques of markout values per interval
+        # Rolling deques of markout values per interval: token_id -> {interval: deque}
+        self._market_markouts: dict[str, dict[int, deque]] = {}
         self._markouts: dict[int, deque] = {
             i: deque(maxlen=_ROLLING_WINDOW) for i in MARKOUT_INTERVALS
         }
         self._n_fills = 0
+        # Per-category rolling markouts: category -> {interval: deque}
+        self.by_category: dict[str, dict[int, deque]] = {}
 
     # ------------------------------------------------------------------
     # Public stats (read by dashboard_loop)
@@ -100,6 +109,21 @@ class MarkoutTracker:
             result[f"avg_markout_{interval}s"] = round(avg, 5)
             result[f"adverse_rate_{interval}s"] = round(adverse, 3)
         return result
+
+    def get_markout_30s(self, token_id: str, category: str) -> float:
+        """Rolling avg markout at T+30s with three-tier fallback.
+
+        Returns per-market value if >= MIN_MARKET_FILLS fills exist,
+        else per-category value if >= MIN_CATEGORY_FILLS fills exist,
+        else 0.0 (neutral — no data yet).
+        """
+        per_mkt = self._market_markouts.get(token_id, {}).get(30)
+        if per_mkt is not None and len(per_mkt) >= MIN_MARKET_FILLS:
+            return sum(per_mkt) / len(per_mkt)
+        per_cat = self.by_category.get(category, {}).get(30)
+        if per_cat is not None and len(per_cat) >= MIN_CATEGORY_FILLS:
+            return sum(per_cat) / len(per_cat)
+        return 0.0
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -128,12 +152,31 @@ class MarkoutTracker:
         async with self._app._lock:
             cs = self._app.markets.get(check.token_id)
             mid_now = cs.mid if cs else None
+            category = cs.category if cs else ""
 
         if mid_now is None:
             return  # market gone — skip silently
 
         markout = self._sign(check.side) * (mid_now - check.mid_at_fill)
         self._markouts[check.interval].append(markout)
+
+        # Update per-market rolling markouts for Phase 5 Aggressive Exit
+        m_stats = self._market_markouts.setdefault(check.token_id, {
+            i: deque(maxlen=20) for i in MARKOUT_INTERVALS
+        })
+        m_stats[check.interval].append(markout)
+        
+        # Calculate and export avg for this token/interval to MakerState
+        async with self._maker._lock:
+            token_avgs = self._maker.rolling_markouts.setdefault(check.token_id, {})
+            d = m_stats[check.interval]
+            token_avgs[check.interval] = sum(d) / len(d)
+
+        # Update per-category rolling markouts
+        if category:
+            if category not in self.by_category:
+                self.by_category[category] = {i: deque(maxlen=_ROLLING_WINDOW) for i in MARKOUT_INTERVALS}
+            self.by_category[category][check.interval].append(markout)
 
         record = {
             "order_id": check.order_id,
