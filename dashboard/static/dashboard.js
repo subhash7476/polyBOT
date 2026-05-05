@@ -121,6 +121,7 @@ function renderHeader(d) {
 
   setPnl('alltime-cash',     d.alltime_cash_pnl || 0);
   setPnl('alltime-realized', d.alltime_realized_pnl || 0);
+  setPnl('prior-realized',   (d.alltime_realized_pnl || 0) - (d.today_realized_pnl || 0));
   $('alltime-fills').textContent = d.alltime_fills || 0;
 
   $('total-inv').textContent = (d.total_abs_inventory || 0).toFixed(2);
@@ -325,6 +326,32 @@ function render(d) {
       <td class="num right warn">${(o.ask_sum||0).toFixed(4)}</td>
       <td class="num right"><span class="gap-pos">+${((o.gap||0)*100).toFixed(2)}%</span></td>
     </tr>`).join('');
+  }
+
+  // ── Live Positions ───────────────────────────────────────
+  const positions = d.live_positions || [];
+  $('tab-positions-badge').textContent = positions.length;
+  $('pos-count').textContent = positions.length;
+  const posBody = $('positions-body');
+  if (!positions.length) {
+    posBody.innerHTML = emptyRow(9, 'No open positions', 'Markets with open inventory will appear here.');
+  } else {
+    posBody.innerHTML = positions.map(p => {
+      const inv = p.inventory || 0;
+      const invSign = inv >= 0 ? '+' : '';
+      const invCls = inv >= 0 ? 'pos' : 'neg';
+      return `<tr>
+        <td><div class="qtext" title="${esc(p.question)}">${esc(truncate(p.question, 65))}</div></td>
+        <td>${p.category ? `<span class="pill pill-cat">${esc(p.category)}</span>` : '<span class="dim">—</span>'}</td>
+        <td>${fmtResolves(p.end_date_iso)}</td>
+        <td class="num right ${invCls}">${invSign}${inv.toFixed(2)}</td>
+        <td class="num right">${(p.current_mid || 0).toFixed(4)}</td>
+        <td class="num right ${pnlClass(p.position_value)}">${fmtPnl(p.position_value)}</td>
+        <td class="num right ${pnlClass(p.cash_pnl)}">${fmtPnl(p.cash_pnl)}</td>
+        <td class="num right ${pnlClass(p.mtm_pnl)}">${fmtPnl(p.mtm_pnl)}</td>
+        <td class="num right ${pnlClass(p.realized_pnl)}">${fmtPnl(p.realized_pnl)}</td>
+      </tr>`;
+    }).join('');
   }
 
   // ── Falcon ───────────────────────────────────────────────
@@ -573,6 +600,24 @@ function demoData(t) {
     days_left: [0.08, 0.6, 2.3, 8.4, 1.2, 0.04, 3.1][i],
     is_quoting: i < 5,
   }));
+  const live_positions = DEMO_MARKETS.slice(0, 5).map((m, i) => {
+    const inv = Math.sin((t + i*2)*0.15) * (30 + i * 10);
+    const mid = 0.42 + Math.sin((t + i) * 0.3) * 0.06 + i * 0.02;
+    const cash = (i === 3 ? -12.34 : 3.2 + i * 2.1 + Math.sin(t*0.1+i));
+    const posVal = inv * mid;
+    return {
+      question: m.q, category: m.cat, token_id: m.token,
+      end_date_iso: new Date(Date.now() + [3,26,50,200,80][i] * 3600000).toISOString(),
+      days_left: [0.08, 0.6, 2.3, 8.4, 1.2][i],
+      inventory: parseFloat(inv.toFixed(2)),
+      current_mid: parseFloat(mid.toFixed(4)),
+      position_value: parseFloat(posVal.toFixed(4)),
+      cash_pnl: parseFloat(cash.toFixed(4)),
+      mtm_pnl: parseFloat((cash + posVal).toFixed(4)),
+      realized_pnl: parseFloat((i === 3 ? -4.12 : 1.5 + i * 0.9).toFixed(4)),
+    };
+  });
+
   const arb_current = (t % 20 < 3) ? [{
     question: DEMO_MARKETS[1].q,
     ask_a: 0.512, ask_b: 0.478, ask_sum: 0.990, gap: 0.010,
@@ -599,6 +644,7 @@ function demoData(t) {
     selected_markets: selected,
     arb_current,
     arb_total_events: 12,
+    live_positions,
     clob_age: t % 30 < 20 ? `${(t % 8) + 1}s` : '42s',
     micro_age: t % 40 < 30 ? `${(t % 5) + 1}s` : '1m12s',
     falcon_data: {
