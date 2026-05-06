@@ -200,7 +200,7 @@ class FalconFeed:
                             if ins.question
                         }
                     self._state.stamp_feed("falcon_insights")
-                    log.info(f"market insights refreshed: {len(insights)} markets")
+                    log.info(f"market insights refreshed: {len(insights)} active markets (expired skipped: {n_expired})")
             except Exception as exc:
                 log.warning(f"market insights fetch failed: {exc}")
             await asyncio.sleep(config.FALCON_MARKET_INSIGHTS_POLL_INTERVAL)
@@ -223,11 +223,27 @@ class FalconFeed:
         results = resp.json().get("data", {}).get("results", [])
 
         now = time.time()
+        n_expired = 0
         insights = []
         for r in results:
             cid = r.get("condition_id", "")
             if not cid:
                 continue
+            # Skip markets whose end_date has already passed — Falcon's API
+            # continues returning resolved markets as "Spiking" for days after
+            # resolution, polluting the cache with NOT_IN_STATE noise.
+            end_date_str = str(r.get("end_date", ""))
+            if end_date_str:
+                try:
+                    from datetime import datetime, timezone
+                    end_ts = datetime.fromisoformat(
+                        end_date_str.replace("Z", "+00:00")
+                    ).timestamp()
+                    if end_ts < now:
+                        n_expired += 1
+                        continue
+                except (ValueError, TypeError):
+                    pass  # unparseable end_date — include the market
             insights.append(FalconMarketInsight(
                 condition_id=cid,
                 question=str(r.get("question", "")),
