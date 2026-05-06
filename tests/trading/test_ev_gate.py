@@ -97,8 +97,8 @@ def test_rejects_untradeable_market():
 
 def test_ev_multiplier_raises_threshold():
     slip = make_slip(adjusted_price=0.52)
-    # ev=0.05 passes at multiplier=1 but fails at multiplier=2 (threshold=0.06)
-    ok_1x, _ = should_enter(ev=0.05, slippage=slip, ev_multiplier=1.0)
-    ok_2x, _ = should_enter(ev=0.05, slippage=slip, ev_multiplier=2.0)
+    # ev=0.03 passes at multiplier=1 (threshold=0.02) but fails at multiplier=2 (threshold=0.04)
+    ok_1x, _ = should_enter(ev=0.03, slippage=slip, ev_multiplier=1.0)
+    ok_2x, _ = should_enter(ev=0.03, slippage=slip, ev_multiplier=2.0)
     assert ok_1x is True
     assert ok_2x is False

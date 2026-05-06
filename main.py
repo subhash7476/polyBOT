@@ -13,27 +13,49 @@ v2.1 fixes applied:
 """
 
 import asyncio
+import os
+from pathlib import Path
+import config
 from config import BANKROLL_USDC, SIGNAL_WEIGHTS, PAPER
 from market.state import AppState
 from feeds.deribit import DeribitFeed
 from feeds.microstructure import MicrostructureFeed
 from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
-from market.clob_monitor import CLOBMonitor
-from engine.probability import build_model_probability
+from feeds.weather import WeatherFeed
+from feeds.falcon import FalconFeed
+from market.clob_monitor import CLOBMonitor, build_threshold_markets
+from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
+from engine.probability import build_model_probability, build_microstructure_probability
+from engine.macro_probability import build_macro_probability
+from engine.weather_probability import build_weather_probability
 from engine.contract_parser import parse_contract
 from engine.signal_filter import passes_signal_filter
-from trading.ev_gate import calculate_ev, should_enter
+from engine.flatline import compute_flatline_signal, record_price as record_flatline_price
+from engine.orderbook_imbalance import compute_obi_signal, record_obi_reading
+from engine.volume_divergence import compute_vpd_signal, record_volume
+from trading.ev_gate import calculate_ev, should_enter, get_trade_direction, passes_divergence_guard
 from trading.kelly import fractional_kelly
 from trading.slippage import estimate_slippage
 from trading.risk import RiskManager
+from trading.positions import PositionLedger
 from trading.executor import CLOBExecutor
+from trading.redeemall import redeem_tracked_positions, run_redeemall, redeemall_loop as _redeemall_loop_impl
+from trading.resolution import resolution_loop
+from trading.balance import BalancePoller
 from calibration.tracker import CalibrationTracker
+from dashboard.state import DashboardState
+from dashboard.loops import dashboard_loop, update_scan_stats
+from dashboard.server import start_dashboard_server
+from monitoring.alerts import get_alert_manager, AlertType
 from utils.logger import get_logger
 
 log = get_logger("main")
 
-_SCAN_INTERVAL = 5  # seconds between opportunity scans
+_SCAN_INTERVAL = 5   # seconds between opportunity scans
+_ARB_INTERVAL = 30   # seconds between arb scans
+_FEED_HEALTH_INTERVAL = 120  # seconds between feed health log lines
+_feed_health_last: float = 0.0
 
 
 async def trading_loop(
@@ -41,6 +63,7 @@ async def trading_loop(
     risk: RiskManager,
     executor: CLOBExecutor,
     tracker: CalibrationTracker,
+    dash: DashboardState,
 ):
     while True:
         await asyncio.sleep(_SCAN_INTERVAL)
@@ -48,62 +71,202 @@ async def trading_loop(
             markets = dict(state.markets)
             feeds = state.feeds
 
+        if not feeds.is_fresh():
+            log.debug("feeds stale — skipping scan")
+            continue
+
+        # Optional paper-mode TTL for debugging; disabled by default now that
+        # resolution tracking exists.
+        if PAPER and config.PAPER_USE_POSITION_TTL:
+            expired = risk.expire_paper_positions(config.PAPER_POSITION_TTL_HOURS)
+            if expired:
+                log.info(f"expired {expired} paper position(s) — slots reopened")
+
+        n_total = len(markets)
+        n_parseable = n_signal = n_liquidity = n_ev = n_traded = 0
+        category_counts: dict[str, int] = {}
+        skip_reasons: dict[str, dict[str, int]] = {}
+
+        def _record_skip(category: str, reason: str) -> None:
+            skip_reasons.setdefault(category, {}).setdefault(reason, 0)
+            skip_reasons[category][reason] += 1
+
         for yes_token_id, contract_state in markets.items():
             try:
                 # 1. Parse contract — skip if unparseable
                 parsed = parse_contract(yes_token_id, contract_state.question)
                 if not parsed.parseable:
+                    _record_skip(parsed.category or "unknown", "unparseable")
                     continue
 
-                # 2. Build model probability (TTE-aware) — Fix 2: get engine back
-                model_prob, signal_count, engine = build_model_probability(
-                    parsed, feeds, SIGNAL_WEIGHTS
-                )
+                # 1b. Category filter — skip if MARKET_CATEGORY_FILTER is set and this
+                # category is not in the allowed list. Prevents stale state.markets entries
+                # (seeded before the filter took effect) from reaching the analysis pipeline.
+                _allowed = config.MARKET_CATEGORY_FILTER.strip()
+                if _allowed:
+                    _allowed_set = {c.strip().lower() for c in _allowed.split(",") if c.strip()}
+                    if parsed.category not in _allowed_set:
+                        continue
+
+                n_parseable += 1
+                category_counts[parsed.category] = category_counts.get(parsed.category, 0) + 1
+
+                # Dashboard record — filled in as we progress through gates
+                mkt_rec = {
+                    "question": contract_state.question,
+                    "model_prob": None,
+                    "market_mid": contract_state.mid,
+                    "ev": None,
+                    "signal_count": 0,
+                    "traded": False,
+                    "reason": "signal filter",
+                }
+
+                # 2. Build probability — dispatch by category
+                if parsed.category in ("macro", "rates"):
+                    model_prob, signal_count, engine = build_macro_probability(
+                        parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                elif parsed.category == "crypto":
+                    model_prob, signal_count, engine = build_model_probability(
+                        parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                elif parsed.category == "weather":
+                    model_prob, signal_count, engine = build_weather_probability(
+                        parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                else:
+                    # election, event, unknown — market-price prior + microstructure signals only
+                    model_prob, signal_count, engine = build_microstructure_probability(
+                        parsed, contract_state, SIGNAL_WEIGHTS
+                    )
+                mkt_rec["model_prob"] = model_prob
+                mkt_rec["signal_count"] = signal_count
+
+                # New microstructure signals — added to existing engine before filter.
+                # Applied to all categories: flatline fires near any resolution,
+                # OBI and VPD are valid for any liquid market regardless of category.
+                record_flatline_price(yes_token_id, contract_state.mid)
+                flatline_sig = compute_flatline_signal(yes_token_id, contract_state, parsed)
+                if flatline_sig:
+                    engine.add_signal(flatline_sig)
+
+                record_obi_reading(yes_token_id, contract_state)
+                obi_sig = compute_obi_signal(yes_token_id)
+                if obi_sig:
+                    engine.add_signal(obi_sig)
+
+                record_volume(yes_token_id, contract_state)
+                vpd_sig = compute_vpd_signal(yes_token_id, contract_state)
+                if vpd_sig:
+                    engine.add_signal(vpd_sig)
+
+                # Re-read updated probability and signal count after new signals
+                model_prob = engine.probability
+                signal_count = engine.signal_count
+                mkt_rec["model_prob"] = model_prob
+                mkt_rec["signal_count"] = signal_count
+
+                # Live pilot filter: restrict categories in live mode
+                if not PAPER and config.LIVE_PILOT_CATEGORIES:
+                    if parsed.category not in config.LIVE_PILOT_CATEGORIES:
+                        _record_skip(parsed.category, "live_pilot_filter")
+                        continue
 
                 # 3. Signal agreement filter — Fix 2: properly wired
                 ok, reason = passes_signal_filter(engine)
                 if not ok:
                     log.debug(f"signal filter: {reason}")
+                    mkt_rec["reason"] = reason
+                    _record_skip(parsed.category, "signal_filter")
+                    dash.update({"active_markets_append": mkt_rec})
+                    continue
+                n_signal += 1
+                mkt_rec["reason"] = "illiquid"
+
+                # 3b. Weather divergence guard — reject when model/market gap >35pp
+                #     with fewer than 2 signals (single uncalibrated forecast vs market)
+                ok, reason = passes_divergence_guard(
+                    model_prob, contract_state.mid, signal_count, parsed.category
+                )
+                if not ok:
+                    log.info(f"divergence guard [{yes_token_id[:8]}]: {reason}")
+                    mkt_rec["reason"] = reason
+                    _record_skip(parsed.category, "divergence_guard")
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
 
-                # 4. Slippage estimate (pre-Kelly size estimate)
+                # 4. Determine direction, then estimate slippage on the correct token
+                direction, _ = get_trade_direction(model_prob, contract_state.mid)
+                if direction == "BUY_YES":
+                    slip_bid, slip_ask = contract_state.best_bid, contract_state.best_ask
+                else:
+                    # BUY_NO: NO ask = 1 - YES bid, NO bid = 1 - YES ask
+                    slip_bid = 1.0 - contract_state.best_ask
+                    slip_ask = 1.0 - contract_state.best_bid
+
                 slippage = estimate_slippage(
                     side="BUY",
                     size_usdc=50.0,  # pre-Kelly estimate
-                    best_bid=contract_state.best_bid,
-                    best_ask=contract_state.best_ask,
+                    best_bid=slip_bid,
+                    best_ask=slip_ask,
                     volume_usd=contract_state.volume_usd,
                 )
                 if not slippage.tradeable:
+                    log.info(
+                        f"illiquid [{yes_token_id[:8]}]: bid={slip_bid:.3f} ask={slip_ask:.3f} "
+                        f"spread={slip_ask-slip_bid:.3f} vol=${contract_state.volume_usd:.0f}"
+                    )
+                    _record_skip(parsed.category, "illiquid")
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
+                n_liquidity += 1
+                mkt_rec["reason"] = "low EV"
 
-                # 5. EV gate — Fix 1+4: BUY_YES/BUY_NO + spread/adverse_selection penalties
+                # 5. EV gate
                 ev, side = calculate_ev(
                     model_prob=model_prob,
                     market_price=contract_state.mid,
                     slippage=slippage,
                     ev_multiplier=risk.ev_multiplier,
+                    fees_enabled=contract_state.fees_enabled,
                 )
+                mkt_rec["ev"] = ev
                 enter, enter_reason = should_enter(ev, slippage, risk.ev_multiplier)
                 if not enter:
-                    log.debug(f"ev gate: {enter_reason}")
+                    log.info(f"ev gate [{yes_token_id[:8]}]: {enter_reason} model={model_prob:.3f} mid={contract_state.mid:.3f}")
+                    mkt_rec["reason"] = enter_reason
+                    _record_skip(parsed.category, "low_ev")
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
+                n_ev += 1
+                mkt_rec["reason"] = "risk block"
 
-                # 6. Kelly sizing
+                # 6. Kelly sizing — use NO perspective for BUY_NO trades
+                # Kelly formula assumes BUY_YES; flip to (1-prob, 1-price) for BUY_NO
+                kelly_model_prob = (1.0 - model_prob) if side == "BUY_NO" else model_prob
+                kelly_market_price = (1.0 - contract_state.mid) if side == "BUY_NO" else contract_state.mid
                 size = fractional_kelly(
-                    model_prob=model_prob,
-                    market_price=contract_state.mid,
+                    model_prob=kelly_model_prob,
+                    market_price=kelly_market_price,
                     bankroll=BANKROLL_USDC,
                     ev=ev,
                     signal_count=signal_count,
                 )
                 if size <= 0:
+                    log.info(f"kelly=0 [{yes_token_id[:8]}]: model={model_prob:.3f} mid={contract_state.mid:.3f}")
+                    mkt_rec["reason"] = "kelly=0"
+                    _record_skip(parsed.category, "kelly=0")
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
 
                 # 7. Risk gate — Fix 3: direction-bucketed group check
                 ok, risk_reason = await risk.can_trade(yes_token_id, parsed, size, feeds)
                 if not ok:
-                    log.info(f"risk block {yes_token_id[:8]}: {risk_reason}")
+                    log.info(f"risk block [{yes_token_id[:8]}]: {risk_reason}")
+                    mkt_rec["reason"] = risk_reason
+                    _record_skip(parsed.category, "risk_block")
+                    dash.update({"active_markets_append": mkt_rec})
                     continue
 
                 # 8. Log signal (before execution)
@@ -115,6 +278,9 @@ async def trading_loop(
                     size_usdc=size,
                     ev=ev,
                     side=side,
+                    question=contract_state.question,
+                    strategy_type="directional",
+                    category=parsed.category,
                 )
 
                 # 9. Execute
@@ -131,28 +297,203 @@ async def trading_loop(
                     price=contract_state.best_ask if side == "BUY_YES" else contract_state.no_best_ask,
                 )
                 if result.success:
-                    await risk.open_position(yes_token_id, parsed, size, result.filled_price)
+                    condition_id = getattr(result, "condition_id", "") or contract_state.condition_id
+                    await risk.open_position(
+                        yes_token_id,
+                        parsed,
+                        size,
+                        result.filled_price,
+                        side=side,
+                        no_token_id=contract_state.no_token_id,
+                        condition_id=condition_id,
+                        question=contract_state.question,
+                        category=parsed.category,
+                        market_price_at_open=contract_state.mid,
+                        strategy_type="directional",
+                    )
+                    n_traded += 1
+                    mkt_rec["traded"] = True
+                    mkt_rec["reason"] = None
+                    asyncio.create_task(get_alert_manager().send(
+                        AlertType.TRADE_EXECUTED,
+                        get_alert_manager().format_trade(
+                            side=side, question=contract_state.question,
+                            size=size, model_prob=model_prob,
+                            market_mid=contract_state.mid, ev=ev,
+                        )
+                    ))
+                dash.update({"active_markets_append": mkt_rec})
 
             except Exception as exc:
                 log.exception(f"trading loop error for {yes_token_id[:8]}: {exc}")
 
+        log.info(
+            f"FUNNEL: {n_total} discovered | {n_parseable} parsed | "
+            f"{n_signal} signal_ok | {n_liquidity} liquid | {n_ev} ev+ | "
+            f"{n_traded} traded | categories: {category_counts}"
+        )
+        if skip_reasons:
+            # Show signal-filter breakdown at INFO so it's visible without debug logging
+            sig_blocked = {
+                cat: reasons.get("signal_filter", 0)
+                for cat, reasons in skip_reasons.items()
+                if reasons.get("signal_filter", 0) > 0
+            }
+            if sig_blocked:
+                log.info(f"  signal_filter blocked: {sig_blocked}")
+            top = sorted(
+                ((cat, reason, count) for cat, reasons in skip_reasons.items() for reason, count in reasons.items()),
+                key=lambda x: -x[2]
+            )[:8]
+            log.debug("skip reasons: " + ", ".join(f"{cat}/{reason}={n}" for cat, reason, n in top))
+        # Feed health log — emitted every 2 minutes so you can see what's populated
+        global _feed_health_last
+        import time as _time
+        if _time.time() - _feed_health_last >= _FEED_HEALTH_INTERVAL:
+            _feed_health_last = _time.time()
+            spot_keys = list(feeds.spot_prices.keys()) or ["none"]
+            dvol_keys = list(feeds.dvol.keys()) or ["none"]
+            fr_keys = list(feeds.funding_rates.keys()) or ["none"]
+            btc_spot = feeds.spot_prices.get("BTC")
+            btc_dvol = feeds.dvol.get("BTC")
+            log.info(
+                f"FEED HEALTH — spot:{spot_keys} dvol:{dvol_keys} funding:{fr_keys} | "
+                f"btc_spot={'${:,.0f}'.format(btc_spot) if btc_spot else 'MISSING'} "
+                f"btc_dvol={f'{btc_dvol:.1f}' if btc_dvol else 'MISSING'} "
+                f"dxy={feeds.dxy or 'MISSING'} "
+                f"weather_cities={len(feeds.weather_forecasts)}"
+            )
+
+        update_scan_stats(dash, n_total=n_total, n_parseable=n_parseable,
+                          n_signal=n_signal, n_liquidity=n_liquidity,
+                          n_ev=n_ev, n_traded=n_traded)
+
+
+async def arb_scan_loop(
+    state: AppState,
+    tracker: CalibrationTracker,
+):
+    """Scan for cross-market monotonicity violations every 30s."""
+    while True:
+        await asyncio.sleep(_ARB_INTERVAL)
+        async with state._lock:
+            markets = dict(state.markets)
+
+        threshold_markets = build_threshold_markets(markets)
+        violations = find_monotonicity_violations(threshold_markets, min_spread=0.03)
+
+        for v in violations:
+            if v.spread > 0.05:
+                asyncio.create_task(get_alert_manager().send(
+                    AlertType.ARB_DETECTED,
+                    get_alert_manager().format_arb(v.trade_description, v.spread)
+                ))
+            log.info(f"ARB: {v.trade_description} | spread={v.spread:.3f}")
+            tracker.log_signal(
+                token_id=f"arb_{v.low_strike_token[:8]}_{v.high_strike_token[:8]}",
+                model_prob=0.99,
+                market_prob=0.50,
+                signal_summary={"type": "arb", "spread": v.spread},
+                size_usdc=0.0,
+                ev=v.spread,
+                side="ARB",
+                strategy_type="arb_monotonicity",
+                category="arb",
+            )
+
+        if violations:
+            log.info(f"arb scan: {len(violations)} violations from {len(threshold_markets)} threshold markets")
+
+        # Cross-temporal arb
+        cross_violations = find_cross_temporal_violations(threshold_markets, min_profit=0.01)
+        for v in cross_violations:
+            log.info(f"CROSS-TEMPORAL ARB: {v.trade_description} | profit={v.profit:.3f}")
+            tracker.log_signal(
+                token_id=f"xarb_{v.earlier_token[:8]}_{v.later_token[:8]}",
+                model_prob=0.99,
+                market_prob=0.50,
+                signal_summary={"type": "cross_temporal_arb", "profit": v.profit},
+                size_usdc=0.0,
+                ev=v.profit,
+                side="ARB",
+                strategy_type="arb_cross_temporal",
+                category="arb",
+            )
+        if cross_violations:
+            log.info(f"cross-temporal arb: {len(cross_violations)} violations")
+
+
+async def redeemall_loop(executor, risk: RiskManager, interval: int = 900):
+    """Thin wrapper — delegates to trading.redeemall.redeemall_loop."""
+    async def _get_pending():
+        async with risk._lock:
+            return dict(risk.pending_redemptions)
+
+    await _redeemall_loop_impl(
+        paper=PAPER,
+        wallet=executor.wallet_address,
+        rpc_url=config.RPC_URL,
+        private_key=config.POLY_PRIVATE_KEY,
+        tracked_positions_fn=_get_pending,
+        mark_redeemed_fn=risk.mark_redeemed,
+        interval=interval,
+    )
+
 
 async def main():
+    Path(__file__).parent.joinpath("bot.pid").write_text(str(os.getpid()))
     log.info(f"starting v2.1 | paper={PAPER} | bankroll=${BANKROLL_USDC}")
     state = AppState()
-    risk = RiskManager(bankroll=BANKROLL_USDC)
+    ledger = PositionLedger(config.TRACKED_POSITIONS_FILE)
+    risk = RiskManager(bankroll=BANKROLL_USDC, ledger=ledger)
+    if risk.open_positions or risk.pending_redemptions:
+        log.info(
+            f"restored {len(risk.open_positions)} open and "
+            f"{len(risk.pending_redemptions)} resolved-pending position(s) from ledger"
+        )
+    if not PAPER:
+        pending_count = len(risk.pending_redemptions)
+        open_count = len(risk.open_positions)
+        log.info(f"[LIVE] Startup state: {open_count} open, {pending_count} pending redemption")
+        if pending_count > 0:
+            log.warning(f"[LIVE] {pending_count} positions awaiting redemption — run 'python -m trading.redeemall' to clear")
     executor = CLOBExecutor(paper=PAPER)
     tracker = CalibrationTracker()
+    dash = DashboardState()
+    start_dashboard_server(dash, port=5050)
+    balance_poller = BalancePoller(state, wallet_address=executor.wallet_address)
 
     await asyncio.gather(
         DeribitFeed(state).start(),
         MicrostructureFeed(state).start(),
         OnChainFeed(state).start(),
         MacroFeed(state).start(),
+        WeatherFeed(state).start(),
+        FalconFeed(state).start(),
         CLOBMonitor(state).start(),
-        trading_loop(state, risk, executor, tracker),
+        trading_loop(state, risk, executor, tracker, dash),
+        resolution_loop(
+            risk,
+            tracker,
+            paper=PAPER,
+            wallet_address=executor.wallet_address,
+        ),
+        arb_scan_loop(state, tracker),
+        dashboard_loop(state, dash, risk=risk),
+        balance_poller.start(),
+        redeemall_loop(executor, risk),
     )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import argparse
+    ap = argparse.ArgumentParser(description="Polymarket trading bot")
+    ap.add_argument("--mode", default="taker", choices=["taker", "maker"],
+                    help="taker (directional) or maker (market making)")
+    cli_args = ap.parse_args()
+
+    if cli_args.mode == "maker":
+        from maker.runner import run_maker
+        asyncio.run(run_maker())
+    else:
+        asyncio.run(main())

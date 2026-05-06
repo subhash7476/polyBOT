@@ -1,6 +1,7 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from feeds.macro import CachedValue
+from feeds.macro import MacroFeed
 
 
 def test_cached_value_fresh_is_not_stale():
@@ -29,3 +30,36 @@ def test_cached_value_confidence_half_age():
     half_age = datetime.now(timezone.utc) - timedelta(seconds=300)
     cv = CachedValue(value=104.0, fetched_at=half_age, max_age_seconds=600)
     assert abs(cv.confidence - 0.5) < 0.05
+
+
+def test_macro_feed_fred_csv_fallback_uses_curl(monkeypatch):
+    class DummyClient:
+        async def get(self, *args, **kwargs):
+            raise RuntimeError("httpx blocked")
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            pass
+
+    class DummyState:
+        async def update_feeds(self, **kwargs):
+            return None
+
+    feed = MacroFeed(DummyState())
+
+    import subprocess as _sp
+    from types import SimpleNamespace
+
+    def fake_run(cmd, **kwargs):
+        return SimpleNamespace(returncode=0, stdout="DATE,VALUE\n2026-01-01,4.25\n")
+
+    monkeypatch.setattr("feeds.macro.subprocess.run", fake_run)
+    # Also patch httpx.AsyncClient so the fresh client created inside _fetch_fred_csv fails
+    import feeds.macro as macro_module
+    monkeypatch.setattr(macro_module.httpx, "AsyncClient", lambda **kwargs: DummyClient())
+
+    import asyncio
+    result = asyncio.run(feed._fetch_fred_csv(DummyClient(), "DFEDTARL"))
+    assert "2026-01-01,4.25" in result

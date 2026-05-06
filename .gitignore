@@ -5,3 +5,8 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+bot.log
+bot.pid
+logs/
+.claude/
+.mypy_cache/

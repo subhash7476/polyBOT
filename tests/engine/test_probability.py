@@ -1,11 +1,27 @@
 import pytest
 from datetime import datetime, timezone, timedelta
+from unittest.mock import MagicMock
 from market.state import FeedState
 from engine.contract_parser import ParsedContract
 from engine.probability import (
     days_to_expiry, lognormal_prob_above,
     build_model_probability,
+    build_microstructure_probability,
 )
+
+
+def make_feeds(btc_dvol=None, btc_price=None, btc_funding_rate=None,
+               dxy=None, dxy_confidence=0.0, dxy_trend=None,
+               fed_may_cut_prob=None, fed_confidence=0.0) -> FeedState:
+    fs = FeedState(dxy=dxy, dxy_confidence=dxy_confidence, dxy_trend=dxy_trend,
+                   fed_may_cut_prob=fed_may_cut_prob, fed_confidence=fed_confidence)
+    if btc_dvol is not None:
+        fs.dvol["BTC"] = btc_dvol
+    if btc_price is not None:
+        fs.spot_prices["BTC"] = btc_price
+    if btc_funding_rate is not None:
+        fs.funding_rates["BTC"] = btc_funding_rate
+    return fs
 
 
 def make_contract(asset="BTC", direction="above", target=90000.0,
@@ -69,7 +85,7 @@ def test_lognormal_invalid_inputs_return_half():
 # --- build_model_probability ---
 
 def test_returns_tuple_of_three():
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = make_contract()
     result = build_model_probability(contract, feeds, {"dvol_lognormal": 0.30})
     assert isinstance(result, tuple) and len(result) == 3
@@ -77,14 +93,14 @@ def test_returns_tuple_of_three():
 
 def test_returns_engine_as_third_element():
     from engine.bayesian import BayesianEngine
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = make_contract()
     _, _, engine = build_model_probability(contract, feeds, {"dvol_lognormal": 0.30})
     assert isinstance(engine, BayesianEngine)
 
 
 def test_no_feeds_returns_prior_and_zero_signals():
-    feeds = FeedState()  # all None
+    feeds = FeedState()  # all empty
     contract = make_contract()
     prob, count, _ = build_model_probability(contract, feeds, {})
     assert abs(prob - 0.5) < 0.01
@@ -92,7 +108,7 @@ def test_no_feeds_returns_prior_and_zero_signals():
 
 
 def test_missing_expiry_returns_prior():
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = ParsedContract(token_id="t", question="q",
                                asset="BTC", direction="above",
                                target_price=90000.0, expiry=None)
@@ -102,7 +118,7 @@ def test_missing_expiry_returns_prior():
 
 
 def test_missing_target_returns_prior():
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = make_contract()
     contract.target_price = None
     prob, count, _ = build_model_probability(contract, feeds, {})
@@ -110,34 +126,88 @@ def test_missing_target_returns_prior():
     assert count == 0
 
 
-def test_dvol_signal_fires_with_full_feeds():
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0)
+def test_dvol_lognormal_always_added_as_signal():
+    """dvol_lognormal is added as a signal whenever spot is available,
+    so extreme markets can pass the strong-prior + 1 signal filter exception."""
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0)
     contract = make_contract(target=90000.0, expiry_days=30)
     prob, count, engine = build_model_probability(
         contract, feeds, {"dvol_lognormal": 0.30}
     )
     assert count >= 1
+    assert prob != 0.5
     assert 0 < prob < 1
+    assert any(s.name == "dvol_lognormal" for s in engine.active_signals)
+
+
+def test_dvol_lognormal_fires_with_fallback_sigma_when_dvol_missing():
+    """Without live DVOL, dvol_lognormal still fires at 0.5 confidence using 80% fallback."""
+    feeds = make_feeds(btc_dvol=None, btc_price=84000.0)
+    contract = make_contract(target=90000.0, expiry_days=30)
+    prob, count, engine = build_model_probability(
+        contract, feeds, {"dvol_lognormal": 0.30}
+    )
+    assert count >= 1
+    sig = next(s for s in engine.active_signals if s.name == "dvol_lognormal")
+    assert sig.confidence == 0.5  # reduced confidence for fallback
 
 
 def test_funding_signal_fires_with_funding_rate():
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0, btc_funding_rate=0.0005)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0, btc_funding_rate=0.0005)
     contract = make_contract()
     _, count, _ = build_model_probability(
         contract, feeds, {"dvol_lognormal": 0.30, "funding_rate": 0.15}
     )
-    assert count >= 2
+    # dvol_lognormal is the prior; funding_rate is 1 signal
+    assert count >= 1
 
 
 def test_macro_signal_uses_dxy_confidence():
-    # dxy_confidence=0 → signal contributes nothing
-    feeds = FeedState(btc_dvol=60.0, btc_price=84000.0,
-                      dxy=105.0, dxy_confidence=0.0, dxy_trend=0.02)
-    feeds_full = FeedState(btc_dvol=60.0, btc_price=84000.0,
-                           dxy=105.0, dxy_confidence=1.0, dxy_trend=0.02)
+    feeds = make_feeds(btc_dvol=60.0, btc_price=84000.0,
+                       dxy=105.0, dxy_confidence=0.0, dxy_trend=0.02)
+    feeds_full = make_feeds(btc_dvol=60.0, btc_price=84000.0,
+                             dxy=105.0, dxy_confidence=1.0, dxy_trend=0.02)
     contract = make_contract()
     weights = {"dvol_lognormal": 0.30, "macro_dxy": 0.10}
     prob_no_conf, _, _ = build_model_probability(contract, feeds, weights)
     prob_full, _, _ = build_model_probability(contract, feeds_full, weights)
-    # With zero confidence the DXY signal contributes nothing
     assert prob_no_conf != prob_full
+
+
+# --- build_microstructure_probability ---
+
+def test_microstructure_probability_uses_market_mid_as_prior():
+    """Mid=0.65 → prior=0.65, no signals added → prob≈0.65, signal_count=0."""
+    from engine.bayesian import BayesianEngine
+    contract = make_contract(category="election")
+    contract_state = MagicMock()
+    contract_state.mid = 0.65
+
+    prob, count, engine = build_microstructure_probability(contract, contract_state, {})
+
+    assert isinstance(engine, BayesianEngine)
+    assert count == 0
+    assert abs(prob - 0.65) < 0.01
+
+
+def test_microstructure_probability_clips_extreme_mid():
+    """mid=0.0 clips to 0.05; mid=1.0 clips to 0.95."""
+    contract = make_contract(category="event")
+
+    cs_low = MagicMock()
+    cs_low.mid = 0.0
+    prob_low, _, _ = build_microstructure_probability(contract, cs_low, {})
+    assert abs(prob_low - 0.05) < 0.01
+
+    cs_high = MagicMock()
+    cs_high.mid = 1.0
+    prob_high, _, _ = build_microstructure_probability(contract, cs_high, {})
+    assert abs(prob_high - 0.95) < 0.01
+
+
+def test_microstructure_probability_returns_three_tuple():
+    contract = make_contract(category="unknown")
+    contract_state = MagicMock()
+    contract_state.mid = 0.50
+    result = build_microstructure_probability(contract, contract_state, {})
+    assert isinstance(result, tuple) and len(result) == 3

@@ -38,25 +38,54 @@ def calculate_ev(
     slippage: SlippageEstimate,
     payout: float = 1.0,
     ev_multiplier: float = 1.0,
+    fees_enabled: bool = True,
 ) -> tuple[float, str]:
     """
     EV with slippage-adjusted entry price + spread penalty + adverse selection penalty.
     Returns (ev, side).
+    fees_enabled=False for negRisk weather markets (feesEnabled=False on Polymarket).
     """
-    side, mid_price = get_trade_direction(model_prob, market_price)
+    side, _ = get_trade_direction(model_prob, market_price)
     effective_prob = model_prob if side == "BUY_YES" else (1 - model_prob)
 
-    # Spread penalty: half the distance from mid to adjusted entry (crossing the spread)
-    spread_penalty = abs(slippage.adjusted_price - mid_price) / 2
-
+    fee = POLYMARKET_FEE if fees_enabled else 0.0
     cost = (
-        slippage.adjusted_price
-        + POLYMARKET_FEE
-        + spread_penalty
+        slippage.adjusted_price * (1 + fee)
         + ADVERSE_SELECTION_PENALTY
     )
     ev = (effective_prob * payout) - cost
     return ev, side
+
+
+def passes_divergence_guard(
+    model_prob: float,
+    market_price: float,
+    signal_count: int,
+    category: str,
+) -> tuple[bool, str]:
+    """
+    Reject trades where model and market disagree by more than the category
+    threshold and signal diversity is low.
+
+    A large gap with a single signal almost always means the model is wrong,
+    not the market. Applied to both weather and crypto.
+    """
+    divergence = abs(model_prob - market_price)
+    if category == "weather":
+        if divergence > 0.35 and signal_count < 2:
+            return False, (
+                f"weather divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
+                f"= {divergence:.3f} > 0.35 with only {signal_count} signal(s)"
+            )
+    elif category == "crypto":
+        # Crypto Up/Down market makers are sophisticated. A >40pp gap almost
+        # always means the market has already priced in the move.
+        if divergence > 0.40 and signal_count < 2:
+            return False, (
+                f"crypto divergence guard: |model={model_prob:.3f} - market={market_price:.3f}| "
+                f"= {divergence:.3f} > 0.40 with only {signal_count} signal(s)"
+            )
+    return True, "ok"
 
 
 def should_enter(
@@ -67,6 +96,13 @@ def should_enter(
     effective_threshold = config.MIN_EV_THRESHOLD * ev_multiplier
     if not slippage.tradeable:
         return False, "market too thin"
+    # Reject near-resolved markets on both ends of the price range.
+    # Sub-floor entry (e.g. NO at 0.15¢) produces degenerate EV arithmetic.
+    # Above-ceiling entry (e.g. YES at 0.98) is the symmetric case.
+    if slippage.adjusted_price < config.MIN_ENTRY_PRICE:
+        return False, f"entry price {slippage.adjusted_price:.4f} < floor {config.MIN_ENTRY_PRICE}"
+    if slippage.adjusted_price > config.MAX_ENTRY_PRICE:
+        return False, f"entry price {slippage.adjusted_price:.4f} > ceiling {config.MAX_ENTRY_PRICE}"
     if ev < effective_threshold:
         return False, f"EV {ev:.3f} < threshold {effective_threshold:.3f}"
     return True, f"EV={ev:.3f} slippage={slippage.slippage_pct:.2%}"

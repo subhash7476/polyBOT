@@ -7,18 +7,170 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
+# ── Weather market detection ────────────────────────────────────────────────
+_WEATHER_RE = re.compile(
+    r'\bhighest\s+temperature\b|\blowest\s+temperature\b|\bhigh\s+temp\b'
+    r'|\bdegrees?\s*(?:fahrenheit|celsius|[°]?[fFcC])\b'
+    r'|\btemperature\b.*(?:above|below|between|exceed|reach)\b',
+    re.IGNORECASE,
+)
+
+_WEATHER_CITY_MAP: dict = {
+    "new york city": "nyc",
+    "new york":      "nyc",
+    "nyc":           "nyc",
+    "chicago":       "chicago",
+    "miami":         "miami",
+    "dallas":        "dallas",
+    "seattle":       "seattle",
+    "atlanta":       "atlanta",
+    "london":        "london",
+    "paris":         "paris",
+    "munich":        "munich",
+    "ankara":        "ankara",
+    "seoul":         "seoul",
+    "tokyo":         "tokyo",
+    "shanghai":      "shanghai",
+    "singapore":     "singapore",
+    "lucknow":       "lucknow",
+    "tel aviv":      "tel-aviv",
+    "tel-aviv":      "tel-aviv",
+    "toronto":       "toronto",
+    "sao paulo":     "sao-paulo",
+    "são paulo":     "sao-paulo",
+    "buenos aires":  "buenos-aires",
+    "wellington":    "wellington",
+    # Additional cities active on Polymarket weather markets
+    "hong kong":     "hong-kong",
+    "beijing":       "beijing",
+    "shenzhen":      "shenzhen",
+    "chongqing":     "chongqing",
+    "taipei":        "taipei",
+    "milan":         "milan",
+    "madrid":        "madrid",
+    "warsaw":        "warsaw",
+    "austin":        "austin",
+    "denver":        "denver",
+    "houston":       "houston",
+    "los angeles":   "los-angeles",
+    "san francisco": "san-francisco",
+}
+
+
+def _detect_weather_city(q: str) -> Optional[str]:
+    for name, slug in sorted(_WEATHER_CITY_MAP.items(), key=lambda x: -len(x[0])):
+        if re.search(r'\b' + re.escape(name) + r'\b', q, re.IGNORECASE):
+            return slug
+    return None
+
+
 PRICE_PATTERNS = [
-    r"\$([0-9,]+(?:\.[0-9]+)?)[kK]?",         # $85k, $85,000, $85000, $3,500.50
+    r"\$([0-9,]+(?:\.[0-9]+)?)[mMkK]?",        # $1m, $85k, $85,000, $3,500.50
     r"([0-9,]+(?:\.[0-9]+)?)[kK]\s*(?:USD|USDT|dollars)?",  # 85k USD
 ]
 EXPIRY_MONTHS = {
     "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
     "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
 }
-SUPPORTED_ASSETS = ["btc", "bitcoin", "eth", "ethereum"]
+MACRO_KEYWORDS: dict = {
+    "consumer price": "CPI", "cpi": "CPI", "inflation": "CPI",
+    "unemployment": "UNEMPLOYMENT", "jobless": "UNEMPLOYMENT",
+    "nonfarm": "NFP", "non-farm": "NFP", "payroll": "NFP",
+    "gross domestic": "GDP", "gdp": "GDP",
+}
+
+ASSET_ALIASES: dict = {
+    "btc": "BTC", "bitcoin": "BTC",
+    "eth": "ETH", "ethereum": "ETH",
+    "sol": "SOL", "solana": "SOL",
+    "xrp": "XRP", "ripple": "XRP",
+    "bnb": "BNB", "binance coin": "BNB",
+    "doge": "DOGE", "dogecoin": "DOGE",
+    "ada": "ADA", "cardano": "ADA",
+    "avax": "AVAX", "avalanche": "AVAX",
+    "hype": "HYPE", "hyperliquid": "HYPE",
+}
 DIRECTION_ABOVE = ["above", "over", "exceed", "higher than", "hit", "reach", ">"]
 DIRECTION_BELOW = ["below", "under", "drop", "fall below", "<"]
-RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]
+# Use word-boundary regex to avoid false positives: "rate" in "operate",
+# "fed" in "federal"/"fedotov", "hike" in valid non-rate contexts.
+_RATE_RE = re.compile(
+    r'\bfed\b|\brates?\b|\bfomc\b|\bbps\b|\bbasis\s+points\b|\bcut\s+rates\b|\bhike\b',
+    re.IGNORECASE,
+)
+RATE_KEYWORDS = ["fed", "rate", "fomc", "basis points", "bps", "cut rates", "hike"]  # kept for reference
+_ELECTION_RE = re.compile(
+    r'\belection\b|\bmidterm\b|\bprimary\b|\bpresidential\b|\bsenate\b|\bhouse\s+race\b|\bballot\b|\bvote\b|\bcandidate\b',
+    re.IGNORECASE,
+)
+_EVENT_RE = re.compile(
+    r'\bby\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?'
+    r'|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|\d{4}|q[1-4])\b'
+    r'|\bby\s+end\s+of\b|\bapproved?\b|\bpassed?\b|\blaunched?\b|\breleased?\b',
+    re.IGNORECASE,
+)
+
+_SPORTS_RE = re.compile(
+    r'\b(?:nba|nfl|nhl|mlb|mls|ufc|pga|atp|wta|fifa|epl|la\s?liga|serie\s?a|bundesliga|ligue\s?1'
+    r'|super\s?bowl|world\s?series|stanley\s?cup|champions\s?league|world\s?cup|march\s?madness'
+    r'|playoffs?|championship|finals?|semifinals?'
+    r'|lakers|celtics|warriors|knicks|nets|bulls|heat|bucks|76ers|suns|mavericks|nuggets|cavaliers|clippers'
+    r'|chiefs|eagles|49ers|cowboys|bills|ravens|lions|packers|bears|dolphins|jets|steelers|bengals|rams'
+    r'|yankees|dodgers|braves|astros|phillies|mets|padres|orioles|rangers|red\s?sox|cubs|guardians'
+    r'|real\s?madrid|barcelona|manchester|liverpool|arsenal|chelsea|bayern|juventus|inter\s?milan|psg'
+    r')\b'
+    r'|\b(?:beat|defeat|advance|eliminate|sweep|upset)\b.*\b(?:game|match|series|round)\b',
+    re.IGNORECASE,
+)
+
+# Questions that look like crypto but aren't price threshold markets
+_SKIP_PATTERNS = ["fdv", "market cap", "megaeth", "fully diluted"]
+
+# Short-dated crypto direction markets: "Will BTC go up in the next 5 minutes?"
+_SHORT_DATED_RE = re.compile(
+    r'(?:will\s+)?(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax|hyperliquid|hype)'
+    r'\s+(?:price\s+)?(?:go\s+)?(up|down|increase|decrease|rise|fall).*?'
+    r'(?:next|in(?:\s+the\s+next)?)\s+(\d+)?\s*(min(?:ute)?s?|hour|hours?)',
+    re.IGNORECASE,
+)
+
+# "Bitcoin Up or Down - March 30, 11:35AM-11:40AM ET"  (range: 5-min, 1-hr, 4-hr blocks)
+# "Bitcoin Up or Down - March 30, 2PM ET"              (hourly — single hour, no end time)
+_UP_OR_DOWN_RANGE_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|'
+    r'cardano|ada|avalanche|avax|hyperliquid|hype)'
+    r'\s+up\s+or\s+down\s*[-–]\s*'
+    r'(?:\w+\s+\d+,?\s*)?'                                   # optional "March 30,"
+    r'(\d{1,2}):(\d{2})\s*([ap]m)\s*-\s*(\d{1,2}):(\d{2})\s*([ap]m)',
+    re.IGNORECASE,
+)
+_UP_OR_DOWN_HOURLY_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|'
+    r'cardano|ada|avalanche|avax|hyperliquid|hype)'
+    r'\s+up\s+or\s+down\s*[-–]\s*'
+    r'(?:\w+\s+\d+,?\s*)?'                                   # optional "March 30,"
+    r'(\d{1,2})\s*([ap]m)\s*et',
+    re.IGNORECASE,
+)
+
+# "Bitcoin all time high by March 31, 2026?"
+_ATH_RE = re.compile(
+    r'(bitcoin|btc|ethereum|eth|solana|sol|xrp|ripple|bnb|doge|dogecoin|cardano|ada|avalanche|avax)'
+    r'\s+all.?time\s+high\s+by',
+    re.IGNORECASE,
+)
+
+# Approximate all-time-high prices (updated March 2026)
+_ASSET_ATH: dict = {
+    "BTC": 109_000.0,
+    "ETH":   4_868.0,
+    "SOL":     295.0,
+    "XRP":     3.84,
+    "BNB":   793.0,
+    "DOGE":    0.74,
+    "ADA":     3.10,
+    "AVAX":   146.0,
+}
 
 
 @dataclass
@@ -26,30 +178,245 @@ class ParsedContract:
     token_id: str
     question: str
     asset: Optional[str] = None         # "BTC" | "ETH" | None
-    direction: Optional[str] = None     # "above" | "below" | None
+    direction: Optional[str] = None     # "above" | "below" | "exactly" | None
     target_price: Optional[float] = None
     expiry: Optional[datetime] = None
-    category: str = "crypto"            # "crypto" | "rates" | "unknown"
+    category: str = "crypto"            # "crypto" | "rates" | "macro" | "unknown"
     parseable: bool = True
+    cut_count: Optional[int] = None     # for "exactly N cuts" rate markets
+    T_days: Optional[float] = None      # for short-dated markets; overrides expiry-derived T
+    strategy_type: str = "directional"  # "directional" | "crypto_fast"
 
 
 def parse_contract(token_id: str, question: str) -> ParsedContract:
     q = question.lower()
     contract = ParsedContract(token_id=token_id, question=question)
 
-    # 1. Rate contracts — detect early, return without asset/direction parsing
-    if any(kw in q for kw in RATE_KEYWORDS):
+    # 0. Weather markets — detect before crypto/macro to avoid misclassification
+    if _WEATHER_RE.search(q):
+        city_slug = _detect_weather_city(q)
+        if city_slug:
+            contract.category = "weather"
+            contract.asset = city_slug
+            contract.direction = "bucket"
+            contract.parseable = True
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"weather market: {q[:60]}")
+            return contract
+
+    # 0b. "Bitcoin Up or Down - March 30, 11:35AM-11:40AM ET"  (range format)
+    m = _UP_OR_DOWN_RANGE_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset:
+            def _to_minutes(h: str, mi: str, ap: str) -> int:
+                hh = int(h) % 12
+                if ap.lower() == "pm":
+                    hh += 12
+                return hh * 60 + int(mi)
+            start_min = _to_minutes(m.group(2), m.group(3), m.group(4))
+            end_min   = _to_minutes(m.group(5), m.group(6), m.group(7))
+            window_min = max(end_min - start_min, 5)
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = None
+            contract.T_days = window_min / 1440.0
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "crypto_fast"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"up_or_down range: {q[:60]} window={window_min}min")
+            return contract
+
+    # 0c. "Bitcoin Up or Down - March 30, 2PM ET"  (hourly format — no end time)
+    m = _UP_OR_DOWN_HOURLY_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset:
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = None
+            contract.T_days = 1.0 / 24.0   # 1-hour window
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "crypto_fast"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"up_or_down hourly: {q[:60]}")
+            return contract
+
+    # 0d. "Bitcoin all time high by March 31, 2026?"
+    m = _ATH_RE.search(q)
+    if m:
+        asset = ASSET_ALIASES.get(m.group(1).lower())
+        if asset and asset in _ASSET_ATH:
+            contract.asset = asset
+            contract.direction = "above"
+            contract.target_price = _ASSET_ATH[asset]
+            contract.category = "crypto"
+            contract.parseable = True
+            contract.strategy_type = "directional"
+            contract.expiry = _parse_expiry(question)
+            log.debug(f"ath market: {q[:60]} target={_ASSET_ATH[asset]}")
+            return contract
+
+    # 1. Rate contracts — detect early, extract direction/target/expiry
+    if _RATE_RE.search(q):
         contract.category = "rates"
         contract.asset = None
+
+        # Annual cut-count markets: "Will N Fed rate cuts happen in 2026?"
+        # "Will no Fed rate cuts happen in 2026?"
+        no_cuts = re.search(r"\bno\b.*\bfed\b.*\bcut|no fed rate cuts", q)
+        n_cuts = re.search(r"will\s+(\d+)\s+fed\s+rate\s+cut", q)
+        if no_cuts:
+            contract.direction = "exactly"
+            contract.cut_count = 0
+            contract.target_price = 0.0
+        elif n_cuts:
+            contract.direction = "exactly"
+            contract.cut_count = int(n_cuts.group(1))
+            contract.target_price = float(contract.cut_count)
+        elif re.search(r"\d+\s+or\s+more\s+fed\s+rate\s+cut", q):
+            m = re.search(r"(\d+)\s+or\s+more", q)
+            contract.direction = "above"
+            contract.cut_count = int(m.group(1)) if m else None
+            contract.target_price = float(contract.cut_count) if contract.cut_count else None
+        else:
+            # Single-meeting markets: direction based on cut/hike/hold keywords
+            if any(w in q for w in ["cut", "lower", "reduce", "ease", "decrease"]):
+                contract.direction = "below"
+            elif any(w in q for w in ["hike", "raise", "increase", "tighten"]):
+                contract.direction = "above"
+            elif any(w in q for w in ["hold", "steady", "unchanged", "no change", "no rate change", "pause", "maintain"]):
+                contract.direction = "hold"
+            elif "above" in q:
+                contract.direction = "above"
+            elif "below" in q:
+                contract.direction = "below"
+
+            # Target: bps first, then percentage
+            bps_match = re.search(r"(\d+)\s*(?:basis points|bps|bp)", q)
+            if bps_match:
+                contract.target_price = float(bps_match.group(1))
+            else:
+                pct_match = re.search(r"(\d+\.?\d*)\s*%", q)
+                if pct_match:
+                    contract.target_price = float(pct_match.group(1))
+
+        # Expiry
+        contract.expiry = _parse_expiry(question)
+        if not contract.expiry:
+            now = datetime.now(timezone.utc)
+            last_day = calendar.monthrange(now.year, now.month)[1]
+            contract.expiry = now.replace(day=last_day, hour=23, minute=59, second=0, microsecond=0)
+
+        contract.parseable = (contract.direction is not None)
         return contract
 
-    # 2. Detect asset
-    if "bitcoin" in q or "btc" in q:
-        contract.asset = "BTC"
-    elif "ethereum" in q or "eth" in q:
-        contract.asset = "ETH"
+    # 2. Macro contracts (CPI, GDP, unemployment) — detect before crypto
+    for keyword in sorted(MACRO_KEYWORDS, key=len, reverse=True):
+        if keyword in q:
+            contract.category = "macro"
+            contract.asset = MACRO_KEYWORDS[keyword]
+            pct_match = re.search(r"(\d+\.?\d*)\s*%", q)
+            if pct_match:
+                contract.target_price = float(pct_match.group(1))
+            else:
+                # Try plain number (e.g. "200,000 payrolls")
+                num_match = re.search(r"(\d[\d,]*)", q)
+                if num_match:
+                    contract.target_price = float(num_match.group(1).replace(",", ""))
+            for word in DIRECTION_ABOVE:
+                if word in q:
+                    contract.direction = "above"
+                    break
+            if not contract.direction:
+                for word in DIRECTION_BELOW:
+                    if word in q:
+                        contract.direction = "below"
+                        break
+            contract.expiry = _parse_expiry(question)
+            if not contract.expiry:
+                now = datetime.now(timezone.utc)
+                last_day = calendar.monthrange(now.year, now.month)[1]
+                contract.expiry = now.replace(day=last_day, hour=23, minute=59, second=0, microsecond=0)
+            contract.parseable = (contract.direction is not None and contract.target_price is not None)
+            return contract
+
+    # 2b. Sports markets — detect before election/event catch-alls
+    if _SPORTS_RE.search(q):
+        contract.category = "sports"
+        contract.parseable = True
+        log.debug(f"sports market: {question[:60]}")
+        return contract
+
+    # 2c. Election/political markets
+    if _ELECTION_RE.search(q) and any(w in q for w in ["win", "lose", "elected", "wins"]):
+        contract.category = "election"
+        contract.direction = "yes"
+        contract.expiry = _parse_expiry(question)
+        if not contract.expiry:
+            now = datetime.now(timezone.utc)
+            contract.expiry = now.replace(month=12, day=31, hour=23, minute=59, second=0, microsecond=0)
+        contract.parseable = True
+        log.debug(f"election market: {question[:60]}")
+        return contract
+
+    # 2d. Deadline/event markets ("Will X happen by DATE?")
+    # Approval/launch keywords take priority even if an asset alias is present.
+    # Exclude price-threshold questions (above/below/reach/exceed) without approval keywords,
+    # so unknown-asset price markets remain unparseable.
+    _is_approval_event = re.search(r'\bapproved?\b|\bpassed?\b|\blaunched?\b|\breleased?\b', q, re.IGNORECASE)
+    _has_price_direction = any(w in q for w in DIRECTION_ABOVE + DIRECTION_BELOW)
+    if _EVENT_RE.search(q) and (_is_approval_event or (not any(alias in q for alias in ASSET_ALIASES) and not _has_price_direction)):
+        expiry = _parse_expiry(question)
+        if expiry:
+            contract.category = "event"
+            contract.direction = "yes"
+            contract.expiry = expiry
+            contract.parseable = True
+            log.debug(f"event/deadline market: {question[:60]}")
+            return contract
+
+    # 2e. Short-dated crypto direction markets ("Will BTC go up in the next 5 minutes?")
+    sd_match = _SHORT_DATED_RE.search(q)
+    if sd_match:
+        raw_asset, raw_direction, raw_count, raw_unit = sd_match.group(1), sd_match.group(2), sd_match.group(3), sd_match.group(4)
+        contract.asset = ASSET_ALIASES.get(raw_asset.lower(), raw_asset.upper())
+        contract.direction = "above" if raw_direction.lower() in ("up", "increase", "rise") else "below"
+        contract.category = "crypto"
+        contract.target_price = None
+        count = int(raw_count) if raw_count else 1
+        unit = raw_unit.lower()
+        if unit.startswith("min"):
+            contract.T_days = count / 1440
+        else:  # hour(s)
+            contract.T_days = count / 24
+        contract.parseable = True
+        log.debug(f"short-dated crypto direction market: {question[:60]}")
+        return contract
+
+    # 3. Skip non-price-threshold crypto questions (FDV, market cap, token launches)
+    if any(pat in q for pat in _SKIP_PATTERNS):
+        contract.parseable = False
+        log.debug(f"skip (non-price market): {question[:60]}")
+        return contract
+
+    # 4. Detect asset — try multi-word aliases first (longer first to avoid partial matches)
+    # Use word-boundary matching to avoid false positives like "sol" in "resolution"
+    for alias in sorted(ASSET_ALIASES, key=len, reverse=True):
+        if re.search(r'\b' + re.escape(alias) + r'\b', q, re.IGNORECASE):
+            contract.asset = ASSET_ALIASES[alias]
+            break
 
     if not contract.asset:
+        # Generic binary catch-all — "Will X happen?" → route through microstructure path
+        if re.search(r'\bwill\b.*\?', q, re.IGNORECASE):
+            contract.category = "event"
+            contract.direction = "yes"
+            contract.parseable = True
+            log.debug(f"generic binary market: {question[:60]}")
+            return contract
         contract.parseable = False
         log.debug(f"skip (no asset): {question[:60]}")
         return contract
@@ -76,8 +443,11 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         if match:
             raw = match.group(1).replace(",", "")
             value = float(raw)
-            if "k" in match.group(0).lower():
-                value *= 1000
+            suffix = match.group(0).lower()
+            if "m" in suffix:
+                value *= 1_000_000
+            elif "k" in suffix:
+                value *= 1_000
             contract.target_price = value
             break
 
@@ -101,9 +471,22 @@ def _parse_expiry(question: str) -> Optional[datetime]:
     q = question.lower()
     now = datetime.now(timezone.utc)
 
+    # Quarter patterns: "Q1 2026", "Q2 2025", etc.
+    quarter_match = re.search(r'\bq([1-4])\s+(\d{4})\b', q, re.IGNORECASE)
+    if quarter_match:
+        quarter = int(quarter_match.group(1))
+        year = int(quarter_match.group(2))
+        # Last month of the quarter: Q1→Mar(3), Q2→Jun(6), Q3→Sep(9), Q4→Dec(12)
+        month = quarter * 3
+        last_day = calendar.monthrange(year, month)[1]
+        return datetime(year, month, last_day, 23, 59, tzinfo=timezone.utc)
+
     for month_str, month_num in EXPIRY_MONTHS.items():
         if month_str in q:
-            year = now.year if month_num >= now.month else now.year + 1
+            # Always use current year. Past-month dates → past datetime → expired correctly.
+            # Pushing past months to now.year+1 caused "February 24" in March 2026 to
+            # become Feb 24 2027, making stale fast markets appear far-future.
+            year = now.year
             day_match = re.search(rf"{month_str}\w*\s+(\d{{1,2}})", q)
             day = int(day_match.group(1)) if day_match else 28
             try:

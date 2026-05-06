@@ -54,52 +54,74 @@ def build_model_probability(
     Returns (model_prob, signal_count, engine).
     engine is returned for signal_filter.passes_signal_filter() in main.py.
     """
-    engine = BayesianEngine(prior=0.5)
-
     if contract.expiry is None or contract.target_price is None:
+        engine = BayesianEngine(prior=0.5)
         return 0.5, 0, engine
 
     T = days_to_expiry(contract.expiry)
     up = contract.direction == "above"
+    asset = contract.asset  # e.g. "BTC", "SOL", "XRP"
 
-    spot = feeds.btc_price if contract.asset == "BTC" else feeds.eth_price
-    dvol = feeds.btc_dvol   if contract.asset == "BTC" else feeds.eth_dvol
+    # Generic per-asset lookup from FeedState dictionaries
+    spot = feeds.spot_prices.get(asset)
+    asset_dvol = feeds.dvol.get(asset)
 
-    # Signal 1: DVOL log-normal probability
-    if spot and dvol and contract.target_price:
-        lnorm_prob = lognormal_prob_above(spot, contract.target_price, dvol / 100, T)
-        strength = (lnorm_prob - 0.5) * 2
-        if not up:
-            strength = -strength
-        # Confidence grows with time to expiry (more room to move)
-        conf = min(1.0, T / 30)
+    # Use lognormal as the analytical prior.  Works with spot alone — falls back
+    # to an 80% annualised vol when DVOL feed is unavailable (Deribit cold start,
+    # Binance futures geo-block, etc.).  Without this, a missing DVOL collapses
+    # every crypto market to prior=0.5 and produces zero tradeable signals.
+    _SIGMA_FALLBACK = 0.80   # conservative annual vol when DVOL not yet available
+    dvol_live = asset_dvol is not None
+    sigma_annual = asset_dvol / 100 if dvol_live else _SIGMA_FALLBACK
+    dvol_confidence = 1.0 if dvol_live else 0.5
+
+    if spot and contract.target_price:
+        lnorm_prob = lognormal_prob_above(spot, contract.target_price, sigma_annual, T)
+        prior = lnorm_prob if up else (1.0 - lnorm_prob)
+        # Clamp away from 0/1 so log-odds remain finite
+        prior = float(np.clip(prior, 0.01, 0.99))
+        log.debug(
+            f"lognormal prior={prior:.4f} spot={spot:.4g} target={contract.target_price} "
+            f"T={T:.1f}d sigma={'live' if dvol_live else 'fallback'}={sigma_annual*100:.0f}%"
+        )
+    else:
+        prior = 0.5
+
+    engine = BayesianEngine(prior=prior)
+
+    # Signal 0: Lognormal model signal — always present when a real lognormal prior
+    # was computed (i.e. spot is available).  Encodes how far the model is from 50%.
+    # Confidence is 1.0 with live DVOL, 0.5 with fallback sigma.
+    if spot and contract.target_price:
         engine.add_signal(Signal(
             name="dvol_lognormal",
-            strength=strength,
+            strength=float(np.clip((prior - 0.5) * 2, -1.0, 1.0)),
             weight=weights.get("dvol_lognormal", 0.30),
-            confidence=conf,
+            confidence=dvol_confidence,
         ))
 
-    # Signal 2: Volatility skew
-    if feeds.btc_vol_skew is not None and contract.asset == "BTC":
-        skew_signal = -np.tanh(feeds.btc_vol_skew / 10)
+    # Signal 1: Volatility skew (per-asset)
+    asset_skew = feeds.vol_skew.get(asset)
+    if asset_skew is not None:
+        skew_signal = -np.tanh(asset_skew / 10)
         engine.add_signal(Signal(
             name="vol_skew",
             strength=skew_signal if up else -skew_signal,
             weight=weights.get("vol_skew", 0.15),
         ))
 
-    # Signal 3: Funding rate (positive funding = crowded longs = mean-revert pressure)
-    if feeds.btc_funding_rate is not None and contract.asset == "BTC":
-        fr_signal = -np.tanh(feeds.btc_funding_rate * 1000)
+    # Signal 2: Funding rate (per-asset; positive = crowded longs = mean-revert pressure)
+    asset_funding = feeds.funding_rates.get(asset)
+    if asset_funding is not None:
+        fr_signal = -np.tanh(asset_funding * 1000)
         engine.add_signal(Signal(
             name="funding_rate",
             strength=fr_signal if up else -fr_signal,
             weight=weights.get("funding_rate", 0.15),
         ))
 
-    # Signal 4: On-chain netflow (negative = outflows = bullish)
-    if feeds.btc_exchange_netflow is not None:
+    # Signal 3: On-chain netflow (BTC-only for now; negative = outflows = bullish)
+    if feeds.btc_exchange_netflow is not None and asset == "BTC":
         netflow_signal = -np.tanh(feeds.btc_exchange_netflow)
         engine.add_signal(Signal(
             name="onchain_netflow",
@@ -107,7 +129,7 @@ def build_model_probability(
             weight=weights.get("onchain_netflow", 0.10),
         ))
 
-    # Signal 5: DXY trend (rising dollar = crypto headwind)
+    # Signal 4: DXY trend (rising dollar = crypto headwind)
     if feeds.dxy_trend is not None and feeds.dxy_confidence > 0:
         dxy_signal = -np.tanh(feeds.dxy_trend * 10)
         engine.add_signal(Signal(
@@ -117,7 +139,7 @@ def build_model_probability(
             confidence=feeds.dxy_confidence,
         ))
 
-    # Signal 6: Fed cut probability (rates contracts only)
+    # Signal 5: Fed cut probability (rates contracts only)
     if feeds.fed_may_cut_prob is not None and contract.category == "rates":
         engine.add_signal(Signal(
             name="fed_cut_prob",
@@ -126,4 +148,37 @@ def build_model_probability(
             confidence=feeds.fed_confidence,
         ))
 
+    # Signal 6: Stablecoin supply trend (slow-moving; applies to all crypto)
+    if feeds.stablecoin_supply_change is not None and contract.category == "crypto":
+        engine.add_signal(Signal(
+            name="stablecoin_supply",
+            strength=feeds.stablecoin_supply_change if up else -feeds.stablecoin_supply_change,
+            weight=weights.get("stablecoin_supply", 0.05),
+        ))
+
+    # Signal 7: BTC hash rate trend (BTC-only; slow-moving)
+    if feeds.btc_hashrate_trend is not None and asset == "BTC":
+        engine.add_signal(Signal(
+            name="btc_hashrate",
+            strength=feeds.btc_hashrate_trend if up else -feeds.btc_hashrate_trend,
+            weight=weights.get("btc_hashrate", 0.05),
+        ))
+
+    return engine.probability, engine.signal_count, engine
+
+
+def build_microstructure_probability(
+    contract: ParsedContract,
+    contract_state,  # ContractState — use market mid as prior
+    weights: dict,
+) -> tuple[float, int, BayesianEngine]:
+    """
+    For markets without feed-based models (election, event, generic binary).
+    Uses current market mid-price as the prior (crowd's estimate),
+    then lets microstructure signals (flatline/OBI/VPD) adjust it.
+    Signal filter will require microstructure signals to disagree with market
+    before generating trades.
+    """
+    prior = float(np.clip(contract_state.mid, 0.05, 0.95))
+    engine = BayesianEngine(prior=prior)
     return engine.probability, engine.signal_count, engine
