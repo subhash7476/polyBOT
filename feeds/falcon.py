@@ -200,7 +200,7 @@ class FalconFeed:
                             if ins.question
                         }
                     self._state.stamp_feed("falcon_insights")
-                    log.info(f"market insights refreshed: {len(insights)} active markets (expired skipped: {n_expired})")
+                    log.info(f"market insights refreshed: {len(insights)} active markets")
             except Exception as exc:
                 log.warning(f"market insights fetch failed: {exc}")
             await asyncio.sleep(config.FALCON_MARKET_INSIGHTS_POLL_INTERVAL)
@@ -262,4 +262,6 @@ class FalconFeed:
                 trade_concentration_flag=bool(r.get("trade_concentration_flag", False)),
                 fetched_at=now,
             ))
+        if n_expired:
+            log.debug(f"skipped {n_expired} expired markets from Falcon insights")
         return insights
