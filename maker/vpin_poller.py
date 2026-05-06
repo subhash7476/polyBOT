@@ -126,6 +126,12 @@ class VPINPoller:
         buf = self._buffers.setdefault(token_id, deque(maxlen=_BUFFER_SIZE))
         buf.extend(reversed(new_trades))  # API returns newest-first; store oldest-first for tick rule
 
+        # Only refresh the cache timestamp when new trades arrived. On quiet markets
+        # the timestamp ages past VPIN_STALE_SECONDS and get_vpin() returns 0.5
+        # (neutral) — preventing stale non-neutral VPIN from persisting indefinitely.
+        if not new_trades:
+            return
+
         raw_vpin = _compute_raw_vpin(list(buf))
         prev_vpin = self._vpin_cache.get(token_id, (0.5, 0.0))[0]
         smoothed = _ema(prev=prev_vpin, raw=raw_vpin)
