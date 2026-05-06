@@ -310,25 +310,16 @@ class QuoteEngine:
                     model_prob, sig_count, _ = build_macro_probability(contract, feeds, SIGNAL_WEIGHTS)
 
                 if model_prob is not None and sig_count > 0:
-                    if contract.category == "weather":
-                        # Weather forecast is the primary signal for temperature bucket markets.
-                        # Blend 70% model, 30% inventory-adjusted fv to anchor directly.
-                        anchor_fv = _clamp(0.70 * model_prob + 0.30 * fv, 0.05, 0.95)
+                    prob_delta = model_prob - cs.mid
+                    # If model deviates from mid, nudge fv toward model (max 3¢)
+                    model_anchor_adj = _clamp(prob_delta, -0.03, 0.03)
+                    anchor_fv = _clamp(fv + model_anchor_adj, 0.05, 0.95)
+                    if abs(model_anchor_adj) >= 0.01:
                         log.debug(
-                            f"weather_anchor [{token_id[:8]}]: mid={cs.mid:.3f} "
-                            f"model={model_prob:.3f} fv→{anchor_fv:.3f}"
+                            f"model_anchor [{token_id[:8]}] cat={contract.category}: "
+                            f"mid={cs.mid:.3f} model={model_prob:.3f} "
+                            f"adj={model_anchor_adj:+.3f} fv={fv:.3f}→{anchor_fv:.3f}"
                         )
-                    else:
-                        prob_delta = model_prob - cs.mid
-                        # If model deviates from mid, nudge fv toward model (max 3¢)
-                        model_anchor_adj = _clamp(prob_delta, -0.03, 0.03)
-                        anchor_fv = _clamp(fv + model_anchor_adj, 0.05, 0.95)
-                        if abs(model_anchor_adj) >= 0.01:
-                            log.debug(
-                                f"model_anchor [{token_id[:8]}] cat={contract.category}: "
-                                f"mid={cs.mid:.3f} model={model_prob:.3f} "
-                                f"adj={model_anchor_adj:+.3f} fv={fv:.3f}→{anchor_fv:.3f}"
-                            )
 
             base_spread = compute_spread(
                 volume_usd=cs.volume_usd,
@@ -372,11 +363,29 @@ class QuoteEngine:
                 eff_fv = anchor_fv
                 eff_spread = spread
 
+            base_size = max(1.0, QUOTE_SIZE_USDC * regime.size_multiplier)
+            # Floor size at min_incentive_size so orders qualify for Liquidity Rewards.
+            # Cap at 200sh to guard against API outliers.
+            if cs.min_incentive_size > 0.0:
+                base_size = max(base_size, min(cs.min_incentive_size, 200.0))
+
+            # Warn once per market when all ladder levels are outside the incentive spread
+            # window — those orders score 0 for Liquidity Rewards (quadratic penalty).
+            if cs.max_incentive_spread > 0.0:
+                tightest_half = eff_spread / 2.0 - LEVEL_STEP
+                if tightest_half > cs.max_incentive_spread:
+                    if token_id not in self._stale_skip_warned:
+                        log.warning(
+                            f"incentive_spread miss [{token_id[:8]}]: "
+                            f"tightest_half={tightest_half:.3f} > max_incentive={cs.max_incentive_spread:.3f} "
+                            f"— all ladder levels score 0 for rewards"
+                        )
+
             ladder = self.build_ladder(
                 token_id=token_id,
                 fair_value=eff_fv,
                 spread=eff_spread,
-                size=max(1.0, QUOTE_SIZE_USDC * regime.size_multiplier),
+                size=base_size,
                 reason="reprice",
             )
 

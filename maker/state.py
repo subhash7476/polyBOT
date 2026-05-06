@@ -14,9 +14,9 @@ class MakerState:
     max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
     max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
 
-    # Optional per-category cap overrides: {"weather": 15.0}.  Falls back to
+    # Optional per-category cap overrides: {"weather": 10.0}.  Falls back to
     # max_inventory_per_market for any category not listed here.
-    category_inventory_caps: dict = field(default_factory=dict)
+    category_inventory_caps: dict = field(default_factory=lambda: {"weather": 10.0})
 
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)
@@ -43,6 +43,10 @@ class MakerState:
 
     # Per-market cooldown: token_id -> resume_at (unix timestamp)
     cooldowns: dict[str, float] = field(default_factory=dict)
+
+    # Per-market inventory-cap hit tracking used for escalating cooldowns.
+    # token_id -> {"count": int, "last_hit": unix timestamp}
+    inventory_cap_hits: dict[str, dict] = field(default_factory=dict)
 
     # Global cooldown: set when total inventory cap fires; blocks ALL quoting
     global_cooldown_until: float = 0.0
@@ -82,9 +86,17 @@ class MakerState:
     # Persistence: fill_ids from today's ledger that have already been applied to inventory
     daily_fills_seen: set = field(default_factory=set)
 
-    # Persistence: per-market P&L for fills during this session only (not replayed)
+    # Persistence: per-market P&L for fills since last UTC midnight (not replayed).
     # token_id → {fills, cash_pnl, realized_pnl, question}
+    # Cleared at UTC midnight so it tracks only today's fills (used for "Today" P&L).
     session_by_market: dict = field(default_factory=dict)
+
+    # Cumulative session totals folded in at each UTC midnight rollover.
+    # Together with session_by_market these give the full-runtime "Session" P&L
+    # that spans uninterrupted across day boundaries without double-counting.
+    session_pre_midnight_fills: int = 0
+    session_pre_midnight_cash: float = 0.0
+    session_pre_midnight_realized: float = 0.0
 
     # Persistence: pre-session snapshot of today's fill ledger (set by MakerStateLoader)
     today_stats: dict = field(default_factory=dict)
