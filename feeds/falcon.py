@@ -189,10 +189,16 @@ class FalconFeed:
                 insights = await self._fetch_market_insights(client)
                 if insights:
                     async with self._state._lock:
-                        for ins in insights:
-                            self._state.feeds.falcon_market_insights[ins.condition_id] = ins
-                            if ins.question:
-                                self._state.feeds.falcon_insights_by_question[ins.question.strip().lower()] = ins
+                        # Replace both dicts atomically so resolved/expired markets
+                        # that the API no longer returns are evicted immediately.
+                        self._state.feeds.falcon_market_insights = {
+                            ins.condition_id: ins for ins in insights
+                        }
+                        self._state.feeds.falcon_insights_by_question = {
+                            ins.question.strip().lower(): ins
+                            for ins in insights
+                            if ins.question
+                        }
                     self._state.stamp_feed("falcon_insights")
                     log.info(f"market insights refreshed: {len(insights)} markets")
             except Exception as exc:
