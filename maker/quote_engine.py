@@ -423,17 +423,24 @@ class QuoteEngine:
                         else: # Short YES (Long NO), need to BUY
                             exit_bid_adj = 0.02
 
-                    new_levels = tuple(
-                        QuoteIntent(
-                            l.token_id, 
-                            round(_clamp(l.bid_price + exit_bid_adj, 0.01, 0.99), 4),
-                            round(_clamp(l.ask_price + exit_ask_adj, 0.01, 0.99), 4),
-                            0.0 if inv > 0 else l.bid_size,
-                            0.0 if inv < 0 else l.ask_size,
-                            reason,
-                        )
-                        for l in ladder.levels
-                    )
+                    # Cap total closing-side volume to abs(inv) so a simultaneous
+                    # sweep of all ladder levels cannot overshoot to the opposite side.
+                    remaining_to_close = abs(inv)
+                    capped_levels: list[QuoteIntent] = []
+                    for l in ladder.levels:
+                        if remaining_to_close <= 0.0:
+                            break
+                        bp = round(_clamp(l.bid_price + exit_bid_adj, 0.01, 0.99), 4)
+                        ap = round(_clamp(l.ask_price + exit_ask_adj, 0.01, 0.99), 4)
+                        if inv > 0:  # long YES — sell to reduce
+                            sz = min(l.ask_size, remaining_to_close)
+                            remaining_to_close -= sz
+                            capped_levels.append(QuoteIntent(l.token_id, bp, ap, 0.0, sz, reason))
+                        else:  # short YES — buy to reduce
+                            sz = min(l.bid_size, remaining_to_close)
+                            remaining_to_close -= sz
+                            capped_levels.append(QuoteIntent(l.token_id, bp, ap, sz, 0.0, reason))
+                    new_levels = tuple(capped_levels)
                     ladder = LadderUpdate(token_id, new_levels, reason)
 
             old_center = self._maker.last_quotes.get(token_id)
