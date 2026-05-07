@@ -132,6 +132,7 @@ class QuoteEngine:
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
         self._stale_skip_warned: set[str] = set()   # markets already warned about bid-range exit
+        self._pre_res_flatten_warned: set[str] = set()  # markets warned about pre-resolution flatten
         self._last_regime_log: float = 0.0           # throttle regime summary to 1/min
 
     @staticmethod
@@ -389,6 +390,23 @@ class QuoteEngine:
                 reason="reprice",
             )
 
+            # Pre-resolution flatten guard: at T-2h any meaningful inventory must close.
+            # Promote to reduce_only regardless of cap or markout — prevents holding
+            # into resolution when there is no time left to recover.
+            PRE_RES_HOURS = 2.0
+            PRE_RES_INV_THRESHOLD = 0.5
+            if (cs.hours_to_resolution <= PRE_RES_HOURS
+                    and abs(inv) > PRE_RES_INV_THRESHOLD
+                    and token_id not in self._maker.reduce_only_markets):
+                self._maker.reduce_only_markets.add(token_id)
+                if token_id not in self._pre_res_flatten_warned:
+                    self._pre_res_flatten_warned.add(token_id)
+                    log.warning(
+                        f"PRE-RESOLUTION FLATTEN [{token_id[:8]}]: "
+                        f"{cs.hours_to_resolution:.2f}h remaining inv={inv:+.2f} "
+                        f"— forcing reduce_only + aggressive_exit"
+                    )
+
             if token_id in self._maker.reduce_only_markets:
                 inv = self._maker.get_inventory(token_id)
                 if inv != 0.0:
@@ -415,7 +433,9 @@ class QuoteEngine:
                     exit_bid_adj = 0.0
                     exit_ask_adj = 0.0
                     
-                    if avg_30s < -0.001:  # -10 bps threshold
+                    # Aggressive exit when markout is negative OR within 2h of resolution —
+                    # at T-2h there is no time to recover, so always cross the spread.
+                    if avg_30s < -0.001 or cs.hours_to_resolution <= PRE_RES_HOURS:
                         reason = "aggressive_exit"
                         # Lean 2¢ into the book to ensure immediate fill
                         if inv > 0: # Long YES, need to SELL
@@ -501,7 +521,8 @@ class QuoteEngine:
                     break
             new_ids = self._active_token_ids - prev_ids
             removed_ids = prev_ids - self._active_token_ids
-            self._stale_skip_warned -= removed_ids   # re-warn if market re-enters and is still stale
+            self._stale_skip_warned -= removed_ids       # re-warn if market re-enters and is still stale
+            self._pre_res_flatten_warned -= removed_ids  # reset so re-entry re-logs the warning
             if removed_ids and self._cancel_q is not None:
                 for _tid in removed_ids:
                     await self._cancel_q.put(CancelAll(_tid))
