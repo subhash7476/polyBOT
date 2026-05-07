@@ -28,7 +28,7 @@ def test_full_pipeline_paper_mode():
                 best_bid=0.40,
                 best_ask=0.60,
                 volume_usd=5_000.0,
-                end_date_iso="2026-05-04T12:00:00Z",
+                end_date_iso="2026-05-14T12:00:00Z",
             )
 
         actors, queues = build_maker_actors(app_state=app_state, paper=True)

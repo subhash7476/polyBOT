@@ -13,7 +13,7 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-_MIN_DAILY_VOLUME = 3_000.0     # widened from 10k to sample broader universe during live-validation
+_MIN_DAILY_VOLUME = 1_000.0     # widened from 3k to sample mid-tier markets where spread > 1¢ still exists
 _MAX_ACTIVE_MARKETS = 30        # focus on best opportunities, not thin spread
 _MIN_SPREAD = 0.01              # widened from 2¢ to 1¢; QuoteEngine.MIN_SPREAD=0.02 still protects edge
 _MIN_BID = 0.10      # exclude near-zero / near-resolved markets (bid < 10¢)
@@ -43,6 +43,10 @@ _TREND_MULT = {
     "Dying Interest": 0.2,   # near-dead market — strongly deprioritise
     "No Trades":      0.05,  # no activity — virtually exclude
 }
+
+_FEE_ENABLED_MULT = 1.08          # fee-enabled markets can pay maker rebates
+_FEE_FREE_MULT = 0.92             # fee-free books can still trade, but no maker rebate
+_INCENTIVE_METADATA_MULT = 1.25   # confirmed reward params deserve selection priority
 
 
 def _get_falcon_insight(
@@ -204,8 +208,9 @@ class MarketSelector:
         markets: dict[str, ContractState],
         max_markets: int = _MAX_ACTIVE_MARKETS,
         feeds: FeedState | None = None,
+        rolling_markouts: "dict[str, dict[int, float]] | None" = None,
     ) -> "OrderedDict[str, ContractState]":
-        """Filter to quotable markets, rank by spread × volume × falcon_score."""
+        """Filter to quotable markets, rank by spread × volume × falcon_score × markout_score."""
         candidates = []
         falcon_log: list[str] = []
 
@@ -278,9 +283,13 @@ class MarketSelector:
             vol_rank = cs.volume_24h if cs.volume_24h > 0 else cs.volume_usd
             base_score = spread * vol_rank
 
-            # #6 Fee multiplier: fee-free markets (negRisk weather) attract takers
-            # with no crossing cost → higher fill probability for the same spread.
-            fee_mult = 1.2 if not cs.fees_enabled else 1.0
+            # #6 Fee/reward multiplier: prefer markets where maker economics are explicit.
+            fee_mult = _FEE_ENABLED_MULT if cs.fees_enabled else _FEE_FREE_MULT
+            incentive_mult = (
+                _INCENTIVE_METADATA_MULT
+                if cs.min_incentive_size > 0.0 and cs.max_incentive_spread > 0.0
+                else 1.0
+            )
 
             # #2 Depth multiplier: thin books mean we're the primary liquidity
             # provider → lower queue competition → higher fill probability.
@@ -294,15 +303,32 @@ class MarketSelector:
                 depth_mult = 1.0   # deep book — competing against many makers
 
             falcon_mult, reason = _falcon_score(cs.condition_id, feeds, question=cs.question)
-            score = base_score * fee_mult * depth_mult * falcon_mult
+
+            # Realized markout multiplier: markets where the bot gets picked off
+            # (negative 30s markout) are deprioritised; positive markout = good flow.
+            # Formula: clamp(1.0 + avg_30s * 100, 0.2, 2.0)
+            #   −1¢ markout (−0.01) → ×0.0 → floored at ×0.2 (strongly deprioritise)
+            #   0¢  markout (0.0)   → ×1.0 (neutral — no data treated the same)
+            #   +1¢ markout (+0.01) → ×2.0 (prioritise — clean flow)
+            markout_mult = 1.0
+            if rolling_markouts is not None:
+                avg_30s = rolling_markouts.get(token_id, {}).get(30, None)
+                if avg_30s is not None:
+                    markout_mult = min(2.0, max(0.2, 1.0 + avg_30s * 100.0))
+
+            score = base_score * fee_mult * incentive_mult * depth_mult * falcon_mult * markout_mult
 
             mults = []
             if fee_mult != 1.0:
-                mults.append(f"fee_free×{fee_mult:.1f}")
+                mults.append(f"fee×{fee_mult:.2f}")
+            if incentive_mult != 1.0:
+                mults.append(f"incentive×{incentive_mult:.2f}")
             if depth_mult != 1.0:
                 mults.append(f"thin_book×{depth_mult:.1f}")
             if falcon_mult != 1.0:
                 mults.append(f"falcon×{falcon_mult:.2f}({reason})")
+            if markout_mult != 1.0:
+                mults.append(f"markout×{markout_mult:.2f}")
             if mults:
                 falcon_log.append(f"{cs.question[:35]}… {' '.join(mults)}")
 
@@ -650,6 +676,60 @@ class MarketSelector:
                 f"backfilled={backfilled} condition_ids on existing markets"
             )
 
+    async def _fetch_incentive_params(self, selected: "OrderedDict[str, ContractState]") -> None:
+        """Fetch min_incentive_size and max_incentive_spread from CLOB API for selected markets.
+
+        Only fetches markets where min_incentive_size == 0.0 (not yet populated).
+        Results are written back onto the ContractState objects under the state lock.
+        API: GET https://clob.polymarket.com/clob-market-info?condition_id=<id>
+        """
+        to_fetch = [
+            (token_id, cs)
+            for token_id, cs in selected.items()
+            if cs.condition_id and cs.min_incentive_size == 0.0
+        ]
+        if not to_fetch:
+            return
+
+        log.info(f"incentive_params: fetching for {len(to_fetch)} markets")
+        fetched = 0
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                for token_id, cs in to_fetch:
+                    try:
+                        resp = await client.get(
+                            "https://clob.polymarket.com/clob-market-info",
+                            params={"condition_id": cs.condition_id},
+                        )
+                        if resp.status_code != 200:
+                            continue
+                        data = resp.json()
+                        raw_min = data.get("min_incentive_size") or data.get("minIncentiveSize")
+                        raw_spread = data.get("max_incentive_spread") or data.get("maxIncentiveSpread")
+                        if raw_min is None and raw_spread is None:
+                            continue
+                        min_size = float(raw_min) if raw_min is not None else 0.0
+                        # API returns spread in cents (e.g. 3 = 3¢); convert to [0,1] space
+                        max_spread = float(raw_spread) / 100.0 if raw_spread is not None else 0.0
+                        async with self._state._lock:
+                            live_cs = self._state.markets.get(token_id)
+                            if live_cs is not None:
+                                live_cs.min_incentive_size = max(0.0, min(min_size, 200.0))
+                                live_cs.max_incentive_spread = max(0.0, min(max_spread, 0.50))
+                        fetched += 1
+                        log.info(
+                            f"incentive_params [{token_id[:8]}] {cs.question[:35]}: "
+                            f"min_size={min_size:.0f}sh max_spread={max_spread*100:.1f}¢"
+                        )
+                    except Exception as exc:
+                        log.debug(f"incentive_params fetch failed [{token_id[:8]}]: {exc}")
+                    await asyncio.sleep(0.12)  # ~8 req/s — well within 200 req/10s limit
+        except Exception as exc:
+            log.warning(f"incentive_params client error: {exc}")
+
+        if fetched:
+            log.info(f"incentive_params: populated {fetched}/{len(to_fetch)} markets")
+
     async def _run_one_cycle(self) -> None:
         """One selection cycle: discover, rank, update state, emit to queue."""
         await self._discover_and_seed()
@@ -658,7 +738,9 @@ class MarketSelector:
             markets = dict(self._state.markets)
             feeds = self._state.feeds
 
-        selected = self.filter_and_rank(markets, feeds=feeds)
+        rolling_markouts = self._maker_state.rolling_markouts if self._maker_state else None
+        selected = self.filter_and_rank(markets, feeds=feeds, rolling_markouts=rolling_markouts)
+        await self._fetch_incentive_params(selected)
         by_cat: dict[str, int] = {}
         for cs in selected.values():
             by_cat[cs.category] = by_cat.get(cs.category, 0) + 1
