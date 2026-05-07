@@ -26,6 +26,8 @@ class MakerDashboardState:
         self.realized_pnl: float = 0.0
         # Total absolute inventory
         self.total_abs_inventory: float = 0.0
+        # USDC currently deployed: sum(abs(inv) * mid) across all open positions
+        self.current_investment: float = 0.0
         # Fill history: deque of fill dicts
         self.fills: deque = deque(maxlen=50)
         # Circuit breaker fires today
@@ -68,6 +70,12 @@ class MakerDashboardState:
         # Arb scanner: total events seen (YES_ask + NO_ask < 1.0) and current live opps
         self.arb_total_events: int = 0
         self.arb_current: list = []
+        # Live P&L by market: markets currently being quoted
+        self.live_positions: list = []
+        # Resolved markets: historical P&L from fill logs
+        self.resolved_markets: list = []
+        # Session P&L by market: all markets with fills this session (sum = session KPIs)
+        self.session_pnl: list = []
 
     def update(self, snapshot: dict) -> None:
         with self._lock:
@@ -90,6 +98,7 @@ class MakerDashboardState:
                 "cash_pnl": self.cash_pnl,
                 "realized_pnl": self.realized_pnl,
                 "total_abs_inventory": self.total_abs_inventory,
+                "current_investment": self.current_investment,
                 "fills": list(self.fills),
                 "cb_fires": self.cb_fires,
                 "n_active_markets": self.n_active_markets,
@@ -115,4 +124,7 @@ class MakerDashboardState:
                 "selected_markets": self.selected_markets,
                 "arb_total_events": self.arb_total_events,
                 "arb_current": self.arb_current,
+                "live_positions": self.live_positions,
+                "resolved_markets": self.resolved_markets,
+                "session_pnl": self.session_pnl,
             })

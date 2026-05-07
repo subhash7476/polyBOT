@@ -65,6 +65,9 @@ async def maker_dashboard_loop(
                 total_cancels = maker_state.total_cancels
                 realized_pnl = maker_state.realized_pnl
                 session_by_market = dict(maker_state.session_by_market)
+                pre_mid_fills = maker_state.session_pre_midnight_fills
+                pre_mid_cash = maker_state.session_pre_midnight_cash
+                pre_mid_realized = maker_state.session_pre_midnight_realized
                 today_stats = dict(maker_state.today_stats)
                 lifetime_stats = dict(maker_state.lifetime_stats)
                 selected_token_ids = set(maker_state.selected_token_ids)
@@ -83,6 +86,13 @@ async def maker_dashboard_loop(
                 for tid, net in inventory.items()
             )
             mtm_pnl = cash_pnl + position_value
+
+            # USDC currently deployed: gross position value at current mid prices
+            current_investment = sum(
+                abs(net) * (markets_snapshot[tid].mid if tid in markets_snapshot else 0.0)
+                for tid, net in inventory.items()
+                if net != 0.0
+            )
 
             # Build active markets list — live_orders[token_id] is list[dict] (ladder levels)
             active_markets = []
@@ -147,20 +157,26 @@ async def maker_dashboard_loop(
                 return f"{s}s" if s < 60 else f"{s // 60}m{s % 60}s"
 
             # ── Three-timeframe P&L ───────────────────────────────────────
-            # SESSION: fills accumulated since process start (session_by_market)
-            sess_fills = sum(m.get("fills", 0) for m in session_by_market.values())
-            sess_cash = sum(m.get("cash_pnl", 0.0) for m in session_by_market.values())
-            sess_realized = sum(m.get("realized_pnl", 0.0) for m in session_by_market.values())
+            # session_by_market holds fills since last UTC midnight only.
+            # pre_mid_* holds fills from earlier in this runtime (folded in at midnight).
+            sbm_fills = sum(m.get("fills", 0) for m in session_by_market.values())
+            sbm_cash = sum(m.get("cash_pnl", 0.0) for m in session_by_market.values())
+            sbm_realized = sum(m.get("realized_pnl", 0.0) for m in session_by_market.values())
+
+            # SESSION: full runtime = pre-midnight totals + today's fills
+            sess_fills = pre_mid_fills + sbm_fills
+            sess_cash = pre_mid_cash + sbm_cash
+            sess_realized = pre_mid_realized + sbm_realized
             sess_position_value = sum(
                 net * (markets_snapshot[tid].mid if tid in markets_snapshot else 0.0)
                 for tid, net in inventory.items()
             )
             sess_mtm = sess_cash + sess_position_value
 
-            # TODAY: pre-session ledger snapshot + session delta
-            today_fills = today_stats.get("fills", 0) + sess_fills
-            today_cash = today_stats.get("cash_pnl", 0.0) + sess_cash
-            today_realized = today_stats.get("realized_pnl", 0.0) + sess_realized
+            # TODAY: pre-session ledger snapshot (fills before this startup) + today's session fills
+            today_fills = today_stats.get("fills", 0) + sbm_fills
+            today_cash = today_stats.get("cash_pnl", 0.0) + sbm_cash
+            today_realized = today_stats.get("realized_pnl", 0.0) + sbm_realized
 
             # ALL TIME: lifetime (days before today) + today
             lt_fills = lifetime_stats.get("total_fills", 0)
@@ -176,6 +192,92 @@ async def maker_dashboard_loop(
                 today_stats.get("by_market", {}),
                 session_by_market,
             )
+
+            # ── Live P&L: markets currently being quoted ──────────────────────────
+            by_market_lookup = {row["token_id"]: row for row in by_market}
+            live_positions = []
+            for token_id, levels in live_orders.items():
+                cs  = markets_snapshot.get(token_id)
+                dl  = _days_left(cs.end_date_iso if cs else None)
+                # Skip if end date clearly passed (resolved)
+                if dl is not None and dl < -0.1:
+                    continue
+                inv      = inventory.get(token_id, 0.0)
+                mid      = cs.mid if cs else 0.0
+                pos_val  = inv * mid
+                tid16    = token_id[:16]
+                row      = by_market_lookup.get(tid16, {})
+                cash     = row.get("alltime_cash_pnl", 0.0)
+                realized = row.get("alltime_realized_pnl", 0.0)
+                center   = levels[len(levels) // 2] if levels else {}
+                live_positions.append({
+                    "token_id":       tid16,
+                    "question":       cs.question[:70] if cs else tid16,
+                    "end_date_iso":   cs.end_date_iso if cs else None,
+                    "days_left":      dl,
+                    "category":       cs.category if cs else None,
+                    "inventory":      round(inv, 2),
+                    "current_mid":    round(mid, 4),
+                    "bid":            round(center.get("bid_price", 0.0), 4),
+                    "ask":            round(center.get("ask_price", 0.0), 4),
+                    "position_value": round(pos_val, 4),
+                    "cash_pnl":       round(cash, 4),
+                    "realized_pnl":   round(realized, 4),
+                    "mtm_pnl":        round(cash + pos_val, 4),
+                })
+            live_positions.sort(key=lambda p: abs(p["mtm_pnl"]), reverse=True)
+
+            # ── Resolved markets: historical P&L from fill logs ────────────────────
+            tid16_to_full    = {tid[:16]: tid for tid in markets_snapshot}
+            live_tid16s      = {tid[:16] for tid in live_orders}
+            resolved_markets = []
+            for row in by_market:
+                tid16    = row["token_id"]
+                if tid16 in live_tid16s:
+                    continue  # still being quoted
+                full_tid = tid16_to_full.get(tid16)
+                cs       = markets_snapshot.get(full_tid) if full_tid else None
+                dl       = _days_left(cs.end_date_iso if cs else None)
+                # Resolved: past end date OR no longer tracked by CLOBMonitor
+                if not (cs is None or (dl is not None and dl < 0)):
+                    continue
+                resolved_markets.append({
+                    "token_id":     tid16,
+                    "question":     row.get("question") or (cs.question[:70] if cs else tid16),
+                    "end_date_iso": cs.end_date_iso if cs else None,
+                    "days_left":    dl,
+                    "category":     cs.category if cs else None,
+                    "fills":        row.get("alltime_fills", 0),
+                    "cash_pnl":     round(row.get("alltime_cash_pnl", 0.0), 4),
+                    "realized_pnl": round(row.get("alltime_realized_pnl", 0.0), 4),
+                })
+            resolved_markets.sort(key=lambda r: r["fills"], reverse=True)
+            resolved_markets = resolved_markets[:150]
+
+            # ── Session P&L by market: ALL markets with fills this session ──────────
+            session_pnl_list = []
+            for token_id, mkt in session_by_market.items():
+                cs      = markets_snapshot.get(token_id)
+                inv     = inventory.get(token_id, 0.0)
+                mid     = cs.mid if cs else 0.0
+                pos_val = inv * mid
+                cash    = mkt.get("cash_pnl", 0.0)
+                realized = mkt.get("realized_pnl", 0.0)
+                session_pnl_list.append({
+                    "token_id":       token_id[:16],
+                    "question":       mkt.get("question") or (cs.question[:70] if cs else token_id[:16]),
+                    "end_date_iso":   cs.end_date_iso if cs else None,
+                    "days_left":      _days_left(cs.end_date_iso if cs else None),
+                    "category":       cs.category if cs else None,
+                    "inventory":      round(inv, 2),
+                    "current_mid":    round(mid, 4),
+                    "position_value": round(pos_val, 4),
+                    "cash_pnl":       round(cash, 4),
+                    "realized_pnl":   round(realized, 4),
+                    "mtm_pnl":        round(cash + pos_val, 4),
+                    "is_quoting":     token_id in live_orders,
+                })
+            session_pnl_list.sort(key=lambda p: abs(p["realized_pnl"]), reverse=True)
 
             # ── Arb scanner: find condition_id pairs where YES_ask + NO_ask < 1.0 ─
             arb_current, n_new_arb = _scan_arb(markets_snapshot)
@@ -193,6 +295,7 @@ async def maker_dashboard_loop(
                 "cash_pnl": round(cash_pnl, 4),          # net cash flows
                 "realized_pnl": round(realized_pnl, 4), # booked profit from closed round trips
                 "total_abs_inventory": round(total_abs, 2),
+                "current_investment": round(current_investment, 2),
                 "active_markets": active_markets,
                 "fills": fill_history,
                 "n_active_markets": len(live_orders),
@@ -217,6 +320,9 @@ async def maker_dashboard_loop(
                 "selected_markets": selected_markets,
                 "arb_total_events": _arb_total_events,
                 "arb_current": arb_current,
+                "live_positions": live_positions,
+                "resolved_markets": resolved_markets,
+                "session_pnl": session_pnl_list,
             })
         except Exception as exc:
             import logging

@@ -774,6 +774,7 @@ tbody tr:last-child td { border-bottom: none; }
         <span class="kpi-delta muted" id="inv-hint">abs shares</span>
       </div>
       <div class="kpi-sub">
+        <div class="kpi-sub-item"><span class="l">Invested</span><span class="v" id="current-investment">$—</span></div>
         <div class="kpi-sub-item"><span class="l">Markets</span><span class="v" id="n-markets">0</span></div>
         <div class="kpi-sub-item"><span class="l">CB Fires</span><span class="v" id="cb-fires">0</span></div>
       </div>
@@ -787,6 +788,9 @@ tbody tr:last-child td { border-bottom: none; }
     <button class="tab" data-tab="fills">Fills <span class="tab-badge" id="tab-fills-badge">0</span></button>
     <button class="tab" data-tab="markets">Markets <span class="tab-badge" id="tab-markets-badge">0</span></button>
     <button class="tab" data-tab="arb">Arbitrage <span class="tab-badge" id="tab-arb-badge">0</span></button>
+    <button class="tab" data-tab="positions">Active Quotes <span class="tab-badge" id="tab-positions-badge">0</span></button>
+    <button class="tab" data-tab="session-pnl">Session P&amp;L <span class="tab-badge" id="tab-session-pnl-badge">0</span></button>
+    <button class="tab" data-tab="resolved">Resolved <span class="tab-badge" id="tab-resolved-badge">0</span></button>
     <button class="tab" data-tab="intel">Intelligence</button>
     <button class="tab" data-tab="feeds">Feeds</button>
   </nav>
@@ -964,6 +968,85 @@ tbody tr:last-child td { border-bottom: none; }
               <th class="right">Gap</th>
             </tr></thead>
             <tbody id="arb-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESOLVED MARKETS -->
+    <section class="tab-panel" id="panel-resolved">
+      <div class="panel panel-wide">
+        <div class="panel-header">
+          <span class="panel-title">Resolved Markets</span>
+          <span class="panel-count" id="resolved-count">0</span>
+          <span class="panel-meta">historical P&amp;L from fill logs · sorted by fills</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Market</th>
+              <th>Category</th>
+              <th>Resolved</th>
+              <th class="right">Fills</th>
+              <th class="right">Cash P&amp;L</th>
+              <th class="right">Realized P&amp;L</th>
+            </tr></thead>
+            <tbody id="resolved-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ACTIVE QUOTES -->
+    <section class="tab-panel" id="panel-positions">
+      <div class="panel panel-wide">
+        <div class="panel-header">
+          <span class="panel-title">Active Quotes P&amp;L</span>
+          <span class="panel-count" id="pos-count">0</span>
+          <span class="panel-meta">markets currently being quoted · MTM = cash flows + position value</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Market</th>
+              <th>Category</th>
+              <th>Resolves</th>
+              <th>Our Quote</th>
+              <th class="right">Inventory</th>
+              <th class="right">Mid</th>
+              <th class="right">Pos Value</th>
+              <th class="right">Cash P&amp;L</th>
+              <th class="right">MTM P&amp;L</th>
+              <th class="right">Realized</th>
+            </tr></thead>
+            <tbody id="positions-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SESSION P&L BY MARKET -->
+    <section class="tab-panel" id="panel-session-pnl">
+      <div class="panel panel-wide">
+        <div class="panel-header">
+          <span class="panel-title">Session P&amp;L by Market</span>
+          <span class="panel-count" id="session-pnl-count">0</span>
+          <span class="panel-meta">all markets with fills this session · sum = Session Realized KPI · <span style="color:#4fc3f7">●</span> = currently quoting</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Market</th>
+              <th>Category</th>
+              <th>Resolves</th>
+              <th class="right">Inventory</th>
+              <th class="right">Mid</th>
+              <th class="right">Pos Value</th>
+              <th class="right">Cash P&amp;L</th>
+              <th class="right">MTM P&amp;L</th>
+              <th class="right">Realized</th>
+            </tr></thead>
+            <tbody id="session-pnl-body"></tbody>
           </table>
         </div>
       </div>
