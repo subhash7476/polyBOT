@@ -110,6 +110,40 @@ InventoryManager→ skew_updates_q    → QuoteEngine    (inventory skew adjusts
                 → markout_q         → MarkoutTracker (post-fill price tracking)
 ```
 
+### Liquidity Rewards Program
+
+The bot earns **three stacking revenue streams** on every eligible fill:
+
+1. **Liquidity Rewards** — daily USDC for resting orders scored by tightness (no fill needed)
+2. **Maker Rebates** — 20–25% of taker fees redistributed daily on fills
+3. **Spread Capture** — round-trip bid-ask P&L
+
+**Scoring formula (quadratic):** `S(v, s) = ((v - s) / v)² × b`
+- `v` = `max_incentive_spread` (market-specific, in [0,1] space, e.g. 0.03 = 3¢)
+- `s` = your order's distance from mid
+- Orders beyond `max_incentive_spread` score **zero**. Halving spread distance quadruples score.
+- Orders below `min_incentive_size` (shares) score **zero**.
+
+**Per-market params** are fetched automatically by `MarketSelector._fetch_incentive_params()` every 15-minute selection cycle via `GET https://clob.polymarket.com/clob-market-info?condition_id=<id>`. Stored as `ContractState.min_incentive_size` and `ContractState.max_incentive_spread`. A value of `0.0` means not yet fetched (sentinel).
+
+**QuoteEngine enforcement:**
+- `base_size` is floored at `min_incentive_size` (capped at 200sh) when the field is populated.
+- A `WARNING` log is emitted (once per market) when all 3 ladder levels are outside `max_incentive_spread` — those orders score 0 for rewards.
+
+**Maker fee rates by category:** Sports 3%, Finance/Politics 4%, Crypto 7.2%, Weather/Other 5%, Geopolitics 0% (fee-free). Maker fee = **zero** on all categories. Rebate = 20–25% of taker fees, paid daily in USDC.
+
+**Heartbeat (`maker/runner.py`):** In live mode, `_heartbeat_loop(clob)` runs as a coroutine calling `clob.post_heartbeat()` every 30s. Prevents CLOB from auto-cancelling all open orders during network quiet periods. No-op in paper mode (`clob=None`). Failures logged as WARNING.
+
+**WebSocket `custom_feature_enabled` (`market/clob_monitor.py`):** The subscription message includes `"custom_feature_enabled": True`, which unlocks three additional event types:
+- `best_bid_ask` — handled by `_handle_best_bid_ask()`: updates `cs.best_bid`/`cs.best_ask` and nudges `price_update_q`
+- `market_resolved` — handled by `_handle_market_resolved()`: logs resolution and nudges `price_update_q` so QuoteEngine's bid-range guard fires and cancels resting quotes
+- `new_market` — logged at DEBUG only (discovery runs every 15 min and will pick it up)
+
+**Reward monitoring endpoints (not yet wired to dashboard):**
+- `GET /rewards/earnings` — your earnings by date (authenticated)
+- `GET /rewards/percentages` — real-time reward % share
+- `GET /rebates?maker=&date=` — current rebated fees
+
 ### Live-Validation Metric Layer (`maker/markout_tracker.py`)
 
 `MarkoutTracker` is the pre-live-go validation tool. For every fill it schedules market mid samples at **T+5s, T+30s, T+60s** and computes:
@@ -229,6 +263,184 @@ Stop escalation: SIGTERM → `taskkill /F` (Windows) or SIGKILL (Linux/macOS).
 | `TELEGRAM_CHAT_ID` | No | — | Your Telegram user/chat ID |
 | `FRED_API_KEY` | No | — | Adds consensus CPI/GDP/unemployment detail |
 | `GLASSNODE_API_KEY` | No | — | On-chain netflow data |
+| `MAKER_EXCLUDED_CATEGORIES` | No | `""` | Comma-separated maker categories to skip (e.g. `weather`, `weather,sports`). Requires restart. |
+| `MAKER_MAX_DAYS_TO_RESOLVE` | No | `7` | Skip markets resolving more than N days out |
+| `MAKER_MIN_DAYS_TO_RESOLVE` | No | `0.17` | Skip markets resolving in less than ~4h |
+| `MAKER_MIN_DAYS_TO_RESOLVE_WEATHER` | No | `0.33` | Weather-specific minimum (~8h) |
+| `MAKER_MAX_INVENTORY_PER_MARKET` | No | `20` | Per-market share cap (non-weather) |
+| `MAKER_MAX_TOTAL_INVENTORY` | No | `700` | Portfolio-wide share cap |
+| `MAKER_MAX_DAILY_LOSS_PCT` | No | `0.03` | Stop all quoting if MTM loss exceeds this fraction of bankroll |
+| `MAKER_WEATHER_INV_CAP` | No | `5` | Weather per-market share cap |
+| `MAKER_SPORTS_INV_CAP` | No | `0` | Sports cap (0 = use MAKER_MAX_INVENTORY_PER_MARKET) |
+| `MAKER_POLITICS_INV_CAP` | No | `0` | Politics cap (0 = use default) |
+| `MAKER_CRYPTO_INV_CAP` | No | `0` | Crypto cap (0 = use default) |
+| `MAKER_QUOTE_SIZE` | No | `10` | Base shares per ladder level |
+| `MAKER_LADDER_LEVELS` | No | `3` | Bid/ask pairs per market |
+| `MAKER_LEVEL_STEP` | No | `0.01` | Price offset between ladder levels |
+| `MAKER_BASE_SPREAD` | No | `0.06` | Starting spread before adjustments |
+| `MAKER_MIN_SPREAD` | No | `0.02` | Hard spread floor |
+| `MAKER_MAX_SPREAD` | No | `0.15` | Hard spread ceiling |
+| `MAKER_MAX_ACTIVE_MARKETS` | No | `30` | Max markets quoted simultaneously |
+| `MAKER_MIN_DAILY_VOLUME` | No | `1000` | Min USD 24h volume to qualify |
+| `MAKER_MIN_BID` | No | `0.10` | Skip near-zero markets |
+| `MAKER_MAX_BID` | No | `0.90` | Skip near-certain markets |
+| `MAKER_COOLDOWN_SECONDS` | No | `300` | Quote pause after inventory cap hit |
+| `MAKER_ADVERSE_COOLDOWN_SECONDS` | No | `1800` | Extended pause for adverse selection / weather cap |
+| `MAKER_RAPID_FILL_WINDOW` | No | `5.0` | Both sides filled within this window → pull quotes |
+| `MAKER_ADVERSE_MIN_FILLS` | No | `5` | Min fills before directional check fires |
+| `MAKER_ADVERSE_DIRECTION_PCT` | No | `0.80` | Fraction same-side to trigger adverse detection |
+| `MAKER_PRE_RES_HOURS` | No | `2.0` | Force reduce-only within this many hours of expiry |
+| `MAKER_SPREAD_MULT_WEATHER` | No | `2.0` | Category spread multiplier for weather |
+| `MAKER_SPREAD_MULT_SPORTS` | No | `1.6` | Category spread multiplier for sports |
+| `MAKER_SPREAD_MULT_CRYPTO` | No | `1.2` | Category spread multiplier for crypto |
+| `MAKER_SPREAD_MULT_POLITICS` | No | `1.3` | Category spread multiplier for politics |
+| `MAKER_SPREAD_MULT_FINANCE` | No | `1.0` | Category spread multiplier for finance |
+| `MAKER_SPREAD_MULT_ENTERTAINMENT` | No | `2.2` | Category spread multiplier for entertainment |
+| `MAKER_SPREAD_MULT_DEFAULT` | No | `1.5` | Fallback for uncategorised markets |
+| `MAKER_VPIN_STALE_SECONDS` | No | `180` | Reset VPIN to neutral after this silence |
+| `MAKER_NEGRISK_SIBLING_THRESHOLD` | No | `0.80` | Weather sibling mid above this → cancel losers |
+
+### Maker Bot .env Cheat Sheet
+
+Common operating modes — copy the relevant block into `.env` and restart:
+
+```bash
+# Conservative / cautious day
+MAKER_QUOTE_SIZE=5
+MAKER_MAX_ACTIVE_MARKETS=10
+MAKER_MAX_DAILY_LOSS_PCT=0.01
+MAKER_MAX_INVENTORY_PER_MARKET=10
+
+# Pause weather markets entirely
+MAKER_EXCLUDED_CATEGORIES=weather
+
+# Scale up after live validation passes
+MAKER_QUOTE_SIZE=20
+MAKER_MAX_TOTAL_INVENTORY=1500
+MAKER_MAX_INVENTORY_PER_MARKET=30
+
+# Tighter spreads (more competitive quoting)
+MAKER_BASE_SPREAD=0.04
+MAKER_MIN_SPREAD=0.01
+MAKER_SPREAD_MULT_SPORTS=1.2
+
+# Widen a specific category (higher adverse selection observed)
+MAKER_SPREAD_MULT_WEATHER=3.0
+
+# More aggressive adverse-selection circuit breaker
+MAKER_ADVERSE_MIN_FILLS=3
+MAKER_ADVERSE_DIRECTION_PCT=0.70
+
+# Earlier pre-resolution flatten (e.g. for same-day markets)
+MAKER_PRE_RES_HOURS=4.0
+```
+
+## Assessing a Maker Bot Run
+
+When asked to "assess the run" or "how did the bot do", execute this checklist in order:
+
+### 1. Markout quality — `fills_markout.jsonl`
+Parse all records, group by `interval_s` (5, 30, 60). Compute avg markout and adverse rate per interval.
+Gate: `avg_markout_30s >= 0` and `adverse_rate_30s` stable.
+
+### 2. Lifetime P&L — `maker_data/maker_lifetime.json`
+Report `total_fills`, `total_cash_pnl`, `total_realized_pnl`, and `by_date` breakdown.
+Flag any day with large negative `cash_pnl`.
+
+### 3. Today's fills — `maker_data/maker_fills/maker_fills_YYYY-MM-DD.jsonl`
+Count fills, sum `cash_flow` and `realized_pnl`. Check spread between buy/sell fill prices to verify edge capture.
+
+### 4. Log scan — `logs/` directory
+Check these five files for ERROR/WARNING lines:
+- `maker.inventory.log` — cap hits, circuit breaker fires, orphaned positions
+- `maker.order_manager.log` — order rejections, cancel storms
+- `maker.quote_engine.log` — repricing errors, skew issues
+- `maker.market_selector.log` — markets selected/dropped
+- `maker.runner.log` — startup/shutdown, top-level errors
+
+Summarize count and unique message types.
+
+### 5. Pre-live gate status
+Report pass/fail for each criterion:
+1. Paper mechanics: quotes inside spread, inventory caps fire, CB stops exposure
+2. Several hundred live fills collected
+3. `avg_markout_30s >= 0`
+4. `adverse_rate_30s` stable and acceptable
+5. Net realized P&L after fees > 0 over multiple sessions
+6. Inventory cap hits near zero; no uncontrolled drift
+
+## Querying Resolved Markets
+
+### How to look up resolution outcome for a token
+
+Use the **CLOB API `/last-trade-price` endpoint** — not the Gamma API. The Gamma API's `clob_token_ids` parameter does not reliably match specific token IDs (returns unrelated markets or empty).
+
+```
+GET https://clob.polymarket.com/last-trade-price?token_id=<TOKEN_ID>
+→ {"price": "0.001", "side": "BUY"}
+```
+
+Interpret the returned price:
+- `price >= 0.95` → market resolved **YES** (token pays $1/share)
+- `price <= 0.05` → market resolved **NO** (token pays $0/share)
+- `0.05 < price < 0.95` → market still **open/unresolved**
+
+### Resolution P&L calculation
+
+For each token with a known net position from fills:
+
+```python
+# net_shares > 0 = net long YES; net_shares < 0 = net short YES (sold NO into market)
+# net_cash = sum of cash_flows from fills (negative for net buys, positive for net sells)
+
+if resolved_YES:
+    payout = net_shares * 1.0
+elif resolved_NO:
+    payout = net_shares * 0.0   # longs get nothing; shorts keep their sale proceeds
+
+pnl = net_cash + payout
+```
+
+### Script pattern (async, uses httpx)
+
+```python
+import asyncio, json, httpx
+from collections import defaultdict
+
+CLOB_URL = "https://clob.polymarket.com"
+
+# Build net position per token from a fills JSONL file
+net = defaultdict(lambda: {"shares": 0.0, "cost": 0.0, "question": ""})
+with open("maker_data/maker_fills/maker_fills_YYYY-MM-DD.jsonl") as f:
+    for line in f:
+        r = json.loads(line)
+        sign = 1 if r["side"] == "BUY" else -1
+        net[r["token_id"]]["shares"] += sign * r["size"]
+        net[r["token_id"]]["cost"] += r["cash_flow"]
+        net[r["token_id"]]["question"] = r.get("question", "")
+
+async def main():
+    async with httpx.AsyncClient(timeout=15) as client:
+        for tid, pos in net.items():
+            r = await client.get(f"{CLOB_URL}/last-trade-price?token_id={tid}")
+            await asyncio.sleep(0.08)   # polite rate limit
+            price = float(r.json()["price"]) if r.status_code == 200 else None
+            if price is None:
+                continue
+            if price >= 0.95:
+                pnl = pos["cost"] + pos["shares"] * 1.0
+            elif price <= 0.05:
+                pnl = pos["cost"] + pos["shares"] * 0.0
+            else:
+                pnl = None   # still open
+            print(f"{pos['question'][:50]}  shares={pos['shares']:+.2f}  pnl={pnl}")
+
+asyncio.run(main())
+```
+
+### Known limitation: resolution P&L not tracked in checkpoint
+
+`maker_checkpoint.json` zeroes inventory when markets resolve (paper mode runs `resolve_position()`) but **does not book the resolution cash** back into `realized_pnl`. The checkpoint's `realized_pnl` therefore reflects only spread capture from round-trip intra-session trades, not resolution payouts. To get the full economic picture, run the CLOB query above against the fills JSONL.
 
 ## Environment
 
