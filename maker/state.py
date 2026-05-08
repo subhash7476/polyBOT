@@ -14,9 +14,11 @@ class MakerState:
     max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
     max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
 
-    # Optional per-category cap overrides: {"weather": 10.0}.  Falls back to
+    # Optional per-category cap overrides: {"weather": 5.0}.  Falls back to
     # max_inventory_per_market for any category not listed here.
-    category_inventory_caps: dict = field(default_factory=lambda: {"weather": 10.0})
+    # Weather cap kept tight (5sh) because same-day NegRisk buckets carry resolution
+    # risk that the skew/markout feedback cannot hedge — size is the only lever.
+    category_inventory_caps: dict = field(default_factory=lambda: {"weather": 5.0})
 
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)

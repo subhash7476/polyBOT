@@ -19,6 +19,8 @@ ADVERSE_COOLDOWN_SECONDS = 1800  # 30 minutes — adverse selection detected
 RAPID_FILL_WINDOW = 5.0        # seconds
 MAX_DAILY_LOSS_PCT = 0.03      # 3% of bankroll
 ABSENT_MARKET_EXPIRY_HOURS = 4.0  # zero inventory for markets absent from state this long
+CAP_HIT_WINDOW_SECONDS = 3600     # repeated cap hits within 1h escalate cooldown
+MAX_CAP_COOLDOWN_SECONDS = 3600   # never keep a market cap-blocked for more than 1h
 
 # Hysteresis: after global cooldown expires, re-engage if inventory still above this
 # fraction of max_total_inventory. Prevents the ratchet where expiry → fill → cap fires.
@@ -52,6 +54,18 @@ class InventoryManager:
         self._markout_q = markout_q
         self._fill_ledger = fill_ledger
         self._max_daily_loss = bankroll * MAX_DAILY_LOSS_PCT
+
+    def _inventory_cap_cooldown_seconds(self, token_id: str) -> int:
+        """Escalate cooldowns when the same market repeatedly hits its cap."""
+        now = time.time()
+        hit = self._maker.inventory_cap_hits.get(token_id, {})
+        last_hit = float(hit.get("last_hit", 0.0) or 0.0)
+        count = int(hit.get("count", 0) or 0)
+        count = count + 1 if now - last_hit <= CAP_HIT_WINDOW_SECONDS else 1
+        self._maker.inventory_cap_hits[token_id] = {"count": count, "last_hit": now}
+
+        cooldown = COOLDOWN_SECONDS * (2 ** (count - 1))
+        return int(min(cooldown, MAX_CAP_COOLDOWN_SECONDS))
 
     async def handle_fill(self, fill: Fill) -> None:
         """Process a fill: update inventory, compute skew, check limits."""
@@ -92,8 +106,8 @@ class InventoryManager:
             )
             self._maker.daily_fills_seen.add(fill_id)
 
-        # 2. Emit skew update
-        skew = self._maker.skew_factor(fill.token_id)
+        # 2. Emit skew update — pass category so weather uses 5-share cap as denominator
+        skew = self._maker.skew_factor(fill.token_id, category)
         await self._skew_q.put(SkewUpdate(token_id=fill.token_id, skew_factor=skew))
 
         # 3. Forward to markout tracker (non-blocking; absent in tests)
@@ -111,10 +125,15 @@ class InventoryManager:
         mkt_cap = self._maker.max_inventory_for_category(category)
         if abs_pos >= mkt_cap:
             await self._cancel_q.put(CancelAll(fill.token_id))
-            self._maker.cooldowns[fill.token_id] = time.time() + COOLDOWN_SECONDS
+            cooldown_seconds = self._inventory_cap_cooldown_seconds(fill.token_id)
+            # Weather markets: same-day resolution means no time to recover from adverse fills.
+            # Enforce a minimum 30-min cooldown so the bot can't re-accumulate before expiry.
+            if category == "weather":
+                cooldown_seconds = max(cooldown_seconds, ADVERSE_COOLDOWN_SECONDS)
+            self._maker.cooldowns[fill.token_id] = time.time() + cooldown_seconds
             log.warning(
                 f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
-                f" (cap={mkt_cap:.0f}) — quotes pulled for {COOLDOWN_SECONDS}s"
+                f" (cap={mkt_cap:.0f}) — quotes pulled for {cooldown_seconds}s"
             )
             self._promote_over_cap_to_reduce_only()
 
