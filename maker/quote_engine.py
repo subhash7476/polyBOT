@@ -13,20 +13,25 @@ from engine.probability import build_model_probability
 from engine.weather_probability import build_weather_probability
 from engine.macro_probability import build_macro_probability
 from engine.orderbook_imbalance import compute_obi_signal
-from config import SIGNAL_WEIGHTS
+from config import (
+    SIGNAL_WEIGHTS,
+    MAKER_BASE_SPREAD, MAKER_MIN_SPREAD, MAKER_MAX_SPREAD,
+    MAKER_QUOTE_SIZE, MAKER_LADDER_LEVELS, MAKER_LEVEL_STEP,
+    MAKER_PRE_RES_HOURS, MAKER_NEGRISK_SIBLING_THRESHOLD,
+)
 from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
 from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-BASE_SPREAD = 0.06
-MIN_SPREAD = 0.02  # tightened from 0.04 to quote inside thinner books
-MAX_SPREAD = 0.15
-QUOTE_SIZE_USDC = 10.0
-SKEW_PER_SHARE = 0.004   # fv shift per share of net position
-MAX_SKEW_ABS = 0.10      # hard cap on total inventory adjustment
-LADDER_LEVELS = 3    # bid+ask pairs per market
-LEVEL_STEP = 0.01    # price offset between ladder levels
+BASE_SPREAD     = MAKER_BASE_SPREAD
+MIN_SPREAD      = MAKER_MIN_SPREAD
+MAX_SPREAD      = MAKER_MAX_SPREAD
+QUOTE_SIZE_USDC = MAKER_QUOTE_SIZE
+SKEW_PER_SHARE  = 0.004   # fv shift per share of net position
+MAX_SKEW_ABS    = 0.10    # hard cap on total inventory adjustment
+LADDER_LEVELS   = MAKER_LADDER_LEVELS
+LEVEL_STEP      = MAKER_LEVEL_STEP
 
 # NegRisk weather sibling guard: group buckets by city+date via question-text regex.
 # When one bucket moves into resolution territory (mid > NEGRISK_SIBLING_THRESHOLD),
@@ -35,7 +40,7 @@ _WEATHER_GROUP_RE = re.compile(
     r"Will the highest temperature in (.+?) be .+? on (.+?)(?:\?|$)",
     re.IGNORECASE,
 )
-NEGRISK_SIBLING_THRESHOLD = 0.80
+NEGRISK_SIBLING_THRESHOLD = MAKER_NEGRISK_SIBLING_THRESHOLD
 
 
 def _negrisk_group_key(question: str) -> "str | None":
@@ -390,10 +395,9 @@ class QuoteEngine:
                 reason="reprice",
             )
 
-            # Pre-resolution flatten guard: at T-2h any meaningful inventory must close.
-            # Promote to reduce_only regardless of cap or markout — prevents holding
-            # into resolution when there is no time left to recover.
-            PRE_RES_HOURS = 2.0
+            # Pre-resolution flatten guard: promotes to reduce_only within MAKER_PRE_RES_HOURS
+            # of expiry regardless of cap or markout — prevents holding into resolution.
+            PRE_RES_HOURS = MAKER_PRE_RES_HOURS
             PRE_RES_INV_THRESHOLD = 0.5
             if (cs.hours_to_resolution <= PRE_RES_HOURS
                     and abs(inv) > PRE_RES_INV_THRESHOLD

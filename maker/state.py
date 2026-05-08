@@ -5,20 +5,20 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from maker.types import QuoteIntent
+from config import MAKER_MAX_INVENTORY_PER_MARKET, MAKER_MAX_TOTAL_INVENTORY, MAKER_CATEGORY_CAPS
 
 
 @dataclass
 class MakerState:
     """Thread-safe state shared across all maker actors."""
 
-    max_inventory_per_market: float = 20.0   # was 50 — tighter per-market limit
-    max_total_inventory: float = 700.0       # was 200 — above current 653-share inventory
+    max_inventory_per_market: float = field(default_factory=lambda: MAKER_MAX_INVENTORY_PER_MARKET)
+    max_total_inventory: float = field(default_factory=lambda: MAKER_MAX_TOTAL_INVENTORY)
 
-    # Optional per-category cap overrides: {"weather": 5.0}.  Falls back to
-    # max_inventory_per_market for any category not listed here.
-    # Weather cap kept tight (5sh) because same-day NegRisk buckets carry resolution
-    # risk that the skew/markout feedback cannot hedge — size is the only lever.
-    category_inventory_caps: dict = field(default_factory=lambda: {"weather": 5.0})
+    # Per-category cap overrides — built from env vars in config.py.
+    # Weather always present; other categories included when their env var is non-zero.
+    # Missing categories fall back to max_inventory_per_market.
+    category_inventory_caps: dict = field(default_factory=lambda: dict(MAKER_CATEGORY_CAPS))
 
     # Per-market net position: positive = holding YES, negative = holding NO
     inventory: dict[str, float] = field(default_factory=dict)

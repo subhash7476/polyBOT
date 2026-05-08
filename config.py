@@ -144,6 +144,71 @@ WEATHER_POLL_INTERVAL = int(os.getenv("WEATHER_POLL_INTERVAL", "3600"))
 FAST_RESOLVE_PRIORITY = os.getenv("FAST_RESOLVE_PRIORITY", "true").lower() == "true"
 VC_KEY = os.getenv("VC_KEY", "")
 
+# ── Maker bot: Inventory / Risk ────────────────────────────────────────────
+MAKER_MAX_INVENTORY_PER_MARKET  = float(os.getenv("MAKER_MAX_INVENTORY_PER_MARKET",  "20"))
+MAKER_MAX_TOTAL_INVENTORY       = float(os.getenv("MAKER_MAX_TOTAL_INVENTORY",       "700"))
+MAKER_MAX_DAILY_LOSS_PCT        = float(os.getenv("MAKER_MAX_DAILY_LOSS_PCT",        "0.03"))
+
+# Per-category inventory caps (0 = fall back to MAKER_MAX_INVENTORY_PER_MARKET)
+MAKER_WEATHER_INV_CAP           = float(os.getenv("MAKER_WEATHER_INV_CAP",           "5"))
+MAKER_SPORTS_INV_CAP            = float(os.getenv("MAKER_SPORTS_INV_CAP",            "0"))
+MAKER_POLITICS_INV_CAP          = float(os.getenv("MAKER_POLITICS_INV_CAP",          "0"))
+MAKER_CRYPTO_INV_CAP            = float(os.getenv("MAKER_CRYPTO_INV_CAP",            "0"))
+MAKER_FINANCE_INV_CAP           = float(os.getenv("MAKER_FINANCE_INV_CAP",           "0"))
+MAKER_ENTERTAINMENT_INV_CAP     = float(os.getenv("MAKER_ENTERTAINMENT_INV_CAP",     "0"))
+
+def _build_category_caps() -> dict[str, float]:
+    caps: dict[str, float] = {"weather": MAKER_WEATHER_INV_CAP}
+    for cat, val in [
+        ("sports",        MAKER_SPORTS_INV_CAP),
+        ("politics",      MAKER_POLITICS_INV_CAP),
+        ("crypto",        MAKER_CRYPTO_INV_CAP),
+        ("finance",       MAKER_FINANCE_INV_CAP),
+        ("entertainment", MAKER_ENTERTAINMENT_INV_CAP),
+    ]:
+        if val > 0:
+            caps[cat] = val
+    return caps
+
+MAKER_CATEGORY_CAPS: dict[str, float] = _build_category_caps()
+
+# ── Maker bot: Quote sizing ────────────────────────────────────────────────
+MAKER_QUOTE_SIZE    = float(os.getenv("MAKER_QUOTE_SIZE",    "10"))
+MAKER_LADDER_LEVELS = int(os.getenv("MAKER_LADDER_LEVELS",   "3"))
+MAKER_LEVEL_STEP    = float(os.getenv("MAKER_LEVEL_STEP",    "0.01"))
+
+# ── Maker bot: Spread ──────────────────────────────────────────────────────
+MAKER_BASE_SPREAD = float(os.getenv("MAKER_BASE_SPREAD", "0.06"))
+MAKER_MIN_SPREAD  = float(os.getenv("MAKER_MIN_SPREAD",  "0.02"))
+MAKER_MAX_SPREAD  = float(os.getenv("MAKER_MAX_SPREAD",  "0.15"))
+
+# ── Maker bot: Market selection ────────────────────────────────────────────
+MAKER_MAX_ACTIVE_MARKETS = int(os.getenv("MAKER_MAX_ACTIVE_MARKETS",   "30"))
+MAKER_MIN_DAILY_VOLUME   = float(os.getenv("MAKER_MIN_DAILY_VOLUME",   "1000"))
+MAKER_MIN_BID            = float(os.getenv("MAKER_MIN_BID",            "0.10"))
+MAKER_MAX_BID            = float(os.getenv("MAKER_MAX_BID",            "0.90"))
+
+# ── Maker bot: Circuit breakers ────────────────────────────────────────────
+MAKER_COOLDOWN_SECONDS         = int(os.getenv("MAKER_COOLDOWN_SECONDS",         "300"))
+MAKER_ADVERSE_COOLDOWN_SECONDS = int(os.getenv("MAKER_ADVERSE_COOLDOWN_SECONDS", "1800"))
+MAKER_RAPID_FILL_WINDOW        = float(os.getenv("MAKER_RAPID_FILL_WINDOW",      "5.0"))
+MAKER_ADVERSE_MIN_FILLS        = int(os.getenv("MAKER_ADVERSE_MIN_FILLS",        "5"))
+MAKER_ADVERSE_DIRECTION_PCT    = float(os.getenv("MAKER_ADVERSE_DIRECTION_PCT",  "0.80"))
+MAKER_PRE_RES_HOURS            = float(os.getenv("MAKER_PRE_RES_HOURS",          "2.0"))
+
+# ── Maker bot: Category spread multipliers (regime.py baseline) ───────────
+MAKER_SPREAD_MULT_FINANCE       = float(os.getenv("MAKER_SPREAD_MULT_FINANCE",       "1.0"))
+MAKER_SPREAD_MULT_CRYPTO        = float(os.getenv("MAKER_SPREAD_MULT_CRYPTO",        "1.2"))
+MAKER_SPREAD_MULT_POLITICS      = float(os.getenv("MAKER_SPREAD_MULT_POLITICS",      "1.3"))
+MAKER_SPREAD_MULT_SPORTS        = float(os.getenv("MAKER_SPREAD_MULT_SPORTS",        "1.6"))
+MAKER_SPREAD_MULT_WEATHER       = float(os.getenv("MAKER_SPREAD_MULT_WEATHER",       "2.0"))
+MAKER_SPREAD_MULT_ENTERTAINMENT = float(os.getenv("MAKER_SPREAD_MULT_ENTERTAINMENT", "2.2"))
+MAKER_SPREAD_MULT_DEFAULT       = float(os.getenv("MAKER_SPREAD_MULT_DEFAULT",       "1.5"))
+
+# ── Maker bot: VPIN / NegRisk ──────────────────────────────────────────────
+MAKER_VPIN_STALE_SECONDS        = float(os.getenv("MAKER_VPIN_STALE_SECONDS",        "180"))
+MAKER_NEGRISK_SIBLING_THRESHOLD = float(os.getenv("MAKER_NEGRISK_SIBLING_THRESHOLD", "0.80"))
+
 # Live pilot controls (Step 19)
 # Comma-separated list of categories to trade in live mode (empty = all)
 LIVE_PILOT_CATEGORIES: list[str] = [c.strip() for c in os.getenv("LIVE_PILOT_CATEGORIES", "").split(",") if c.strip()]

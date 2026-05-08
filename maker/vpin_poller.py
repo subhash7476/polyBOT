@@ -6,18 +6,18 @@ from collections import deque
 
 import httpx
 
-from config import POLYMARKET_CLOB_URL
+from config import POLYMARKET_CLOB_URL, MAKER_VPIN_STALE_SECONDS
 from market.state import AppState
 from utils.logger import get_logger
 
 log = get_logger(__name__)
 
-VPIN_POLL_INTERVAL = 30.0    # seconds between polls per market
-VPIN_STALE_SECONDS = 180.0   # reset to neutral if no update within this window
-MIN_VPIN_TRADES = 10         # minimum trades in buffer before computing VPIN
-VPIN_EMA_ALPHA = 0.3         # weight on new observation; 0.7 on previous smoothed value
-_BUFFER_SIZE = 100           # rolling buffer depth per token
-_LOG_HEARTBEAT_CYCLES = 10   # log liveness every N poll cycles (~5 min)
+VPIN_POLL_INTERVAL    = 30.0                    # seconds between polls per market
+VPIN_STALE_SECONDS    = MAKER_VPIN_STALE_SECONDS
+MIN_VPIN_TRADES       = 10                      # minimum trades before computing VPIN
+VPIN_EMA_ALPHA        = 0.3                     # weight on new observation
+_BUFFER_SIZE          = 100                     # rolling buffer depth per token
+_LOG_HEARTBEAT_CYCLES = 10                      # log liveness every N poll cycles
 
 
 def _ema(prev: float, raw: float, alpha: float = VPIN_EMA_ALPHA) -> float:

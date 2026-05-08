@@ -11,17 +11,22 @@ from market.state import AppState, ContractState, FeedState
 from market.clob_monitor import fetch_active_markets
 from utils.logger import get_logger
 
+from config import (
+    MAKER_MAX_ACTIVE_MARKETS, MAKER_MIN_DAILY_VOLUME,
+    MAKER_MIN_BID, MAKER_MAX_BID,
+)
+
 log = get_logger(__name__)
 
-_MIN_DAILY_VOLUME = 1_000.0     # widened from 3k to sample mid-tier markets where spread > 1¢ still exists
-_MAX_ACTIVE_MARKETS = 30        # focus on best opportunities, not thin spread
-_MIN_SPREAD = 0.01              # widened from 2¢ to 1¢; QuoteEngine.MIN_SPREAD=0.02 still protects edge
-_MIN_BID = 0.10      # exclude near-zero / near-resolved markets (bid < 10¢)
-_MAX_BID = 0.90      # exclude near-certain markets (bid > 90¢)
-_MAX_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE", "7"))   # near-expiry only
-_MIN_DAYS_TO_RESOLVE = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE", "0.17"))  # >=4h — skip imminent resolution
-_MIN_DAYS_TO_RESOLVE_WEATHER = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE_WEATHER", "0.33"))  # >=8h for weather buckets
-_REQUIRE_END_DATE = os.getenv("MAKER_REQUIRE_END_DATE", "true").lower() == "true"
+_MIN_DAILY_VOLUME    = MAKER_MIN_DAILY_VOLUME
+_MAX_ACTIVE_MARKETS  = MAKER_MAX_ACTIVE_MARKETS
+_MIN_SPREAD          = 0.01   # book spread filter; QuoteEngine MIN_SPREAD is the edge floor
+_MIN_BID             = MAKER_MIN_BID
+_MAX_BID             = MAKER_MAX_BID
+_MAX_DAYS_TO_RESOLVE         = float(os.getenv("MAKER_MAX_DAYS_TO_RESOLVE",         "7"))
+_MIN_DAYS_TO_RESOLVE         = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE",         "0.17"))
+_MIN_DAYS_TO_RESOLVE_WEATHER = float(os.getenv("MAKER_MIN_DAYS_TO_RESOLVE_WEATHER", "0.33"))
+_REQUIRE_END_DATE            = os.getenv("MAKER_REQUIRE_END_DATE", "true").lower() == "true"
 
 # Categories that are excluded from maker quoting regardless of spread/volume.
 # Configure via MAKER_EXCLUDED_CATEGORIES env var (comma-separated, e.g. "weather,sports").

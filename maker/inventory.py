@@ -12,24 +12,28 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from maker.fill_ledger import FillLedger
 
+from config import (
+    MAKER_COOLDOWN_SECONDS, MAKER_ADVERSE_COOLDOWN_SECONDS,
+    MAKER_RAPID_FILL_WINDOW, MAKER_MAX_DAILY_LOSS_PCT,
+    MAKER_ADVERSE_MIN_FILLS, MAKER_ADVERSE_DIRECTION_PCT,
+)
+
 log = get_logger(__name__)
 
-COOLDOWN_SECONDS = 300         # 5 minutes
-ADVERSE_COOLDOWN_SECONDS = 1800  # 30 minutes — adverse selection detected
-RAPID_FILL_WINDOW = 5.0        # seconds
-MAX_DAILY_LOSS_PCT = 0.03      # 3% of bankroll
-ABSENT_MARKET_EXPIRY_HOURS = 4.0  # zero inventory for markets absent from state this long
-CAP_HIT_WINDOW_SECONDS = 3600     # repeated cap hits within 1h escalate cooldown
-MAX_CAP_COOLDOWN_SECONDS = 3600   # never keep a market cap-blocked for more than 1h
+COOLDOWN_SECONDS           = MAKER_COOLDOWN_SECONDS
+ADVERSE_COOLDOWN_SECONDS   = MAKER_ADVERSE_COOLDOWN_SECONDS
+RAPID_FILL_WINDOW          = MAKER_RAPID_FILL_WINDOW
+MAX_DAILY_LOSS_PCT         = MAKER_MAX_DAILY_LOSS_PCT
+ABSENT_MARKET_EXPIRY_HOURS = 4.0
+CAP_HIT_WINDOW_SECONDS     = 3600
+MAX_CAP_COOLDOWN_SECONDS   = 3600
 
 # Hysteresis: after global cooldown expires, re-engage if inventory still above this
 # fraction of max_total_inventory. Prevents the ratchet where expiry → fill → cap fires.
 TOTAL_INV_RESUME_RATIO = 0.80
 
-# Adverse-selection detector: if >= ADVERSE_MIN_FILLS fills seen and
-# >= ADVERSE_DIRECTION_PCT are the same side, trigger extended cooldown.
-ADVERSE_MIN_FILLS = 5
-ADVERSE_DIRECTION_PCT = 0.80
+ADVERSE_MIN_FILLS     = MAKER_ADVERSE_MIN_FILLS
+ADVERSE_DIRECTION_PCT = MAKER_ADVERSE_DIRECTION_PCT
 
 
 class InventoryManager:

@@ -2,19 +2,24 @@
 
 from dataclasses import dataclass
 from math import copysign
+from config import (
+    MAKER_SPREAD_MULT_FINANCE, MAKER_SPREAD_MULT_CRYPTO, MAKER_SPREAD_MULT_POLITICS,
+    MAKER_SPREAD_MULT_SPORTS, MAKER_SPREAD_MULT_WEATHER, MAKER_SPREAD_MULT_ENTERTAINMENT,
+    MAKER_SPREAD_MULT_DEFAULT,
+)
 
 
 # ── Category spread baseline ──────────────────────────────────────────────────
-# Seeded from Becker (2026) maker-taker gap findings. Tune empirically after
-# 500+ fills per category accumulate in fills_markout.jsonl.
+# Seeded from Becker (2026) maker-taker gap findings. Tune via MAKER_SPREAD_MULT_*
+# env vars after 500+ fills per category accumulate in fills_markout.jsonl.
 CATEGORY_SPREAD_MULTIPLIER: dict[str, float] = {
-    "finance":       1.0,
-    "crypto":        1.2,
-    "politics":      1.3,
-    "sports":        1.6,
-    "weather":       2.0,
-    "entertainment": 2.2,
-    "default":       1.5,
+    "finance":       MAKER_SPREAD_MULT_FINANCE,
+    "crypto":        MAKER_SPREAD_MULT_CRYPTO,
+    "politics":      MAKER_SPREAD_MULT_POLITICS,
+    "sports":        MAKER_SPREAD_MULT_SPORTS,
+    "weather":       MAKER_SPREAD_MULT_WEATHER,
+    "entertainment": MAKER_SPREAD_MULT_ENTERTAINMENT,
+    "default":       MAKER_SPREAD_MULT_DEFAULT,
 }
 
 def _clamp(v: float, lo: float, hi: float) -> float:
