@@ -9,10 +9,11 @@ from maker.types import QuoteIntent, SkewUpdate, LadderUpdate, CancelAll
 from market.state import AppState
 from engine.falcon_signals import compute_adverse_selection_penalty, compute_market_skew_adjustment
 from engine.contract_parser import parse_contract
-from engine.probability import build_model_probability
+from engine.category_probability import build_finance_probability, build_category_probability
 from engine.weather_probability import build_weather_probability
 from engine.macro_probability import build_macro_probability
 from engine.orderbook_imbalance import compute_obi_signal
+from monitoring.alerts import get_alert_manager, AlertType
 from config import (
     SIGNAL_WEIGHTS,
     MAKER_BASE_SPREAD, MAKER_MIN_SPREAD, MAKER_MAX_SPREAD,
@@ -137,6 +138,8 @@ class QuoteEngine:
         self._active_token_ids: set[str] = set()
         self._last_force_reprice: float = 0.0
         self._stale_skip_warned: set[str] = set()   # markets already warned about bid-range exit
+        self._incentive_info_logged: set[str] = set()  # markets already logged as incentive eligible
+        self._reward_risk_warned: set[str] = set()  # markets already warned about zero-reward risk
         self._pre_res_flatten_warned: set[str] = set()  # markets warned about pre-resolution flatten
         self._last_regime_log: float = 0.0           # throttle regime summary to 1/min
 
@@ -198,10 +201,10 @@ class QuoteEngine:
                 continue
 
             # Bid-range guard: market has moved out of quotable range since last MarketSelector
-            # refresh (every 15 min). Weather uses tighter 0.10/0.90 — NegRisk buckets
-            # resolve near 0 once a sibling wins, and resolution-territory spreads are toxic.
-            _bid_lo = 0.10 if cs.category == "weather" else 0.05
-            _bid_hi = 0.90 if cs.category == "weather" else 0.95
+            # refresh. Keep the same range for all categories so weather is not treated
+            # as a special case in risk handling.
+            _bid_lo = 0.05
+            _bid_hi = 0.95
             if (cs.best_bid < _bid_lo or cs.best_bid > _bid_hi
                     or cs.best_ask < _bid_lo or cs.best_ask > _bid_hi):
                 if token_id not in self._stale_skip_warned:
@@ -307,13 +310,15 @@ class QuoteEngine:
                 model_prob = None
                 sig_count = 0
 
-                if contract.category == "crypto":
+                if contract.category in ("crypto", "finance"):
                     asset_dvol = feeds.dvol.get(contract.asset, 60.0)
-                    model_prob, sig_count, _ = build_model_probability(contract, feeds, SIGNAL_WEIGHTS)
+                    model_prob, sig_count, _ = build_finance_probability(contract, feeds, SIGNAL_WEIGHTS)
                 elif contract.category == "weather":
                     model_prob, sig_count, _ = build_weather_probability(contract, feeds, SIGNAL_WEIGHTS)
                 elif contract.category in ("macro", "rates"):
                     model_prob, sig_count, _ = build_macro_probability(contract, feeds, SIGNAL_WEIGHTS)
+                elif contract.category in ("sports", "politics", "event", "election"):
+                    model_prob, sig_count, _ = build_category_probability(contract, cs, feeds, SIGNAL_WEIGHTS)
 
                 if model_prob is not None and sig_count > 0:
                     prob_delta = model_prob - cs.mid
@@ -380,12 +385,36 @@ class QuoteEngine:
             if cs.max_incentive_spread > 0.0:
                 tightest_half = eff_spread / 2.0 - LEVEL_STEP
                 if tightest_half > cs.max_incentive_spread:
+                    reward_cap_spread = max(MIN_SPREAD, 2.0 * (cs.max_incentive_spread + LEVEL_STEP))
+                    if reward_cap_spread < eff_spread:
+                        eff_spread = reward_cap_spread
+                        eff_half = eff_spread / 2.0
+                        eff_fv = _clamp(anchor_fv, 0.05 + eff_half, 0.95 - eff_half)
                     if token_id not in self._stale_skip_warned:
                         log.warning(
                             f"incentive_spread miss [{token_id[:8]}]: "
                             f"tightest_half={tightest_half:.3f} > max_incentive={cs.max_incentive_spread:.3f} "
-                            f"— all ladder levels score 0 for rewards"
+                            f"— compressed spread to {eff_spread:.3f}"
                         )
+                    if token_id not in self._reward_risk_warned:
+                        self._reward_risk_warned.add(token_id)
+                        asyncio.create_task(get_alert_manager().send(
+                            AlertType.REWARD_ZERO_RISK,
+                            get_alert_manager().format_reward_risk(
+                                question=cs.question,
+                                min_incentive_size=cs.min_incentive_size,
+                                max_incentive_spread=cs.max_incentive_spread,
+                                quote_size=base_size,
+                                quote_half_spread=eff_spread / 2.0,
+                            ),
+                        ))
+                elif token_id not in self._incentive_info_logged:
+                    log.info(
+                        f"incentive eligible [{token_id[:8]}]: "
+                        f"min_size={cs.min_incentive_size:.0f}sh max_spread={cs.max_incentive_spread*100:.1f}¢ "
+                        f"size={base_size:.0f}sh spread={eff_spread:.3f}"
+                    )
+                    self._incentive_info_logged.add(token_id)
 
             ladder = self.build_ladder(
                 token_id=token_id,

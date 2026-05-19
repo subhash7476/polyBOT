@@ -8,12 +8,14 @@ import time
 from collections import OrderedDict
 from datetime import datetime, timezone
 from market.state import AppState, ContractState, FeedState
+from maker.state import MakerState
 from market.clob_monitor import fetch_active_markets
 from utils.logger import get_logger
 
 from config import (
     MAKER_MAX_ACTIVE_MARKETS, MAKER_MIN_DAILY_VOLUME,
     MAKER_MIN_BID, MAKER_MAX_BID,
+    CATEGORY_QUOTA_FILL_WEIGHT, CATEGORY_QUOTA_MARKOUT_WEIGHT, CATEGORY_QUOTA_PNL_WEIGHT,
 )
 
 log = get_logger(__name__)
@@ -50,8 +52,117 @@ _TREND_MULT = {
 }
 
 _FEE_ENABLED_MULT = 1.08          # fee-enabled markets can pay maker rebates
-_FEE_FREE_MULT = 0.92             # fee-free books can still trade, but no maker rebate
+_FEE_FREE_MULT = 0.86             # fee-free books can still trade, but no maker rebate
 _INCENTIVE_METADATA_MULT = 1.25   # confirmed reward params deserve selection priority
+
+
+def _normalize_category(category: str) -> str:
+    return (category or "unknown").strip().lower()
+
+
+def _category_perf_weight(
+    category: str,
+    markets: dict[str, ContractState],
+    maker_state: MakerState | None,
+) -> float:
+    """Return a conservative equal-weight adjustment based on recent performance.
+
+    The goal is not to let one category dominate. We start from 1.0 and only move
+    within a narrow band when fills, markout, or PnL clearly improve.
+    """
+    if maker_state is None:
+        return 1.0
+
+    cat = _normalize_category(category)
+    token_ids = [tid for tid, cs in markets.items() if _normalize_category(cs.category) == cat]
+    if not token_ids:
+        return 1.0
+
+    fills = 0
+    cash_pnl = 0.0
+    realized_pnl = 0.0
+    markouts: list[float] = []
+    for tid in token_ids:
+        row = maker_state.session_by_market.get(tid)
+        if row:
+            fills += int(row.get("fills", 0) or 0)
+            cash_pnl += float(row.get("cash_pnl", 0.0) or 0.0)
+            realized_pnl += float(row.get("realized_pnl", 0.0) or 0.0)
+        m = maker_state.rolling_markouts.get(tid, {})
+        avg_30s = m.get(30)
+        if avg_30s is not None:
+            markouts.append(float(avg_30s))
+
+    fill_score = min(1.0, fills / 100.0)
+    markout_score = 0.5
+    if markouts:
+        avg_markout = sum(markouts) / len(markouts)
+        markout_score = max(0.0, min(1.0, 0.5 + (avg_markout * 10.0)))
+
+    pnl_score = max(0.0, min(1.0, 0.5 + ((cash_pnl + realized_pnl) / 100.0)))
+
+    weighted = (
+        CATEGORY_QUOTA_FILL_WEIGHT * fill_score
+        + CATEGORY_QUOTA_MARKOUT_WEIGHT * markout_score
+        + CATEGORY_QUOTA_PNL_WEIGHT * pnl_score
+    )
+    # Base around 1.0 and keep adjustments narrow so this remains near-equal weighting.
+    return max(0.5, min(1.5, 0.75 + weighted))
+
+
+def _allocate_category_quotas(
+    candidates: list[tuple[str, ContractState, float]],
+    markets: dict[str, ContractState],
+    maker_state: MakerState | None,
+    max_markets: int,
+) -> "OrderedDict[str, ContractState]":
+    """Select markets by equal-weight category quota, then backfill globally."""
+    by_cat: dict[str, list[tuple[str, ContractState, float]]] = {}
+    for token_id, cs, score in candidates:
+        by_cat.setdefault(_normalize_category(cs.category), []).append((token_id, cs, score))
+
+    if not by_cat:
+        return OrderedDict()
+
+    cat_weights = {
+        cat: _category_perf_weight(cat, markets, maker_state)
+        for cat in by_cat
+    }
+    weight_sum = sum(cat_weights.values()) or 1.0
+
+    # Initial equal-weight quota with a small performance adjustment.
+    quotas: dict[str, int] = {}
+    for cat, items in by_cat.items():
+        raw = (cat_weights[cat] / weight_sum) * max_markets
+        quota = int(raw)
+        if quota <= 0:
+            quota = 1
+        quota = min(quota, len(items))
+        quotas[cat] = quota
+
+    total_quota = sum(quotas.values())
+    if total_quota > max_markets:
+        # Trim the weakest categories first until the total fits the budget.
+        for cat, _ in sorted(cat_weights.items(), key=lambda kv: (kv[1], len(by_cat[kv[0]]))):
+            while total_quota > max_markets and quotas.get(cat, 0) > 0:
+                quotas[cat] -= 1
+                total_quota -= 1
+
+    selected: "OrderedDict[str, ContractState]" = OrderedDict()
+    for cat, items in by_cat.items():
+        for token_id, cs, _ in items[:quotas[cat]]:
+            selected[token_id] = cs
+
+    # Backfill remainder from the global rank order so we still fill the full budget.
+    if len(selected) < max_markets:
+        for token_id, cs, _ in candidates:
+            if token_id in selected:
+                continue
+            selected[token_id] = cs
+            if len(selected) >= max_markets:
+                break
+
+    return selected
 
 
 def _get_falcon_insight(
@@ -214,6 +325,7 @@ class MarketSelector:
         max_markets: int = _MAX_ACTIVE_MARKETS,
         feeds: FeedState | None = None,
         rolling_markouts: "dict[str, dict[int, float]] | None" = None,
+        maker_state: MakerState | None = None,
     ) -> "OrderedDict[str, ContractState]":
         """Filter to quotable markets, rank by spread × volume × falcon_score × markout_score."""
         candidates = []
@@ -277,8 +389,7 @@ class MarketSelector:
                     if days_left > _MAX_DAYS_TO_RESOLVE:
                         n_far_future += 1
                         continue
-                    min_days = _MIN_DAYS_TO_RESOLVE_WEATHER if cs.category == "weather" else _MIN_DAYS_TO_RESOLVE
-                    if days_left < min_days:
+                    if days_left < _MIN_DAYS_TO_RESOLVE:
                         n_too_soon += 1
                         continue
                 except ValueError:
@@ -289,12 +400,15 @@ class MarketSelector:
             base_score = spread * vol_rank
 
             # #6 Fee/reward multiplier: prefer markets where maker economics are explicit.
+            has_reward_params = cs.min_incentive_size > 0.0 and cs.max_incentive_spread > 0.0
             fee_mult = _FEE_ENABLED_MULT if cs.fees_enabled else _FEE_FREE_MULT
-            incentive_mult = (
-                _INCENTIVE_METADATA_MULT
-                if cs.min_incentive_size > 0.0 and cs.max_incentive_spread > 0.0
-                else 1.0
-            )
+            incentive_mult = 1.0
+            if has_reward_params:
+                incentive_mult *= _INCENTIVE_METADATA_MULT
+            elif cs.fees_enabled:
+                incentive_mult *= 0.90
+            else:
+                incentive_mult *= 0.84
 
             # #2 Depth multiplier: thin books mean we're the primary liquidity
             # provider → lower queue competition → higher fill probability.
@@ -382,9 +496,12 @@ class MarketSelector:
             for entry in falcon_log[:10]:
                 log.info(f"  {entry}")
 
-        result: OrderedDict[str, ContractState] = OrderedDict()
-        for token_id, cs, _ in candidates[:max_markets]:
-            result[token_id] = cs
+        if maker_state is not None:
+            result = _allocate_category_quotas(candidates, markets, maker_state, max_markets)
+        else:
+            result = OrderedDict()
+            for token_id, cs, _ in candidates[:max_markets]:
+                result[token_id] = cs
         return result
 
     async def _discover_and_seed(self) -> None:
@@ -427,8 +544,7 @@ class MarketSelector:
                 if days_left > _MAX_DAYS_TO_RESOLVE:
                     n_far_future += 1
                     continue
-                min_days = _MIN_DAYS_TO_RESOLVE_WEATHER if meta["category"] == "weather" else _MIN_DAYS_TO_RESOLVE
-                if days_left < min_days:
+                if days_left < _MIN_DAYS_TO_RESOLVE:
                     continue
             # Spread filter — same as filter_and_rank
             spread = meta["best_ask"] - meta["best_bid"]
@@ -744,7 +860,12 @@ class MarketSelector:
             feeds = self._state.feeds
 
         rolling_markouts = self._maker_state.rolling_markouts if self._maker_state else None
-        selected = self.filter_and_rank(markets, feeds=feeds, rolling_markouts=rolling_markouts)
+        selected = self.filter_and_rank(
+            markets,
+            feeds=feeds,
+            rolling_markouts=rolling_markouts,
+            maker_state=self._maker_state,
+        )
         await self._fetch_incentive_params(selected)
         by_cat: dict[str, int] = {}
         for cs in selected.values():

@@ -104,6 +104,11 @@ class FeedState:
     falcon_market_insights: dict = field(default_factory=dict)  # condition_id → FalconMarketInsight
     falcon_insights_by_question: dict = field(default_factory=dict)  # question.lower() → FalconMarketInsight
 
+    # Category-specific priors from optional external providers.
+    # Shape: category -> lookup_key -> {"prob": float, "confidence": float, "source": str}
+    # The key is usually an asset ticker or normalized question text.
+    category_priors: dict = field(default_factory=dict)
+
     # === Feed staleness tracking ===
     last_feed_update: dict = field(default_factory=dict)  # feed_name → unix timestamp (float)
 
@@ -173,6 +178,9 @@ class ContractState:
     # Regime score inputs — written by VPINPoller
     vpin: float = 0.5             # size-weighted EMA-smoothed order flow imbalance; 0.5 = neutral
     vpin_updated_at: float = 0.0  # unix timestamp of last VPINPoller write
+    # Liquidity reward eligibility — fetched from CLOB API by MarketSelector; 0.0 = not yet fetched
+    min_incentive_size: float = 0.0    # minimum order size in shares to qualify for rewards
+    max_incentive_spread: float = 0.0  # max distance from mid in [0,1] space; orders beyond score 0
 
     @property
     def mid(self) -> float:

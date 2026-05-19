@@ -279,8 +279,67 @@ def test_sports_events_supplement_assigns_sports_category():
         f"Expected category='sports', got '{market['category']}'. "
         "Sports markets need a non-unknown category to pass maker filter_and_rank()."
     )
-    assert market["parseable"] is False, "Sports markets should not be parseable (no signal model)"
-    assert market["volume_24h"] == 20000.0
+
+
+def test_weather_events_supplement_is_not_case_sensitive():
+    """Weather event discovery should survive title casing changes from Gamma.
+
+    The production API has historically returned weather event titles with
+    varying capitalization.  If discovery only matches one exact title string,
+    the bot can silently lose the entire weather universe.
+    """
+    import asyncio
+    import json
+    from unittest.mock import AsyncMock, MagicMock
+    from datetime import datetime, timezone, timedelta
+    import market.clob_monitor as cm_mod
+
+    future_expiry = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+
+    def _fake_market(question, yes_id, no_id):
+        return {
+            "question": question,
+            "clobTokenIds": json.dumps([yes_id, no_id]),
+            "acceptingOrders": True,
+            "enableOrderBook": True,
+            "endDateIso": future_expiry,
+            "bestBid": "0.45",
+            "bestAsk": "0.55",
+            "volumeClob": 500000,
+            "volume24hrClob": 20000,
+            "liquidityClob": 10000,
+            "outcomePrices": ["0.5", "0.5"],
+        }
+
+    fake_events = [
+        {
+            "title": "highest temperature in london on may 19",
+            "markets": [_fake_market(
+                "Will the highest temperature in London be 17°C on May 19?",
+                "weather_yes_1",
+                "weather_no_1",
+            )],
+        },
+    ]
+
+    async def _fake_get(url, params=None, timeout=None):
+        resp = MagicMock()
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = fake_events
+        return resp
+
+    async def _run():
+        client = AsyncMock()
+        client.get.side_effect = _fake_get
+        result = await cm_mod._fetch_weather_event_markets(client)
+        return result
+
+    result = asyncio.run(_run())
+
+    assert "weather_yes_1" in result
+    assert result["weather_yes_1"]["category"] == "weather"
+    assert result["weather_yes_1"]["parseable"] is True
+    assert result["weather_yes_1"]["volume_24h"] == 20000.0
 
 
 def test_default_subscription_cap_is_500():

@@ -42,8 +42,7 @@ def _is_ultra_short_crypto(meta: dict) -> bool:
 
 
 def _allowed_categories() -> set[str]:
-    import config as _config
-    raw = (_config.MARKET_CATEGORY_FILTER or "").strip()
+    raw = (MARKET_CATEGORY_FILTER or "").strip()
     if not raw:
         return set()
     return {part.strip().lower() for part in raw.split(",") if part.strip()}
@@ -258,7 +257,11 @@ async def _fetch_weather_event_markets(client: httpx.AsyncClient) -> dict:
         return token_map
 
     for event in events:
-        if "Highest temperature" not in event.get("title", ""):
+        # Gamma has changed the weather event title format before.
+        # Use a broad, case-insensitive temperature check so we do not drop
+        # the entire weather universe if the capitalization or phrasing shifts.
+        title = (event.get("title") or "").lower()
+        if "temperature" not in title:
             continue
         for m in event.get("markets", []):
             if not m.get("acceptingOrders") or not m.get("enableOrderBook"):
@@ -599,6 +602,7 @@ class CLOBMonitor(BaseFeed):
                 "assets_ids": token_ids,
                 "type": "Market",
                 "id": "1",
+                "custom_feature_enabled": True,  # unlocks best_bid_ask, market_resolved, new_market events
             }
 
             # Inner loop: handle WS messages until 15-minute re-discovery window elapses
@@ -646,6 +650,57 @@ class CLOBMonitor(BaseFeed):
             await self._handle_price(msg)
         elif event_type == "last_trade_price":
             self._handle_trade(msg)
+        elif event_type == "best_bid_ask":
+            await self._handle_best_bid_ask(msg)
+        elif event_type == "market_resolved":
+            await self._handle_market_resolved(msg)
+        elif event_type == "new_market":
+            log.debug(f"new_market event: {msg.get('market_id', '')}")
+
+    async def _handle_best_bid_ask(self, msg: dict):
+        """Handle best_bid_ask events — fired when best bid or ask changes.
+
+        More granular than price_change (which fires on any level); useful for
+        tight spread tracking without processing the full book on every tick.
+        """
+        yes_token_id = msg.get("asset_id", "")
+        if not yes_token_id:
+            return
+        raw_bid = msg.get("best_bid") or msg.get("bid")
+        raw_ask = msg.get("best_ask") or msg.get("ask")
+        if raw_bid is None and raw_ask is None:
+            return
+        async with self._state._lock:
+            cs = self._state.markets.get(yes_token_id)
+            if cs is None:
+                return
+            if raw_bid is not None:
+                cs.best_bid = float(raw_bid)
+            if raw_ask is not None:
+                cs.best_ask = float(raw_ask)
+            self._state.stamp_feed("clob")
+        if self._price_update_q is not None:
+            try:
+                self._price_update_q.put_nowait(yes_token_id)
+            except asyncio.QueueFull:
+                pass
+
+    async def _handle_market_resolved(self, msg: dict):
+        """Handle market_resolved events — push to QuoteEngine so bid-range guard fires.
+
+        Does not interpret the outcome — the subsequent last_trade_price / price_change
+        events will carry the terminal price (~0 or ~1) which triggers the bid-range
+        guard in QuoteEngine and cancels any resting quotes automatically.
+        """
+        yes_token_id = msg.get("asset_id", "") or msg.get("market_id", "")
+        if not yes_token_id:
+            return
+        log.info(f"market_resolved [{yes_token_id[:8]}] — nudging QuoteEngine to cancel quotes")
+        if self._price_update_q is not None:
+            try:
+                self._price_update_q.put_nowait(yes_token_id)
+            except asyncio.QueueFull:
+                pass
 
     async def _handle_book(self, msg: dict):
         yes_token_id = msg.get("asset_id", "")

@@ -22,10 +22,19 @@ _BASE = Path("maker_data")
 class MakerCheckpointer:
     """Saves MakerState to disk every `interval` seconds and on shutdown."""
 
-    def __init__(self, maker_state: "MakerState", base_dir: Path = _BASE):
+    def __init__(
+        self,
+        maker_state: "MakerState",
+        base_dir: Path = _BASE,
+        fill_ledger: "FillLedger | None" = None,
+        lifetime_cache: "LifetimeStatsCache | None" = None,
+    ):
         self._state = maker_state
         self._path = Path(base_dir) / "maker_checkpoint.json"
         self._path.parent.mkdir(parents=True, exist_ok=True)
+        self._fill_ledger = fill_ledger
+        self._lifetime_cache = lifetime_cache
+        self._last_date = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
 
     def save(self) -> None:
         """Atomically write current inventory/P&L state to checkpoint file."""
@@ -34,12 +43,14 @@ class MakerCheckpointer:
             "saved_at": time.time(),
             "session_id": s.session_id,
             "inventory": s.inventory,
+            "inventory_entry_time": s.inventory_entry_time,
             "cash_pnl": s.cash_pnl,
             "realized_pnl": s.realized_pnl,
             "open_lots": {k: [list(lot) for lot in v] for k, v in s._open_lots.items()},
             "total_fills": s.total_fills,
             "total_cancels": s.total_cancels,
             "cooldowns": s.cooldowns,
+            "inventory_cap_hits": s.inventory_cap_hits,
             "daily_fills_seen": list(s.daily_fills_seen),
         }
         tmp = self._path.with_suffix(".tmp")
@@ -56,6 +67,39 @@ class MakerCheckpointer:
                     self.save()
             except Exception as exc:
                 log.warning(f"Checkpoint save failed: {exc}")
+
+            # Detect UTC midnight crossing and update the lifetime cache for the completed day.
+            today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
+            if today != self._last_date and self._fill_ledger and self._lifetime_cache:
+                self._last_date = today
+                try:
+                    stats = self._lifetime_cache.update_through_yesterday(self._fill_ledger)
+                    async with self._state._lock:
+                        self._state.lifetime_stats = stats
+                        # Fold yesterday's session fills into pre-midnight accumulators
+                        # so Session P&L keeps spanning the full runtime, then clear
+                        # session_by_market so "Today" starts clean for the new UTC day.
+                        sbm = self._state.session_by_market
+                        self._state.session_pre_midnight_fills += sum(
+                            m.get("fills", 0) for m in sbm.values()
+                        )
+                        self._state.session_pre_midnight_cash += sum(
+                            m.get("cash_pnl", 0.0) for m in sbm.values()
+                        )
+                        self._state.session_pre_midnight_realized += sum(
+                            m.get("realized_pnl", 0.0) for m in sbm.values()
+                        )
+                        self._state.session_by_market.clear()
+                        self._state.today_stats = {"fills": 0, "cash_pnl": 0.0,
+                                                   "realized_pnl": 0.0, "by_market": {}}
+                    log.info(
+                        f"Midnight rollover: lifetime cache updated through "
+                        f"{stats.get('last_date', '?')} "
+                        f"({stats.get('total_fills', 0)} total fills); "
+                        f"session_by_market reset for new UTC day"
+                    )
+                except Exception as exc:
+                    log.warning(f"Midnight rollover lifetime update failed: {exc}")
 
 
 class LifetimeStatsCache:
@@ -242,11 +286,17 @@ class MakerStateLoader:
             data = json.loads(self._ckpt_path.read_text(encoding="utf-8"))
             s = self._state
             s.inventory = data.get("inventory", {})
+            s.inventory_entry_time = data.get("inventory_entry_time", {})
             s.cash_pnl = data.get("cash_pnl", 0.0)
             s.realized_pnl = data.get("realized_pnl", 0.0)
             s.total_fills = data.get("total_fills", 0)
             s.total_cancels = data.get("total_cancels", 0)
             s.cooldowns = {k: v for k, v in data.get("cooldowns", {}).items() if v > time.time()}
+            cutoff = time.time() - 3600.0
+            s.inventory_cap_hits = {
+                k: v for k, v in data.get("inventory_cap_hits", {}).items()
+                if float(v.get("last_hit", 0.0) or 0.0) >= cutoff
+            }
             s.daily_fills_seen = set(data.get("daily_fills_seen", []))
             s._open_lots = {
                 k: [tuple(lot) for lot in v]

@@ -275,3 +275,42 @@ async def test_reprice_skips_market_at_inventory_cap():
     assert quote_q.empty(), (
         "No LadderUpdate should be emitted when inventory is at or above the per-market cap"
     )
+
+
+# ── Regime score integration ────────────────────────────────────────────────
+
+from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
+
+
+def test_long_inventory_produces_negative_regime_skew():
+    """Long inventory at 80% cap shades fair value downward via regime skew."""
+    d = compute_regime_score(vpin=0.5, markout_30s=0.0, inv_signed=0.8,
+                             hours_to_resolution=24.0, category="crypto")
+    assert d.skew_adjustment < 0.0
+    assert abs(d.skew_adjustment) > 0.001
+
+
+def test_short_inventory_produces_positive_regime_skew():
+    """Short inventory shades fair value upward to encourage buying."""
+    d = compute_regime_score(vpin=0.5, markout_30s=0.0, inv_signed=-0.8,
+                             hours_to_resolution=24.0, category="crypto")
+    assert d.skew_adjustment > 0.0
+
+
+def test_weather_category_spread_multiplier_is_lowered():
+    """Weather remains wider than finance, but the bias is reduced."""
+    assert CATEGORY_SPREAD_MULTIPLIER["weather"] / CATEGORY_SPREAD_MULTIPLIER["finance"] == 2.2
+
+
+def test_neutral_regime_spread_multiplier_is_one():
+    """All-neutral inputs -> spread_multiplier approx 1.0 (no regime premium)."""
+    d = compute_regime_score(vpin=0.5, markout_30s=0.0, inv_signed=0.0,
+                             hours_to_resolution=48.0, category="crypto")
+    assert abs(d.spread_multiplier - 1.0) < 0.05
+
+
+def test_extreme_regime_produces_max_spread_multiplier():
+    """Maximum stress inputs -> spread_multiplier > 2.0."""
+    d = compute_regime_score(vpin=1.0, markout_30s=-0.10, inv_signed=1.0,
+                             hours_to_resolution=0.0, category="crypto")
+    assert d.spread_multiplier > 2.0

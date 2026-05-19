@@ -130,10 +130,6 @@ class InventoryManager:
         if abs_pos >= mkt_cap:
             await self._cancel_q.put(CancelAll(fill.token_id))
             cooldown_seconds = self._inventory_cap_cooldown_seconds(fill.token_id)
-            # Weather markets: same-day resolution means no time to recover from adverse fills.
-            # Enforce a minimum 30-min cooldown so the bot can't re-accumulate before expiry.
-            if category == "weather":
-                cooldown_seconds = max(cooldown_seconds, ADVERSE_COOLDOWN_SECONDS)
             self._maker.cooldowns[fill.token_id] = time.time() + cooldown_seconds
             log.warning(
                 f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"

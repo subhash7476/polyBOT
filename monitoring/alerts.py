@@ -33,6 +33,7 @@ class AlertType(Enum):
     FEED_DISCONNECTED = "feed_down"
     RISK_LIMIT_APPROACHING = "risk"
     FLATLINE_DETECTED = "flatline"
+    REWARD_ZERO_RISK = "reward_risk"
 
 
 class AlertManager:
@@ -64,6 +65,7 @@ class AlertManager:
             AlertType.FEED_DISCONNECTED:      "[FEED DOWN]",
             AlertType.RISK_LIMIT_APPROACHING: "[RISK ALERT]",
             AlertType.FLATLINE_DETECTED:      "[FLATLINE]",
+            AlertType.REWARD_ZERO_RISK:       "[REWARD RISK]",
         }.get(alert_type, "[ALERT]")
         full_msg = f"{prefix} {message}"
         try:
@@ -125,6 +127,21 @@ class AlertManager:
             f"Flatline pattern on high-volume market:\n"
             f"Q: {question[:60]}\n"
             f"Leading price: {leading_price:.2%} | {hours_left:.1f}h to resolution"
+        )
+
+    def format_reward_risk(
+        self,
+        question: str,
+        min_incentive_size: float,
+        max_incentive_spread: float,
+        quote_size: float,
+        quote_half_spread: float,
+    ) -> str:
+        return (
+            f"Zero-reward risk on active quote:\n"
+            f"Q: {question[:60]}\n"
+            f"Size: {quote_size:.1f}sh | half-spread: {quote_half_spread:.3f}\n"
+            f"Reward floor: min_size={min_incentive_size:.1f}sh max_half_spread={max_incentive_spread:.3f}"
         )
 
 

@@ -34,6 +34,62 @@ def _days_left(end_date_iso: str | None) -> float | None:
         return None
 
 
+def _rebate_snapshot(cs, levels: list[dict] | None = None) -> dict:
+    """Summarise maker-rebate eligibility for a market and its current quote."""
+    levels = levels or []
+    center = levels[len(levels) // 2] if levels else {}
+    bid = float(center.get("bid_price", 0.0) or 0.0)
+    ask = float(center.get("ask_price", 0.0) or 0.0)
+    size = max(
+        float(center.get("bid_size", 0.0) or 0.0),
+        float(center.get("ask_size", 0.0) or 0.0),
+    )
+    spread = max(0.0, ask - bid)
+    half_spread = spread / 2.0
+
+    fees_enabled = bool(getattr(cs, "fees_enabled", False)) if cs else False
+    min_size = round(float(getattr(cs, "min_incentive_size", 0.0) or 0.0), 2) if cs else 0.0
+    max_spread = round(float(getattr(cs, "max_incentive_spread", 0.0) or 0.0), 4) if cs else 0.0
+    has_reward_params = min_size > 0.0 and max_spread > 0.0
+
+    rebate_eligible = bool(
+        cs
+        and fees_enabled
+        and has_reward_params
+        and size >= min_size
+        and half_spread <= max_spread
+    )
+    if rebate_eligible:
+        rebate_status = "eligible"
+    elif not cs:
+        rebate_status = "unknown"
+    elif not levels:
+        if not fees_enabled:
+            rebate_status = "fee_free"
+        elif not has_reward_params:
+            rebate_status = "no_reward_params"
+        else:
+            rebate_status = "reward_ready"
+    elif not fees_enabled:
+        rebate_status = "fee_free"
+    elif not has_reward_params:
+        rebate_status = "no_reward_params"
+    elif size < min_size:
+        rebate_status = "size_below_min"
+    else:
+        rebate_status = "spread_too_wide"
+
+    return {
+        "fees_enabled": fees_enabled,
+        "min_incentive_size": min_size,
+        "max_incentive_spread": max_spread,
+        "quote_size": round(size, 2) if levels else None,
+        "quote_half_spread": round(half_spread, 4) if levels else None,
+        "rebate_eligible": rebate_eligible,
+        "rebate_status": rebate_status,
+    }
+
+
 async def maker_dashboard_loop(
     app_state: AppState,
     maker_state: MakerState,
@@ -106,6 +162,7 @@ async def maker_dashboard_loop(
                 spread = round(ask_p - bid_p, 4)
                 inv = inventory.get(token_id, 0.0)
                 in_cd = token_id in cooldowns
+                rebate = _rebate_snapshot(cs, levels)
                 active_markets.append({
                     "token_id": token_id[:16],
                     "question": question,
@@ -123,6 +180,7 @@ async def maker_dashboard_loop(
                     "bid_depth": getattr(cs, 'bid_depth', 0.0) if cs else 0.0,
                     "ask_depth": getattr(cs, 'ask_depth', 0.0) if cs else 0.0,
                     "category": cs.category if cs else None,
+                    **rebate,
                 })
 
             # Build selected markets list (all markets chosen by MarketSelector)
@@ -132,6 +190,7 @@ async def maker_dashboard_loop(
                 if cs is None:
                     continue
                 dl = _days_left(cs.end_date_iso)
+                rebate = _rebate_snapshot(cs, live_orders.get(token_id))
                 selected_markets.append({
                     "token_id": token_id[:16],
                     "question": cs.question[:70],
@@ -142,6 +201,7 @@ async def maker_dashboard_loop(
                     "volume_24h": getattr(cs, 'volume_24h', None) or cs.volume_usd,
                     "days_left": dl,
                     "is_quoting": token_id in live_orders,
+                    **rebate,
                 })
             # Sort: QUOTING first, then by volume descending
             selected_markets.sort(key=lambda m: (not m["is_quoting"], -(m["volume_24h"] or 0)))
@@ -210,6 +270,7 @@ async def maker_dashboard_loop(
                 cash     = row.get("alltime_cash_pnl", 0.0)
                 realized = row.get("alltime_realized_pnl", 0.0)
                 center   = levels[len(levels) // 2] if levels else {}
+                rebate   = _rebate_snapshot(cs, levels)
                 live_positions.append({
                     "token_id":       tid16,
                     "question":       cs.question[:70] if cs else tid16,
@@ -224,6 +285,7 @@ async def maker_dashboard_loop(
                     "cash_pnl":       round(cash, 4),
                     "realized_pnl":   round(realized, 4),
                     "mtm_pnl":        round(cash + pos_val, 4),
+                    **rebate,
                 })
             live_positions.sort(key=lambda p: abs(p["mtm_pnl"]), reverse=True)
 

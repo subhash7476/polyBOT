@@ -32,6 +32,24 @@ async def _run_vpin_poller(poller: VPINPoller) -> None:
             await asyncio.sleep(30.0)
 
 
+async def _heartbeat_loop(clob, interval: float = 30.0) -> None:
+    """Send POST /heartbeat to CLOB every interval seconds (live mode only).
+
+    Without this, the CLOB auto-cancels all open orders if the session goes
+    quiet (network hiccup, rate-limit pause, etc.), wiping the Liquidity Rewards
+    Q-score for those missed minutes.
+    """
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, clob.post_heartbeat
+            )
+            log.debug(f"heartbeat OK: {result}")
+        except Exception as exc:
+            log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
+
+
 def build_maker_actors(
     app_state: AppState,
     paper: bool = True,
@@ -107,6 +125,7 @@ def build_maker_actors(
 async def run_maker():
     """Main async entrypoint for maker mode."""
     from feeds.microstructure import MicrostructureFeed
+    from feeds.category_priors import CategoryPriorFeed
     from market.clob_monitor import CLOBMonitor
     from trading.balance import BalancePoller
     from dashboard.server import start_dashboard_server
@@ -152,9 +171,20 @@ async def run_maker():
     preloaded_state = MakerState()
     MakerStateLoader(preloaded_state, fill_ledger, paper=paper).load()
 
-    # Per-category inventory caps — weather is more directional so use a tighter cap
-    weather_cap = float(os.getenv("MAKER_WEATHER_INV_CAP", "15"))
-    preloaded_state.category_inventory_caps = {"weather": weather_cap}
+    # Equal-weight inventory caps across categories. This keeps weather from
+    # receiving a higher structural allocation than other markets.
+    category_cap = float(os.getenv("MAKER_NON_MODEL_INV_CAP", "12"))
+    preloaded_state.category_inventory_caps = {
+        "weather": category_cap,
+        "sports": category_cap,
+        "event": category_cap,
+        "election": category_cap,
+        "finance": category_cap,
+        "macro": category_cap,
+        "rates": category_cap,
+        "crypto": category_cap,
+        "unknown": category_cap,
+    }
 
     actors, queues = build_maker_actors(
         app_state=app_state,
@@ -188,12 +218,16 @@ async def run_maker():
     coros = [
         clob_monitor.start(),
         MicrostructureFeed(app_state).start(),
+        CategoryPriorFeed(app_state).start(),
         FalconFeed(app_state).start(),
         checkpointer.checkpoint_loop(),
     ]
 
     if wallet_address:
         coros.append(BalancePoller(app_state, wallet_address).start())
+
+    if clob is not None:
+        coros.append(_heartbeat_loop(clob))
 
     # Redemption loop — recycles resolved positions every 15 min (no-op in paper mode)
     coros.append(

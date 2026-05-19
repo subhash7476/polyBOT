@@ -141,6 +141,32 @@ function statusPill(m) {
   return `<span class="pill pill-quoting pill-dot">Quoting</span>`;
 }
 
+function rebatePill(m) {
+  const title = [
+    `fees=${m.fees_enabled ? 'on' : 'off'}`,
+    `min_size=${Number(m.min_incentive_size || 0).toFixed(1)}sh`,
+    `max_half_spread=${Number(m.max_incentive_spread || 0).toFixed(3)}`,
+    `quote_size=${m.quote_size == null ? 'n/a' : Number(m.quote_size).toFixed(1)}sh`,
+    `quote_half_spread=${m.quote_half_spread == null ? 'n/a' : Number(m.quote_half_spread).toFixed(3)}`,
+  ].join(' · ');
+  if (m.rebate_eligible) {
+    return `<span class="pill pill-quoting pill-dot" title="${esc(title)}">Rebate</span>`;
+  }
+  if (m.rebate_status === 'reward_ready') {
+    return `<span class="pill pill-watching pill-dot" title="${esc(title)}">Reward ready</span>`;
+  }
+  if (m.rebate_status === 'spread_too_wide' || m.rebate_status === 'size_below_min') {
+    return `<span class="pill pill-watching pill-dot" title="${esc(title)}">Zero reward risk</span>`;
+  }
+  if (m.rebate_status === 'fee_free') {
+    return `<span class="pill pill-watching pill-dot" title="${esc(title)}">No rebate</span>`;
+  }
+  if (m.rebate_status === 'no_reward_params') {
+    return `<span class="pill pill-watching pill-dot" title="${esc(title)}">No params</span>`;
+  }
+  return `<span class="pill pill-watching pill-dot" title="${esc(title)}">Reward ?</span>`;
+}
+
 function inventoryBar(m) {
   const pct = Math.max(-1, Math.min(1, m.inventory_pct || 0));
   const width = Math.abs(pct) * 50; // half-bar
@@ -202,7 +228,7 @@ function render(d) {
         <td>${quoteCell(m)}</td>
         <td class="right"><span class="spread">${spread}</span></td>
         <td>${inventoryBar(m)}</td>
-        <td>${statusPill(m)}</td>
+        <td>${statusPill(m)} ${rebatePill(m)}</td>
       </tr>`;
     }).join('');
   }
@@ -296,7 +322,7 @@ function render(d) {
         ? '<span class="pill pill-quoting pill-dot">Quoting</span>'
         : '<span class="pill pill-watching pill-dot">Watching</span>';
       return `<tr>
-        <td>${pill}</td>
+        <td>${pill} ${rebatePill(m)}</td>
         <td><div class="qtext" title="${esc(m.question||'')}">${esc(truncate(m.question||'—', 70))}</div></td>
         <td>${m.category ? `<span class="pill pill-cat">${esc(m.category)}</span>` : '<span class="dim">—</span>'}</td>
         <td>${bookCell(m)}</td>
@@ -334,7 +360,7 @@ function render(d) {
   $('pos-count').textContent = positions.length;
   const posBody = $('positions-body');
   if (!positions.length) {
-    posBody.innerHTML = emptyRow(9, 'No open positions', 'Markets with open inventory will appear here.');
+    posBody.innerHTML = emptyRow(10, 'No open positions', 'Markets with open inventory will appear here.');
   } else {
     posBody.innerHTML = positions.map(p => {
       const inv = p.inventory || 0;
@@ -345,6 +371,7 @@ function render(d) {
         <td>${p.category ? `<span class="pill pill-cat">${esc(p.category)}</span>` : '<span class="dim">—</span>'}</td>
         <td>${fmtResolves(p.end_date_iso)}</td>
         <td class="num right ${invCls}">${invSign}${inv.toFixed(2)}</td>
+        <td>${rebatePill(p)}</td>
         <td class="num right">${(p.current_mid || 0).toFixed(4)}</td>
         <td class="num right ${pnlClass(p.position_value)}">${fmtPnl(p.position_value)}</td>
         <td class="num right ${pnlClass(p.cash_pnl)}">${fmtPnl(p.cash_pnl)}</td>

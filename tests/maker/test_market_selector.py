@@ -82,6 +82,30 @@ def test_ranks_by_spread_times_volume():
     assert keys[0] == "b"  # higher score first
 
 
+def test_fee_enabled_market_beats_fee_free_tie():
+    markets = {
+        "fee": _make_market("fee", bid=0.40, ask=0.60, volume=20_000.0),
+        "free": _make_market("free", bid=0.40, ask=0.60, volume=20_000.0),
+    }
+    markets["fee"].fees_enabled = True
+    markets["free"].fees_enabled = False
+
+    selected = MarketSelector.filter_and_rank(markets)
+    assert list(selected.keys())[0] == "fee"
+
+
+def test_confirmed_incentive_metadata_boosts_market():
+    markets = {
+        "rewarded": _make_market("rewarded", bid=0.40, ask=0.60, volume=10_000.0),
+        "plain": _make_market("plain", bid=0.40, ask=0.60, volume=11_000.0),
+    }
+    markets["rewarded"].min_incentive_size = 5.0
+    markets["rewarded"].max_incentive_spread = 0.03
+
+    selected = MarketSelector.filter_and_rank(markets)
+    assert list(selected.keys())[0] == "rewarded"
+
+
 def test_caps_at_max_active():
     markets = {
         f"m{i}": _make_market(f"m{i}", volume=float(100_000 - i))

@@ -55,6 +55,29 @@ async def test_per_market_cap_triggers_cancel(setup):
 
 
 @pytest.mark.asyncio
+async def test_repeated_inventory_cap_hits_escalate_cooldown(setup):
+    im, maker_state, _, _, cancel_q = setup
+    maker_state.max_inventory_per_market = 10.0
+
+    fill1 = Fill("tok1", "BUY", 0.45, 10.0, "order-a", time.time())
+    await im.handle_fill(fill1)
+    first_resume = maker_state.cooldowns["tok1"]
+
+    # Drain below cap, then refill quickly. This should be treated as a repeat
+    # cap hit on the same market and receive a longer pause.
+    maker_state.inventory["tok1"] = 0.0
+    fill2 = Fill("tok1", "BUY", 0.45, 10.0, "order-b", time.time() + 1)
+    await im.handle_fill(fill2)
+    second_resume = maker_state.cooldowns["tok1"]
+
+    while not cancel_q.empty():
+        cancel_q.get_nowait()
+
+    assert maker_state.inventory_cap_hits["tok1"]["count"] == 2
+    assert second_resume - first_resume >= 250.0
+
+
+@pytest.mark.asyncio
 async def test_total_cap_triggers_global_cancel(setup):
     im, maker_state, _, _, cancel_q = setup
     # Fill up to near total cap

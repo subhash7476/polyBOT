@@ -13,6 +13,7 @@ from flask import Flask, Response, send_file
 from dashboard.state import DashboardState
 
 _STATIC_DIR = Path(__file__).parent / "static"
+_JS_DIR = Path(__file__).parent / "JS"
 
 log = logging.getLogger(__name__)
 
@@ -45,8 +46,13 @@ def create_app(dash: DashboardState, maker_dash=None) -> Flask:
 
     if maker_dash is not None:
         @app.get("/maker")
+        @app.get("/makerbot.html")
         def maker_index():
-            return send_file(_STATIC_DIR / "maker.html")
+            return send_file(_JS_DIR / "makerbot.html")
+
+        @app.get("/dashboard.js")
+        def maker_js():
+            return send_file(_JS_DIR / "dashboard.js", mimetype="application/javascript")
 
         @app.get("/api/maker-snapshot")
         def maker_snapshot():

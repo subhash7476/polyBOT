@@ -15,6 +15,11 @@ _WEATHER_RE = re.compile(
     re.IGNORECASE,
 )
 
+_GLOBAL_TEMPERATURE_RE = re.compile(
+    r'\bglobal\s+temperature\s+increase\b',
+    re.IGNORECASE,
+)
+
 _WEATHER_CITY_MAP: dict = {
     "new york city": "nyc",
     "new york":      "nyc",
@@ -64,6 +69,13 @@ def _detect_weather_city(q: str) -> Optional[str]:
     return None
 
 
+def _detect_finance_asset(q: str) -> Optional[str]:
+    for name, symbol in sorted(FINANCE_ASSET_ALIASES.items(), key=lambda x: -len(x[0])):
+        if re.search(r'\b' + re.escape(name) + r'\b', q, re.IGNORECASE):
+            return symbol
+    return None
+
+
 PRICE_PATTERNS = [
     r"\$([0-9,]+(?:\.[0-9]+)?)[mMkK]?",        # $1m, $85k, $85,000, $3,500.50
     r"([0-9,]+(?:\.[0-9]+)?)[kK]\s*(?:USD|USDT|dollars)?",  # 85k USD
@@ -90,6 +102,16 @@ ASSET_ALIASES: dict = {
     "avax": "AVAX", "avalanche": "AVAX",
     "hype": "HYPE", "hyperliquid": "HYPE",
 }
+
+FINANCE_ASSET_ALIASES: dict = {
+    "spy": "SPY", "spx": "SPY", "s&p 500": "SPY",
+    "qqq": "QQQ", "nasdaq": "QQQ", "ndx": "QQQ",
+    "dia": "DIA", "dow": "DIA", "djia": "DIA",
+    "iwm": "IWM", "russell": "IWM",
+    "xlf": "XLF", "financials": "XLF",
+    "xlk": "XLK", "tech etf": "XLK",
+}
+FINANCE_ASSETS = {"SPY", "QQQ", "DIA", "IWM", "XLF", "XLK"}
 DIRECTION_ABOVE = ["above", "over", "exceed", "higher than", "hit", "reach", ">"]
 DIRECTION_BELOW = ["below", "under", "drop", "fall below", "<"]
 # Use word-boundary regex to avoid false positives: "rate" in "operate",
@@ -195,9 +217,9 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
     # 0. Weather markets — detect before crypto/macro to avoid misclassification
     if _WEATHER_RE.search(q):
         city_slug = _detect_weather_city(q)
-        if city_slug:
+        if city_slug or _GLOBAL_TEMPERATURE_RE.search(q):
             contract.category = "weather"
-            contract.asset = city_slug
+            contract.asset = city_slug or "global-temperature"
             contract.direction = "bucket"
             contract.parseable = True
             contract.expiry = _parse_expiry(question)
@@ -408,6 +430,9 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         if re.search(r'\b' + re.escape(alias) + r'\b', q, re.IGNORECASE):
             contract.asset = ASSET_ALIASES[alias]
             break
+    finance_asset = _detect_finance_asset(q) if not contract.asset else None
+    if finance_asset:
+        contract.asset = finance_asset
 
     if not contract.asset:
         # Generic binary catch-all — "Will X happen?" → route through microstructure path
@@ -464,6 +489,10 @@ def parse_contract(token_id: str, question: str) -> ParsedContract:
         contract.expiry = now.replace(day=last_day, hour=23, minute=59, second=0, microsecond=0)
         log.debug(f"expiry not found, defaulting to EOM: {question[:60]}")
 
+    if contract.asset in FINANCE_ASSETS or finance_asset:
+        contract.category = "finance"
+    else:
+        contract.category = "crypto"
     return contract
 
 

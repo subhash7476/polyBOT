@@ -35,6 +35,25 @@ def test_existing_rates_unchanged():
     assert c.category == "rates"
 
 
+def test_global_temperature_increase_is_weather():
+    c = parse_contract(
+        "tok1",
+        "Will global temperature increase by between 1.10°C and 1.14°C in May 2026?",
+    )
+    assert c.category == "weather"
+    assert c.parseable is True
+    assert c.asset == "global-temperature"
+    assert c.direction == "bucket"
+
+
 def test_election_parseable_has_expiry():
     c = parse_contract("tok1", "Will Republicans win the 2026 midterm?")
     assert c.expiry is not None
+
+
+def test_spy_price_market_is_finance():
+    c = parse_contract("tok1", "Will SPY close above $500 by May 31, 2026?")
+    assert c.category == "finance"
+    assert c.asset == "SPY"
+    assert c.direction == "above"
+    assert c.target_price == 500.0

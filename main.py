@@ -22,12 +22,14 @@ from feeds.deribit import DeribitFeed
 from feeds.microstructure import MicrostructureFeed
 from feeds.onchain import OnChainFeed
 from feeds.macro import MacroFeed
+from feeds.category_priors import CategoryPriorFeed
 from feeds.weather import WeatherFeed
 from feeds.falcon import FalconFeed
 from market.clob_monitor import CLOBMonitor, build_threshold_markets
 from engine.arb_scanner import find_monotonicity_violations, find_cross_temporal_violations
-from engine.probability import build_model_probability, build_microstructure_probability
+from engine.probability import build_microstructure_probability
 from engine.macro_probability import build_macro_probability
+from engine.category_probability import build_finance_probability, build_category_probability
 from engine.weather_probability import build_weather_probability
 from engine.contract_parser import parse_contract
 from engine.signal_filter import passes_signal_filter
@@ -127,13 +129,17 @@ async def trading_loop(
                     model_prob, signal_count, engine = build_macro_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
-                elif parsed.category == "crypto":
-                    model_prob, signal_count, engine = build_model_probability(
+                elif parsed.category in ("crypto", "finance"):
+                    model_prob, signal_count, engine = build_finance_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
                     )
                 elif parsed.category == "weather":
                     model_prob, signal_count, engine = build_weather_probability(
                         parsed, feeds, SIGNAL_WEIGHTS
+                    )
+                elif parsed.category in ("sports", "politics", "event", "election"):
+                    model_prob, signal_count, engine = build_category_probability(
+                        parsed, contract_state, feeds, SIGNAL_WEIGHTS
                     )
                 else:
                     # election, event, unknown — market-price prior + microstructure signals only
@@ -468,6 +474,7 @@ async def main():
         MicrostructureFeed(state).start(),
         OnChainFeed(state).start(),
         MacroFeed(state).start(),
+        CategoryPriorFeed(state).start(),
         WeatherFeed(state).start(),
         FalconFeed(state).start(),
         CLOBMonitor(state).start(),

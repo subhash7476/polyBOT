@@ -21,6 +21,14 @@ log = get_logger(__name__)
 
 _POLL_INTERVAL = 300   # 5 minutes
 _FALLBACK_CONFIDENCE = 0.3
+_FINANCE_SYMBOLS = {
+    "SPY": "SPY",
+    "QQQ": "QQQ",
+    "DIA": "DIA",
+    "IWM": "IWM",
+    "XLF": "XLF",
+    "XLK": "XLK",
+}
 
 # FRED API — free with API key (https://fred.stlouisfed.org/docs/api/)
 _FRED_BASE = "https://api.stlouisfed.org/fred/series/observations"
@@ -113,6 +121,17 @@ class MacroFeed:
             yield_10y=y10,       yield_10y_confidence=y10_conf,
             fed_may_cut_prob=fed, fed_confidence=fed_conf,
         )
+        finance_updates = {}
+        for asset, symbol in _FINANCE_SYMBOLS.items():
+            try:
+                finance_updates[asset] = await self._yahoo_price(client, symbol)
+            except Exception as exc:
+                log.debug(f"finance price fetch failed for {symbol}: {exc}")
+        if finance_updates:
+            # Store index/ETF proxies in the shared spot price map so the generic
+            # asset model can price finance-bracket markets without extra plumbing.
+            for asset, spot in finance_updates.items():
+                await self._state.update_asset_feed(asset, spot=spot)
         await self._fetch_fred_consensus(client)
         # Store prev DXY for next trend computation
         self._cache["dxy_prev"] = CachedValue(

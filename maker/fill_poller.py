@@ -161,6 +161,14 @@ class FillPoller:
     async def _run_live(self):
         from trading.clob_factory import OpenOrderParams
 
+        # Seed known order IDs as OPEN so fills on first poll after restart are detected
+        for levels in self._maker.live_orders.values():
+            for level in levels:
+                for key in ("bid_order_id", "ask_order_id"):
+                    oid = level.get(key, "")
+                    if oid and not oid.startswith("paper-"):
+                        self._order_states[oid] = "OPEN"
+
         while True:
             try:
                 orders = self._clob.get_orders(OpenOrderParams())

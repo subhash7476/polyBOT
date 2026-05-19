@@ -74,9 +74,13 @@ class OrderManager:
 
         from trading.clob_factory import OrderArgs, OrderType
         order_args = OrderArgs(token_id=token_id, price=price, size=size, side=side)
-        signed = self._clob.create_order(order_args)
-        result = self._clob.post_order(signed, orderType=OrderType.GTC, post_only=True)
-        return result.get("orderID", "")
+        try:
+            signed = self._clob.create_order(order_args)
+            result = self._clob.post_order(signed, orderType=OrderType.GTC, post_only=True)
+            return result.get("orderID", "")
+        except Exception as exc:
+            log.warning(f"place_order failed ({side} {size:.4f}@{price:.4f} [{token_id[:8]}]): {exc}")
+            return ""
 
     def _cancel_level(self, level: dict) -> None:
         if self._paper:
@@ -109,5 +113,7 @@ class OrderManager:
                     self.handle_ladder_sync(update)
                 except asyncio.TimeoutError:
                     pass
+                except Exception as exc:
+                    log.error(f"handle_ladder_sync error: {exc}", exc_info=True)
             else:
                 await asyncio.sleep(0.1)
