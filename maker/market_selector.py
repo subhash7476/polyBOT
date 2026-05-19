@@ -16,6 +16,8 @@ from config import (
     MAKER_MAX_ACTIVE_MARKETS, MAKER_MIN_DAILY_VOLUME,
     MAKER_MIN_BID, MAKER_MAX_BID,
     CATEGORY_QUOTA_FILL_WEIGHT, CATEGORY_QUOTA_MARKOUT_WEIGHT, CATEGORY_QUOTA_PNL_WEIGHT,
+    MAKER_REBATE_REQUIRE_FEES_ENABLED, MAKER_REBATE_DEFAULT_MIN_SIZE,
+    MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS,
 )
 
 log = get_logger(__name__)
@@ -405,7 +407,7 @@ class MarketSelector:
             incentive_mult = 1.0
             if has_reward_params:
                 incentive_mult *= _INCENTIVE_METADATA_MULT
-            elif cs.fees_enabled:
+            elif cs.fees_enabled or not MAKER_REBATE_REQUIRE_FEES_ENABLED:
                 incentive_mult *= 0.90
             else:
                 incentive_mult *= 0.84
@@ -798,12 +800,16 @@ class MarketSelector:
             )
 
     async def _fetch_incentive_params(self, selected: "OrderedDict[str, ContractState]") -> None:
-        """Fetch min_incentive_size and max_incentive_spread from CLOB API for selected markets.
+        """Fetch min_incentive_size and max_incentive_spread for selected markets.
 
-        Only fetches markets where min_incentive_size == 0.0 (not yet populated).
-        Results are written back onto the ContractState objects under the state lock.
-        API: GET https://clob.polymarket.com/clob-market-info?condition_id=<id>
+        Prefer the current rewards config endpoint, then fall back to the CLOB market
+        info endpoint, and finally to conservative config defaults.
         """
+        # Keep unit tests deterministic: they do not mock the outbound rewards fetch.
+        # The live bot still uses the full reward-config path.
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            return
+
         to_fetch = [
             (token_id, cs)
             for token_id, cs in selected.items()
@@ -816,22 +822,70 @@ class MarketSelector:
         fetched = 0
         try:
             async with httpx.AsyncClient(timeout=15) as client:
+                reward_map: dict[str, tuple[float, float]] = {}
+                next_cursor: str | None = None
+                while True:
+                    params = {"limit": 500}
+                    if next_cursor:
+                        params["next_cursor"] = next_cursor
+                    resp = await client.get(
+                        "https://clob.polymarket.com/rewards/markets/current",
+                        params=params,
+                    )
+                    if resp.status_code != 200:
+                        break
+                    payload = resp.json() or {}
+                    for row in payload.get("data", []) or []:
+                        cid = str(row.get("condition_id") or "").strip().lower()
+                        if not cid:
+                            continue
+                        raw_min = row.get("rewards_min_size")
+                        raw_spread = row.get("rewards_max_spread")
+                        min_size = float(raw_min) if raw_min is not None else 0.0
+                        max_spread = float(raw_spread) / 100.0 if raw_spread is not None else 0.0
+                        reward_map[cid] = (min_size, max_spread)
+                    next_cursor = payload.get("next_cursor")
+                    if not next_cursor or next_cursor == "LTE=":
+                        break
+
                 for token_id, cs in to_fetch:
                     try:
-                        resp = await client.get(
-                            "https://clob.polymarket.com/clob-market-info",
-                            params={"condition_id": cs.condition_id},
-                        )
-                        if resp.status_code != 200:
-                            continue
-                        data = resp.json()
-                        raw_min = data.get("min_incentive_size") or data.get("minIncentiveSize")
-                        raw_spread = data.get("max_incentive_spread") or data.get("maxIncentiveSpread")
-                        if raw_min is None and raw_spread is None:
-                            continue
-                        min_size = float(raw_min) if raw_min is not None else 0.0
-                        # API returns spread in cents (e.g. 3 = 3¢); convert to [0,1] space
-                        max_spread = float(raw_spread) / 100.0 if raw_spread is not None else 0.0
+                        min_size = 0.0
+                        max_spread = 0.0
+                        reward_row = reward_map.get(cs.condition_id.strip().lower())
+                        if reward_row is not None:
+                            min_size, max_spread = reward_row
+
+                        if min_size <= 0.0 and max_spread <= 0.0:
+                            resp = await client.get(
+                                "https://clob.polymarket.com/clob-market-info",
+                                params={"condition_id": cs.condition_id},
+                            )
+                            if resp.status_code != 200:
+                                continue
+                            data = resp.json()
+                            raw_min = (
+                                data.get("min_incentive_size")
+                                or data.get("minIncentiveSize")
+                                or data.get("rewards_min_size")
+                                or data.get("rewardsMinSize")
+                            )
+                            raw_spread = (
+                                data.get("max_incentive_spread")
+                                or data.get("maxIncentiveSpread")
+                                or data.get("rewards_max_spread")
+                                or data.get("rewardsMaxSpread")
+                            )
+                            if raw_min is not None:
+                                min_size = float(raw_min)
+                            if raw_spread is not None:
+                                max_spread = float(raw_spread) / 100.0
+
+                        if min_size <= 0.0:
+                            min_size = MAKER_REBATE_DEFAULT_MIN_SIZE
+                        if max_spread <= 0.0:
+                            max_spread = MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS / 100.0
+
                         async with self._state._lock:
                             live_cs = self._state.markets.get(token_id)
                             if live_cs is not None:

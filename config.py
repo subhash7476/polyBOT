@@ -42,6 +42,23 @@ RESOLUTION_POLL_INTERVAL_SECONDS = int(
 # Signal agreement
 MIN_SIGNALS_REQUIRED = 2
 
+# Maker rebate program
+# Rebates are market-specific. The live API publishes rewards_min_size and
+# rewards_max_spread per market; these defaults are only fallbacks when the
+# rewards API has not populated a market yet.
+MAKER_REBATE_MIN_ACCRUED_USDC = float(
+    os.getenv("MAKER_REBATE_MIN_ACCRUED_USDC", "1.0")
+)
+MAKER_REBATE_REQUIRE_FEES_ENABLED = os.getenv(
+    "MAKER_REBATE_REQUIRE_FEES_ENABLED", "true"
+).lower() == "true"
+MAKER_REBATE_DEFAULT_MIN_SIZE = float(
+    os.getenv("MAKER_REBATE_DEFAULT_MIN_SIZE", "50")
+)
+MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS = float(
+    os.getenv("MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS", "3")
+)
+
 # Exposure
 MAX_GROUP_EXPOSURE_PCT = 0.20   # 20% of bankroll per direction-bucket
 
