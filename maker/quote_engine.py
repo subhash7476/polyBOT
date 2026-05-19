@@ -109,6 +109,24 @@ def compute_spread(
     return max(MIN_SPREAD, min(spread, MAX_SPREAD))
 
 
+def compute_quote_size(
+    market_size_hint: float,
+    regime_size_multiplier: float,
+    min_incentive_size: float = 0.0,
+) -> float:
+    """Compute a market-aware quote size.
+
+    The global `MAKER_QUOTE_SIZE` is just the baseline. If a market publishes a
+    reward minimum size, we floor to that threshold so the order is still rebate
+    eligible. The `market_size_hint` is the market-specific minimum / baseline
+    size in shares, not the final order size.
+    """
+    base_size = max(1.0, market_size_hint * regime_size_multiplier)
+    if min_incentive_size > 0.0:
+        base_size = max(base_size, min(min_incentive_size, 200.0))
+    return base_size
+
+
 class QuoteEngine:
     """Computes quotes for active markets, event-driven on price ticks."""
 
@@ -374,11 +392,11 @@ class QuoteEngine:
                 eff_fv = anchor_fv
                 eff_spread = spread
 
-            base_size = max(1.0, QUOTE_SIZE_USDC * regime.size_multiplier)
-            # Floor size at min_incentive_size so orders qualify for Liquidity Rewards.
-            # Cap at 200sh to guard against API outliers.
-            if cs.min_incentive_size > 0.0:
-                base_size = max(base_size, min(cs.min_incentive_size, 200.0))
+            base_size = compute_quote_size(
+                market_size_hint=QUOTE_SIZE_USDC,
+                regime_size_multiplier=regime.size_multiplier,
+                min_incentive_size=cs.min_incentive_size,
+            )
 
             # Warn once per market when all ladder levels are outside the incentive spread
             # window — those orders score 0 for Liquidity Rewards (quadratic penalty).

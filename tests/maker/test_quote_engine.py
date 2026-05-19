@@ -1,5 +1,5 @@
 import pytest
-from maker.quote_engine import QuoteEngine, compute_fair_value, compute_spread
+from maker.quote_engine import QuoteEngine, compute_fair_value, compute_spread, compute_quote_size
 from maker.types import LadderUpdate, QuoteIntent
 
 
@@ -60,6 +60,26 @@ def test_spread_max_very_near_expiry():
 def test_spread_floor():
     s = compute_spread(volume_usd=10000.0, abs_inventory=0.0, hours_to_expiry=500.0)
     assert s >= 0.04
+
+
+def test_quote_size_defaults_to_baseline():
+    size = compute_quote_size(market_size_hint=5.0, regime_size_multiplier=1.0, min_incentive_size=0.0)
+    assert size == 5.0
+
+
+def test_quote_size_floors_to_reward_minimum():
+    size = compute_quote_size(market_size_hint=5.0, regime_size_multiplier=1.0, min_incentive_size=50.0)
+    assert size == 50.0
+
+
+def test_quote_size_respects_larger_market_minimum():
+    size = compute_quote_size(market_size_hint=5.0, regime_size_multiplier=1.0, min_incentive_size=100.0)
+    assert size == 100.0
+
+
+def test_quote_size_caps_reward_outlier():
+    size = compute_quote_size(market_size_hint=5.0, regime_size_multiplier=1.0, min_incentive_size=500.0)
+    assert size == 200.0
 
 
 def test_build_ladder_returns_correct_number_of_levels():
