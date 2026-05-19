@@ -1,0 +1,539 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Request Structure" [ref=e146] [cursor=pointer]:
+              - /url: "#request-structure"
+          - listitem [ref=e147]:
+            - link "Request Body Schema" [ref=e148] [cursor=pointer]:
+              - /url: "#request-body-schema"
+          - listitem [ref=e149]:
+            - link "Request Fields" [ref=e150] [cursor=pointer]:
+              - /url: "#request-fields"
+          - listitem [ref=e151]:
+            - link "Example Request" [ref=e152] [cursor=pointer]:
+              - /url: "#example-request"
+          - listitem [ref=e153]:
+            - link "Response Structure" [ref=e154] [cursor=pointer]:
+              - /url: "#response-structure"
+          - listitem [ref=e155]:
+            - link "Response Schema" [ref=e156] [cursor=pointer]:
+              - /url: "#response-schema"
+          - listitem [ref=e157]:
+            - link "Response Fields" [ref=e158] [cursor=pointer]:
+              - /url: "#response-fields"
+          - listitem [ref=e159]:
+            - link "Example Response" [ref=e160] [cursor=pointer]:
+              - /url: "#example-response"
+          - listitem [ref=e161]:
+            - link "Tips for Best Results" [ref=e162] [cursor=pointer]:
+              - /url: "#tips-for-best-results"
+      - main [ref=e163]:
+        - generic [ref=e164]:
+          - generic [ref=e165]:
+            - button "Copy page" [ref=e166] [cursor=pointer]:
+              - img "copy" [ref=e167]
+              - generic [ref=e169]: Copy
+            - button "More" [ref=e170] [cursor=pointer]:
+              - img "chevron-down" [ref=e171]
+          - navigation "Breadcrumb" [ref=e173]:
+            - list [ref=e174]:
+              - listitem [ref=e175]:
+                - link "📦 Reference" [ref=e176] [cursor=pointer]:
+                  - /url: /falcon-api/reference
+                  - generic [ref=e177]: 📦
+                  - text: Reference
+          - heading "🧩 API Structure" [level=1] [ref=e178]:
+            - generic [ref=e179]: 🧩
+            - text: API Structure
+          - paragraph [ref=e180]: Learn how Falcon API requests and responses are structured across all endpoints. Falcon uses a unified JSON query system, meaning every dataset follows the same request format and response schema.
+        - generic [ref=e181]:
+          - heading "Direct link to heading Request Structure" [level=2] [ref=e182]:
+            - link "Direct link to heading" [ref=e184] [cursor=pointer]:
+              - /url: "#request-structure"
+              - img "hashtag" [ref=e185]
+            - generic [ref=e187]: Request Structure
+          - paragraph [ref=e188]:
+            - text: All Falcon queries are sent using a
+            - strong [ref=e189]: POST request
+            - text: with a JSON body.
+          - generic [ref=e191]:
+            - button "Copy" [ref=e192] [cursor=pointer]:
+              - generic [ref=e193]: Copy
+            - code [ref=e195]:
+              - generic [ref=e197]: POST /query
+              - generic [ref=e199]: "Content-Type: application/json"
+          - paragraph [ref=e200]:
+            - text: Each request includes an
+            - code [ref=e201]: agent_id
+            - text: which determines the dataset being queried, along with optional parameters for filtering, pagination, and formatting.
+          - heading "Direct link to heading Request Body Schema" [level=3] [ref=e202]:
+            - link "Direct link to heading" [ref=e204] [cursor=pointer]:
+              - /url: "#request-body-schema"
+              - img "hashtag" [ref=e205]
+            - generic [ref=e207]: Request Body Schema
+          - paragraph [ref=e208]: Every Falcon API request follows the structure below.
+          - generic [ref=e210]:
+            - button "Copy" [ref=e211] [cursor=pointer]:
+              - generic [ref=e212]: Copy
+            - code [ref=e214]:
+              - generic [ref=e216]: "{"
+              - generic [ref=e218]: "\"agent_id\": number,"
+              - generic [ref=e220]: "\"params\": { ... },"
+              - generic [ref=e222]: "\"pagination\": {"
+              - generic [ref=e224]: "\"limit\": number,"
+              - generic [ref=e226]: "\"offset\": number"
+              - generic [ref=e228]: "},"
+              - generic [ref=e230]: "\"formatter_config\": {"
+              - generic [ref=e232]: "\"format_type\": string"
+              - generic [ref=e234]: "}"
+              - generic [ref=e236]: "}"
+          - heading "Direct link to heading Request Fields" [level=3] [ref=e237]:
+            - link "Direct link to heading" [ref=e239] [cursor=pointer]:
+              - /url: "#request-fields"
+              - img "hashtag" [ref=e240]
+            - generic [ref=e242]: Request Fields
+          - heading "Direct link to heading agent_id" [level=4] [ref=e243]:
+            - link "Direct link to heading" [ref=e245] [cursor=pointer]:
+              - /url: "#agent_id"
+              - img "hashtag" [ref=e246]
+            - generic [ref=e248]: agent_id
+          - paragraph [ref=e249]:
+            - strong [ref=e250]: Required
+          - paragraph [ref=e251]: Identifies the dataset or endpoint logic being queried.
+          - paragraph [ref=e252]:
+            - text: Each Falcon dataset is mapped to a specific
+            - code [ref=e253]: agent_id
+            - text: .
+          - paragraph [ref=e254]: "Example:"
+          - generic [ref=e256]:
+            - button "Copy" [ref=e257] [cursor=pointer]:
+              - generic [ref=e258]: Copy
+            - code [ref=e260]:
+              - generic [ref=e262]: "\"agent_id\": 555"
+          - heading "Direct link to heading params" [level=4] [ref=e263]:
+            - link "Direct link to heading" [ref=e265] [cursor=pointer]:
+              - /url: "#params"
+              - img "hashtag" [ref=e266]
+            - generic [ref=e268]: params
+          - paragraph [ref=e269]:
+            - strong [ref=e270]: Optional
+          - paragraph [ref=e271]: Contains dataset-specific filters for the request.
+          - paragraph [ref=e272]: "Common examples include:"
+          - list [ref=e273]:
+            - listitem [ref=e274]:
+              - generic [ref=e276]: •
+              - paragraph [ref=e278]: market status
+            - listitem [ref=e279]:
+              - generic [ref=e281]: •
+              - paragraph [ref=e283]: market slug
+            - listitem [ref=e284]:
+              - generic [ref=e286]: •
+              - paragraph [ref=e288]: timestamps
+            - listitem [ref=e289]:
+              - generic [ref=e291]: •
+              - paragraph [ref=e293]: trader addresses
+            - listitem [ref=e294]:
+              - generic [ref=e296]: •
+              - paragraph [ref=e298]: token identifiers
+          - paragraph [ref=e299]: "Example:"
+          - generic [ref=e301]:
+            - button "Copy" [ref=e302] [cursor=pointer]:
+              - generic [ref=e303]: Copy
+            - code [ref=e305]:
+              - generic [ref=e307]: "\"params\": {"
+              - generic [ref=e309]: "\"closed\": \"false\","
+              - generic [ref=e311]: "\"market_slug\": \"bitcoin\""
+              - generic [ref=e313]: "}"
+          - heading "Direct link to heading pagination" [level=4] [ref=e314]:
+            - link "Direct link to heading" [ref=e316] [cursor=pointer]:
+              - /url: "#pagination"
+              - img "hashtag" [ref=e317]
+            - generic [ref=e319]: pagination
+          - paragraph [ref=e320]:
+            - strong [ref=e321]: Optional
+          - paragraph [ref=e322]: Controls the number of records returned and the result offset.
+          - paragraph [ref=e323]: "Fields:"
+          - list [ref=e324]:
+            - listitem [ref=e325]:
+              - generic [ref=e327]: •
+              - paragraph [ref=e329]:
+                - strong [ref=e330]: limit
+                - text: — maximum number of records returned
+            - listitem [ref=e331]:
+              - generic [ref=e333]: •
+              - paragraph [ref=e335]:
+                - strong [ref=e336]: offset
+                - text: — starting index for the query
+          - paragraph [ref=e337]: "Example:"
+          - generic [ref=e339]:
+            - button "Copy" [ref=e340] [cursor=pointer]:
+              - generic [ref=e341]: Copy
+            - code [ref=e343]:
+              - generic [ref=e345]: "\"pagination\": {"
+              - generic [ref=e347]: "\"limit\": 10,"
+              - generic [ref=e349]: "\"offset\": 0"
+              - generic [ref=e351]: "}"
+          - heading "Direct link to heading formatter_config" [level=4] [ref=e352]:
+            - link "Direct link to heading" [ref=e354] [cursor=pointer]:
+              - /url: "#formatter_config"
+              - img "hashtag" [ref=e355]
+            - generic [ref=e357]: formatter_config
+          - paragraph [ref=e358]:
+            - strong [ref=e359]: Optional
+          - paragraph [ref=e360]: Controls how the response data is formatted.
+          - paragraph [ref=e361]: "Example:"
+          - generic [ref=e363]:
+            - button "Copy" [ref=e364] [cursor=pointer]:
+              - generic [ref=e365]: Copy
+            - code [ref=e367]:
+              - generic [ref=e369]: "\"formatter_config\": {"
+              - generic [ref=e371]: "\"format_type\": \"raw\""
+              - generic [ref=e373]: "}"
+          - heading "Direct link to heading Example Request" [level=3] [ref=e374]:
+            - link "Direct link to heading" [ref=e376] [cursor=pointer]:
+              - /url: "#example-request"
+              - img "hashtag" [ref=e377]
+            - generic [ref=e379]: Example Request
+          - generic [ref=e381]:
+            - button "Copy" [ref=e382] [cursor=pointer]:
+              - generic [ref=e383]: Copy
+            - code [ref=e385]:
+              - generic [ref=e387]: "{"
+              - generic [ref=e389]: "\"agent_id\": 555,"
+              - generic [ref=e391]: "\"params\": {"
+              - generic [ref=e393]: "\"closed\": \"false\","
+              - generic [ref=e395]: "\"market_slug\": \"bitcoin\""
+              - generic [ref=e397]: "},"
+              - generic [ref=e399]: "\"pagination\": {"
+              - generic [ref=e401]: "\"limit\": 10,"
+              - generic [ref=e403]: "\"offset\": 0"
+              - generic [ref=e405]: "},"
+              - generic [ref=e407]: "\"formatter_config\": {"
+              - generic [ref=e409]: "\"format_type\": \"raw\""
+              - generic [ref=e411]: "}"
+              - generic [ref=e413]: "}"
+          - separator [ref=e414]
+          - heading "Direct link to heading Response Structure" [level=2] [ref=e415]:
+            - link "Direct link to heading" [ref=e417] [cursor=pointer]:
+              - /url: "#response-structure"
+              - img "hashtag" [ref=e418]
+            - generic [ref=e420]: Response Structure
+          - paragraph [ref=e421]: Falcon responses follow a consistent schema across all datasets. This ensures predictable data handling when integrating the API.
+          - heading "Direct link to heading Response Schema" [level=3] [ref=e422]:
+            - link "Direct link to heading" [ref=e424] [cursor=pointer]:
+              - /url: "#response-schema"
+              - img "hashtag" [ref=e425]
+            - generic [ref=e427]: Response Schema
+          - generic [ref=e429]:
+            - button "Copy" [ref=e430] [cursor=pointer]:
+              - generic [ref=e431]: Copy
+            - code [ref=e433]:
+              - generic [ref=e435]: "{"
+              - generic [ref=e437]: "\"timestamp\": \"ISO timestamp\","
+              - generic [ref=e439]: "\"params\": { ... },"
+              - generic [ref=e441]: "\"pagination\": {"
+              - generic [ref=e443]: "\"limit\": number,"
+              - generic [ref=e445]: "\"offset\": number,"
+              - generic [ref=e447]: "\"has_more\": boolean"
+              - generic [ref=e449]: "},"
+              - generic [ref=e451]: "\"data\": {"
+              - generic [ref=e453]: "\"results\": [ ... ]"
+              - generic [ref=e455]: "}"
+              - generic [ref=e457]: "}"
+          - heading "Direct link to heading Response Fields" [level=3] [ref=e458]:
+            - link "Direct link to heading" [ref=e460] [cursor=pointer]:
+              - /url: "#response-fields"
+              - img "hashtag" [ref=e461]
+            - generic [ref=e463]: Response Fields
+          - heading "Direct link to heading timestamp" [level=4] [ref=e464]:
+            - link "Direct link to heading" [ref=e466] [cursor=pointer]:
+              - /url: "#timestamp"
+              - img "hashtag" [ref=e467]
+            - generic [ref=e469]: timestamp
+          - paragraph [ref=e470]: The server timestamp indicating when the response was generated.
+          - paragraph [ref=e471]: "Example:"
+          - generic [ref=e473]:
+            - button "Copy" [ref=e474] [cursor=pointer]:
+              - generic [ref=e475]: Copy
+            - code [ref=e477]:
+              - generic [ref=e479]: "\"timestamp\": \"2025-01-09T19:12:50Z\""
+          - heading "Direct link to heading params" [level=4] [ref=e480]:
+            - link "Direct link to heading" [ref=e482] [cursor=pointer]:
+              - /url: "#params-1"
+              - img "hashtag" [ref=e483]
+            - generic [ref=e485]: params
+          - paragraph [ref=e486]: Echoes the parameters used for the query. This helps verify the request configuration in the response.
+          - heading "Direct link to heading pagination" [level=4] [ref=e487]:
+            - link "Direct link to heading" [ref=e489] [cursor=pointer]:
+              - /url: "#pagination-1"
+              - img "hashtag" [ref=e490]
+            - generic [ref=e492]: pagination
+          - paragraph [ref=e493]: Contains metadata about the returned dataset.
+          - paragraph [ref=e494]: "Fields:"
+          - list [ref=e495]:
+            - listitem [ref=e496]:
+              - generic [ref=e498]: •
+              - paragraph [ref=e500]:
+                - strong [ref=e501]: limit
+                - text: — number of records returned
+            - listitem [ref=e502]:
+              - generic [ref=e504]: •
+              - paragraph [ref=e506]:
+                - strong [ref=e507]: offset
+                - text: — starting index of the dataset
+            - listitem [ref=e508]:
+              - generic [ref=e510]: •
+              - paragraph [ref=e512]:
+                - strong [ref=e513]: has_more
+                - text: — indicates whether more records are available
+          - heading "Direct link to heading data.results" [level=4] [ref=e514]:
+            - link "Direct link to heading" [ref=e516] [cursor=pointer]:
+              - /url: "#data.results"
+              - img "hashtag" [ref=e517]
+            - generic [ref=e519]: data.results
+          - paragraph [ref=e520]: An array containing the returned dataset records.
+          - paragraph [ref=e521]: The structure of each object depends on the specific Falcon dataset being queried.
+          - heading "Direct link to heading Example Response" [level=3] [ref=e522]:
+            - link "Direct link to heading" [ref=e524] [cursor=pointer]:
+              - /url: "#example-response"
+              - img "hashtag" [ref=e525]
+            - generic [ref=e527]: Example Response
+          - generic [ref=e529]:
+            - button "Copy" [ref=e530] [cursor=pointer]:
+              - generic [ref=e531]: Copy
+            - code [ref=e533]:
+              - generic [ref=e535]: "{"
+              - generic [ref=e537]: "\"timestamp\": \"2025-01-09T19:12:50Z\","
+              - generic [ref=e539]: "\"params\": {},"
+              - generic [ref=e541]: "\"pagination\": {"
+              - generic [ref=e543]: "\"limit\": 10,"
+              - generic [ref=e545]: "\"offset\": 0,"
+              - generic [ref=e547]: "\"has_more\": true"
+              - generic [ref=e549]: "},"
+              - generic [ref=e551]: "\"data\": {"
+              - generic [ref=e553]: "\"results\": []"
+              - generic [ref=e555]: "}"
+              - generic [ref=e557]: "}"
+          - separator [ref=e558]
+          - heading "Direct link to heading Tips for Best Results" [level=2] [ref=e559]:
+            - link "Direct link to heading" [ref=e561] [cursor=pointer]:
+              - /url: "#tips-for-best-results"
+              - img "hashtag" [ref=e562]
+            - generic [ref=e564]: Tips for Best Results
+          - list [ref=e565]:
+            - listitem [ref=e566]:
+              - generic [ref=e568]: •
+              - paragraph [ref=e570]:
+                - text: Always include
+                - code [ref=e571]: pagination.limit
+                - text: to avoid unnecessarily large responses.
+            - listitem [ref=e572]:
+              - generic [ref=e574]: •
+              - paragraph [ref=e576]:
+                - text: Use
+                - code [ref=e577]: params
+                - text: filters whenever possible to narrow the dataset.
+            - listitem [ref=e578]:
+              - generic [ref=e580]: •
+              - paragraph [ref=e582]:
+                - text: Check
+                - code [ref=e583]: pagination.has_more
+                - text: to determine if additional requests are needed.
+            - listitem [ref=e584]:
+              - generic [ref=e586]: •
+              - paragraph [ref=e588]:
+                - text: Store the
+                - code [ref=e589]: offset
+                - text: value to paginate through large datasets.
+        - generic [ref=e590]:
+          - link "Previous Falcon Wallet 360 chevron-left" [ref=e591] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/falcon-wallet-360
+            - generic [ref=e592]:
+              - generic [ref=e593]: Previous
+              - generic [ref=e594]: Falcon Wallet 360
+            - img "chevron-left" [ref=e595]
+          - link "Next Core Concepts chevron-right" [ref=e597] [cursor=pointer]:
+            - /url: /falcon-api/reference/core-concepts
+            - generic [ref=e598]:
+              - generic [ref=e599]: Next
+              - generic [ref=e600]: Core Concepts
+            - img "chevron-right" [ref=e601]
+        - paragraph [ref=e604]:
+          - text: Last updated
+          - time [ref=e605]: 9 days ago
+  - alert [ref=e606]

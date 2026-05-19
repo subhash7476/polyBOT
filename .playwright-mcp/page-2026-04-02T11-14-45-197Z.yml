@@ -1,0 +1,717 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - region
+    - generic [ref=e3]:
+      - link "Skip to content" [ref=e4] [cursor=pointer]:
+        - /url: "#start-of-content"
+      - banner "Global Navigation Menu" [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - button "Open menu" [ref=e12] [cursor=pointer]:
+              - img [ref=e13]
+            - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+              - /url: /
+              - img [ref=e16]
+          - generic [ref=e18]:
+            - navigation "Breadcrumbs" [ref=e19]:
+              - list [ref=e20]:
+                - listitem [ref=e21]:
+                  - link "subhash7476" [ref=e22] [cursor=pointer]:
+                    - /url: /subhash7476
+                    - generic [ref=e23]: subhash7476
+                - listitem [ref=e24]:
+                  - link "prediction-market-analysis" [ref=e25] [cursor=pointer]:
+                    - /url: /subhash7476/prediction-market-analysis
+                    - generic [ref=e26]: prediction-market-analysis
+                    - img [ref=e27]
+            - button "Search or jump to…" [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]:
+                - generic:
+                  - img
+                - generic [ref=e33]:
+                  - generic:
+                    - text: Type
+                    - generic: /
+                    - text: to search
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - generic [ref=e37]:
+                - link "Chat with Copilot" [ref=e39] [cursor=pointer]:
+                  - /url: /copilot
+                  - img [ref=e40]
+                - button "Open Copilot…" [ref=e44] [cursor=pointer]:
+                  - generic:
+                    - img
+              - button "Create new..." [ref=e46] [cursor=pointer]:
+                - generic [ref=e47]:
+                  - generic:
+                    - img
+                - generic:
+                  - img
+              - link "Issues (g then i)" [ref=e48] [cursor=pointer]:
+                - /url: /issues
+                - img [ref=e49]
+              - link "Pull requests" [ref=e52] [cursor=pointer]:
+                - /url: /pulls
+                - img [ref=e53]
+              - link "Repositories" [ref=e55] [cursor=pointer]:
+                - /url: /repos
+                - img [ref=e56]
+            - link "You have no unread notifications (g then n)" [ref=e58] [cursor=pointer]:
+              - /url: /notifications
+              - img [ref=e59]
+            - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+              - img "User avatar" [ref=e63]
+        - heading "Repository navigation" [level=2] [ref=e64]
+        - navigation "Repository" [ref=e65]:
+          - list [ref=e66]:
+            - listitem [ref=e67]:
+              - link "Code" [ref=e68] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis
+                - img [ref=e70]
+                - generic [ref=e72]: Code
+            - listitem [ref=e73]:
+              - link "Pull requests" [ref=e74] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/pulls
+                - img [ref=e76]
+                - generic [ref=e78]: Pull requests
+            - listitem [ref=e79]:
+              - link "Actions" [ref=e80] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/actions
+                - img [ref=e82]
+                - generic [ref=e84]: Actions
+            - listitem [ref=e85]:
+              - link "Projects" [ref=e86] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/projects
+                - img [ref=e88]
+                - generic [ref=e90]: Projects
+            - listitem [ref=e91]:
+              - link "Wiki" [ref=e92] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/wiki
+                - img [ref=e94]
+                - generic [ref=e96]: Wiki
+            - listitem [ref=e97]:
+              - link "Security and quality" [ref=e98] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/security
+                - img [ref=e100]
+                - generic [ref=e102]: Security and quality
+            - listitem [ref=e103]:
+              - link "Insights" [ref=e104] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/pulse
+                - img [ref=e106]
+                - generic [ref=e108]: Insights
+            - listitem [ref=e109]:
+              - link "Settings" [ref=e110] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/settings
+                - img [ref=e112]
+                - generic [ref=e114]: Settings
+    - main [ref=e118]:
+      - generic [ref=e129]:
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - heading "Expand file tree" [level=2] [ref=e136]:
+              - button "Expand file tree" [ref=e137] [cursor=pointer]:
+                - img [ref=e138]
+            - button "main branch" [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]:
+                - generic [ref=e145]:
+                  - img [ref=e147]
+                  - generic [ref=e150]: main
+                - generic:
+                  - img
+            - generic [ref=e152]:
+              - navigation "Breadcrumbs" [ref=e153]:
+                - heading "Breadcrumbs" [level=2] [ref=e154]
+                - list [ref=e155]:
+                  - listitem [ref=e156]:
+                    - link "prediction-market-analysis" [ref=e157] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main
+                  - listitem [ref=e158]:
+                    - text: /
+                    - link "docs" [ref=e159] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main/docs
+              - generic [ref=e160]:
+                - text: /
+                - heading "SCHEMAS.md" [level=1] [ref=e161]
+              - button "Copy path" [ref=e162] [cursor=pointer]:
+                - img [ref=e163]
+          - generic [ref=e168]:
+            - generic [ref=e171]:
+              - img [ref=e173]
+              - combobox "Go to file" [ref=e175]
+              - generic [ref=e177]: t
+            - button "More file actions" [ref=e178] [cursor=pointer]:
+              - img [ref=e179]
+        - generic [ref=e181]:
+          - generic [ref=e183]:
+            - heading "Latest commit" [level=2] [ref=e184]
+            - generic [ref=e187]:
+              - heading "History" [level=2] [ref=e188]
+              - link "History" [ref=e189] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/commits/main/docs/SCHEMAS.md
+                - generic [ref=e190]:
+                  - generic:
+                    - img
+                  - generic [ref=e191]: History
+          - generic [ref=e193]:
+            - generic [ref=e195]:
+              - heading "File metadata and controls" [level=2] [ref=e196]
+              - generic [ref=e197]:
+                - list "File view" [ref=e198]:
+                  - listitem [ref=e199]:
+                    - button "Preview" [ref=e200] [cursor=pointer]:
+                      - generic [ref=e202]: Preview
+                  - listitem [ref=e203]:
+                    - button "Code" [ref=e204] [cursor=pointer]:
+                      - generic [ref=e206]: Code
+                  - listitem [ref=e207]:
+                    - button "Blame" [ref=e208] [cursor=pointer]:
+                      - generic [ref=e210]: Blame
+                - generic "6.18 KB" [ref=e213]: 137 lines (111 loc) · 6.18 KB
+              - generic [ref=e214]:
+                - button "Add to space" [ref=e215] [cursor=pointer]:
+                  - img [ref=e216]
+                - button "Ask Copilot about this file" [ref=e219] [cursor=pointer]:
+                  - img [ref=e220]
+                - generic [ref=e223]:
+                  - generic [ref=e224]:
+                    - link "Raw" [ref=e226] [cursor=pointer]:
+                      - /url: https://github.com/subhash7476/prediction-market-analysis/raw/refs/heads/main/docs/SCHEMAS.md
+                      - generic [ref=e228]: Raw
+                    - button "Copy raw file" [ref=e230] [cursor=pointer]:
+                      - img [ref=e231]
+                    - button "Download raw file" [ref=e235] [cursor=pointer]:
+                      - img [ref=e236]
+                  - generic [ref=e239]:
+                    - link "Edit this file" [ref=e241] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/edit/main/docs/SCHEMAS.md
+                      - img [ref=e242]
+                    - button "More edit options" [ref=e245] [cursor=pointer]:
+                      - img [ref=e246]
+                - button "Outline" [ref=e248] [cursor=pointer]:
+                  - img [ref=e249]
+            - region [ref=e252]:
+              - article [ref=e254]:
+                - generic [ref=e255]:
+                  - heading "Data Schemas" [level=1] [ref=e256]
+                  - 'link "Permalink: Data Schemas" [ref=e257] [cursor=pointer]':
+                    - /url: "#data-schemas"
+                    - img [ref=e258]
+                - paragraph [ref=e260]:
+                  - text: Data is stored as Parquet files in
+                  - code [ref=e261]: "data/{kalshi,polymarket}/"
+                  - text: .
+                - generic [ref=e262]:
+                  - heading "Kalshi Markets" [level=2] [ref=e263]
+                  - 'link "Permalink: Kalshi Markets" [ref=e264] [cursor=pointer]':
+                    - /url: "#kalshi-markets"
+                    - img [ref=e265]
+                - paragraph [ref=e267]: Each row represents a prediction market contract.
+                - table [ref=e269]:
+                  - rowgroup [ref=e270]:
+                    - row "Column Type Description" [ref=e271]:
+                      - columnheader "Column" [ref=e272]
+                      - columnheader "Type" [ref=e273]
+                      - columnheader "Description" [ref=e274]
+                  - rowgroup [ref=e275]:
+                    - row "ticker string Unique market identifier (e.g., PRES-2024-DJT)" [ref=e276]:
+                      - cell "ticker" [ref=e277]:
+                        - code [ref=e278]: ticker
+                      - cell "string" [ref=e279]
+                      - cell "Unique market identifier (e.g., PRES-2024-DJT)" [ref=e280]:
+                        - text: Unique market identifier (e.g.,
+                        - code [ref=e281]: PRES-2024-DJT
+                        - text: )
+                    - row "event_ticker string Parent event identifier, used for categorization" [ref=e282]:
+                      - cell "event_ticker" [ref=e283]:
+                        - code [ref=e284]: event_ticker
+                      - cell "string" [ref=e285]
+                      - cell "Parent event identifier, used for categorization" [ref=e286]
+                    - row "market_type string Market type (typically binary)" [ref=e287]:
+                      - cell "market_type" [ref=e288]:
+                        - code [ref=e289]: market_type
+                      - cell "string" [ref=e290]
+                      - cell "Market type (typically binary)" [ref=e291]:
+                        - text: Market type (typically
+                        - code [ref=e292]: binary
+                        - text: )
+                    - row "title string Human-readable market title" [ref=e293]:
+                      - cell "title" [ref=e294]:
+                        - code [ref=e295]: title
+                      - cell "string" [ref=e296]
+                      - cell "Human-readable market title" [ref=e297]
+                    - row "yes_sub_title string Label for the \"Yes\" outcome" [ref=e298]:
+                      - cell "yes_sub_title" [ref=e299]:
+                        - code [ref=e300]: yes_sub_title
+                      - cell "string" [ref=e301]
+                      - cell "Label for the \"Yes\" outcome" [ref=e302]
+                    - row "no_sub_title string Label for the \"No\" outcome" [ref=e303]:
+                      - cell "no_sub_title" [ref=e304]:
+                        - code [ref=e305]: no_sub_title
+                      - cell "string" [ref=e306]
+                      - cell "Label for the \"No\" outcome" [ref=e307]
+                    - 'row "status string Market status: open, closed, finalized" [ref=e308]':
+                      - cell "status" [ref=e309]:
+                        - code [ref=e310]: status
+                      - cell "string" [ref=e311]
+                      - 'cell "Market status: open, closed, finalized" [ref=e312]':
+                        - text: "Market status:"
+                        - code [ref=e313]: open
+                        - text: ","
+                        - code [ref=e314]: closed
+                        - text: ","
+                        - code [ref=e315]: finalized
+                    - row "yes_bid int (nullable) Best bid price for Yes contracts (cents, 1-99)" [ref=e316]:
+                      - cell "yes_bid" [ref=e317]:
+                        - code [ref=e318]: yes_bid
+                      - cell "int (nullable)" [ref=e319]
+                      - cell "Best bid price for Yes contracts (cents, 1-99)" [ref=e320]
+                    - row "yes_ask int (nullable) Best ask price for Yes contracts (cents, 1-99)" [ref=e321]:
+                      - cell "yes_ask" [ref=e322]:
+                        - code [ref=e323]: yes_ask
+                      - cell "int (nullable)" [ref=e324]
+                      - cell "Best ask price for Yes contracts (cents, 1-99)" [ref=e325]
+                    - row "no_bid int (nullable) Best bid price for No contracts (cents, 1-99)" [ref=e326]:
+                      - cell "no_bid" [ref=e327]:
+                        - code [ref=e328]: no_bid
+                      - cell "int (nullable)" [ref=e329]
+                      - cell "Best bid price for No contracts (cents, 1-99)" [ref=e330]
+                    - row "no_ask int (nullable) Best ask price for No contracts (cents, 1-99)" [ref=e331]:
+                      - cell "no_ask" [ref=e332]:
+                        - code [ref=e333]: no_ask
+                      - cell "int (nullable)" [ref=e334]
+                      - cell "Best ask price for No contracts (cents, 1-99)" [ref=e335]
+                    - row "last_price int (nullable) Last traded price (cents, 1-99)" [ref=e336]:
+                      - cell "last_price" [ref=e337]:
+                        - code [ref=e338]: last_price
+                      - cell "int (nullable)" [ref=e339]
+                      - cell "Last traded price (cents, 1-99)" [ref=e340]
+                    - row "volume int Total contracts traded" [ref=e341]:
+                      - cell "volume" [ref=e342]:
+                        - code [ref=e343]: volume
+                      - cell "int" [ref=e344]
+                      - cell "Total contracts traded" [ref=e345]
+                    - row "volume_24h int Contracts traded in last 24 hours" [ref=e346]:
+                      - cell "volume_24h" [ref=e347]:
+                        - code [ref=e348]: volume_24h
+                      - cell "int" [ref=e349]
+                      - cell "Contracts traded in last 24 hours" [ref=e350]
+                    - row "open_interest int Outstanding contracts" [ref=e351]:
+                      - cell "open_interest" [ref=e352]:
+                        - code [ref=e353]: open_interest
+                      - cell "int" [ref=e354]
+                      - cell "Outstanding contracts" [ref=e355]
+                    - 'row "result string Market outcome: yes, no, or empty if unresolved" [ref=e356]':
+                      - cell "result" [ref=e357]:
+                        - code [ref=e358]: result
+                      - cell "string" [ref=e359]
+                      - 'cell "Market outcome: yes, no, or empty if unresolved" [ref=e360]':
+                        - text: "Market outcome:"
+                        - code [ref=e361]: "yes"
+                        - text: ","
+                        - code [ref=e362]: "no"
+                        - text: ", or empty if unresolved"
+                    - row "created_time datetime When the market was created" [ref=e363]:
+                      - cell "created_time" [ref=e364]:
+                        - code [ref=e365]: created_time
+                      - cell "datetime" [ref=e366]
+                      - cell "When the market was created" [ref=e367]
+                    - row "open_time datetime (nullable) When trading opened" [ref=e368]:
+                      - cell "open_time" [ref=e369]:
+                        - code [ref=e370]: open_time
+                      - cell "datetime (nullable)" [ref=e371]
+                      - cell "When trading opened" [ref=e372]
+                    - row "close_time datetime (nullable) When trading closed" [ref=e373]:
+                      - cell "close_time" [ref=e374]:
+                        - code [ref=e375]: close_time
+                      - cell "datetime (nullable)" [ref=e376]
+                      - cell "When trading closed" [ref=e377]
+                    - row "_fetched_at datetime When this record was fetched" [ref=e378]:
+                      - cell "_fetched_at" [ref=e379]:
+                        - code [ref=e380]: _fetched_at
+                      - cell "datetime" [ref=e381]
+                      - cell "When this record was fetched" [ref=e382]
+                - generic [ref=e383]:
+                  - heading "Kalshi Trades" [level=2] [ref=e384]
+                  - 'link "Permalink: Kalshi Trades" [ref=e385] [cursor=pointer]':
+                    - /url: "#kalshi-trades"
+                    - img [ref=e386]
+                - paragraph [ref=e388]: Each row represents a single trade execution.
+                - table [ref=e390]:
+                  - rowgroup [ref=e391]:
+                    - row "Column Type Description" [ref=e392]:
+                      - columnheader "Column" [ref=e393]
+                      - columnheader "Type" [ref=e394]
+                      - columnheader "Description" [ref=e395]
+                  - rowgroup [ref=e396]:
+                    - row "trade_id string Unique trade identifier" [ref=e397]:
+                      - cell "trade_id" [ref=e398]:
+                        - code [ref=e399]: trade_id
+                      - cell "string" [ref=e400]
+                      - cell "Unique trade identifier" [ref=e401]
+                    - row "ticker string Market ticker this trade belongs to" [ref=e402]:
+                      - cell "ticker" [ref=e403]:
+                        - code [ref=e404]: ticker
+                      - cell "string" [ref=e405]
+                      - cell "Market ticker this trade belongs to" [ref=e406]
+                    - row "count int Number of contracts traded" [ref=e407]:
+                      - cell "count" [ref=e408]:
+                        - code [ref=e409]: count
+                      - cell "int" [ref=e410]
+                      - cell "Number of contracts traded" [ref=e411]
+                    - row "yes_price int Yes contract price (cents, 1-99)" [ref=e412]:
+                      - cell "yes_price" [ref=e413]:
+                        - code [ref=e414]: yes_price
+                      - cell "int" [ref=e415]
+                      - cell "Yes contract price (cents, 1-99)" [ref=e416]
+                    - row "no_price int No contract price (cents, 1-99), always 100 - yes_price" [ref=e417]:
+                      - cell "no_price" [ref=e418]:
+                        - code [ref=e419]: no_price
+                      - cell "int" [ref=e420]
+                      - cell "No contract price (cents, 1-99), always 100 - yes_price" [ref=e421]:
+                        - text: No contract price (cents, 1-99), always
+                        - code [ref=e422]: 100 - yes_price
+                    - 'row "taker_side string Which side the taker bought: yes or no" [ref=e423]':
+                      - cell "taker_side" [ref=e424]:
+                        - code [ref=e425]: taker_side
+                      - cell "string" [ref=e426]
+                      - 'cell "Which side the taker bought: yes or no" [ref=e427]':
+                        - text: "Which side the taker bought:"
+                        - code [ref=e428]: "yes"
+                        - text: or
+                        - code [ref=e429]: "no"
+                    - row "created_time datetime When the trade occurred" [ref=e430]:
+                      - cell "created_time" [ref=e431]:
+                        - code [ref=e432]: created_time
+                      - cell "datetime" [ref=e433]
+                      - cell "When the trade occurred" [ref=e434]
+                    - row "_fetched_at datetime When this record was fetched" [ref=e435]:
+                      - cell "_fetched_at" [ref=e436]:
+                        - code [ref=e437]: _fetched_at
+                      - cell "datetime" [ref=e438]
+                      - cell "When this record was fetched" [ref=e439]
+                - paragraph [ref=e440]:
+                  - strong [ref=e441]: "Note on Kalshi prices:"
+                  - text: Prices are in cents. A
+                  - code [ref=e442]: yes_price
+                  - text: "of 65 means the contract costs $0.65 and pays $1.00 if the outcome is \"Yes\" (implied probability: 65%). The"
+                  - code [ref=e443]: no_price
+                  - text: is always
+                  - code [ref=e444]: 100 - yes_price
+                  - text: .
+                - generic [ref=e445]:
+                  - heading "Polymarket Markets" [level=2] [ref=e446]
+                  - 'link "Permalink: Polymarket Markets" [ref=e447] [cursor=pointer]':
+                    - /url: "#polymarket-markets"
+                    - img [ref=e448]
+                - paragraph [ref=e450]: Each row represents a prediction market.
+                - table [ref=e452]:
+                  - rowgroup [ref=e453]:
+                    - row "Column Type Description" [ref=e454]:
+                      - columnheader "Column" [ref=e455]
+                      - columnheader "Type" [ref=e456]
+                      - columnheader "Description" [ref=e457]
+                  - rowgroup [ref=e458]:
+                    - row "id string Market ID" [ref=e459]:
+                      - cell "id" [ref=e460]:
+                        - code [ref=e461]: id
+                      - cell "string" [ref=e462]
+                      - cell "Market ID" [ref=e463]
+                    - row "condition_id string Condition ID (hex hash)" [ref=e464]:
+                      - cell "condition_id" [ref=e465]:
+                        - code [ref=e466]: condition_id
+                      - cell "string" [ref=e467]
+                      - cell "Condition ID (hex hash)" [ref=e468]
+                    - row "question string Market question" [ref=e469]:
+                      - cell "question" [ref=e470]:
+                        - code [ref=e471]: question
+                      - cell "string" [ref=e472]
+                      - cell "Market question" [ref=e473]
+                    - row "slug string URL slug" [ref=e474]:
+                      - cell "slug" [ref=e475]:
+                        - code [ref=e476]: slug
+                      - cell "string" [ref=e477]
+                      - cell "URL slug" [ref=e478]
+                    - row "outcomes string JSON string of outcome names" [ref=e479]:
+                      - cell "outcomes" [ref=e480]:
+                        - code [ref=e481]: outcomes
+                      - cell "string" [ref=e482]
+                      - cell "JSON string of outcome names" [ref=e483]
+                    - row "outcome_prices string JSON string of outcome prices" [ref=e484]:
+                      - cell "outcome_prices" [ref=e485]:
+                        - code [ref=e486]: outcome_prices
+                      - cell "string" [ref=e487]
+                      - cell "JSON string of outcome prices" [ref=e488]
+                    - row "volume float Total volume in USD" [ref=e489]:
+                      - cell "volume" [ref=e490]:
+                        - code [ref=e491]: volume
+                      - cell "float" [ref=e492]
+                      - cell "Total volume in USD" [ref=e493]
+                    - row "liquidity float Current liquidity in USD" [ref=e494]:
+                      - cell "liquidity" [ref=e495]:
+                        - code [ref=e496]: liquidity
+                      - cell "float" [ref=e497]
+                      - cell "Current liquidity in USD" [ref=e498]
+                    - row "active bool Is market active" [ref=e499]:
+                      - cell "active" [ref=e500]:
+                        - code [ref=e501]: active
+                      - cell "bool" [ref=e502]
+                      - cell "Is market active" [ref=e503]
+                    - row "closed bool Is market closed" [ref=e504]:
+                      - cell "closed" [ref=e505]:
+                        - code [ref=e506]: closed
+                      - cell "bool" [ref=e507]
+                      - cell "Is market closed" [ref=e508]
+                    - row "end_date datetime (nullable) When market ends" [ref=e509]:
+                      - cell "end_date" [ref=e510]:
+                        - code [ref=e511]: end_date
+                      - cell "datetime (nullable)" [ref=e512]
+                      - cell "When market ends" [ref=e513]
+                    - row "created_at datetime (nullable) When market was created" [ref=e514]:
+                      - cell "created_at" [ref=e515]:
+                        - code [ref=e516]: created_at
+                      - cell "datetime (nullable)" [ref=e517]
+                      - cell "When market was created" [ref=e518]
+                    - row "_fetched_at datetime When this record was fetched" [ref=e519]:
+                      - cell "_fetched_at" [ref=e520]:
+                        - code [ref=e521]: _fetched_at
+                      - cell "datetime" [ref=e522]
+                      - cell "When this record was fetched" [ref=e523]
+                - generic [ref=e524]:
+                  - heading "Polymarket Trades" [level=2] [ref=e525]
+                  - 'link "Permalink: Polymarket Trades" [ref=e526] [cursor=pointer]':
+                    - /url: "#polymarket-trades"
+                    - img [ref=e527]
+                - paragraph [ref=e529]:
+                  - text: Each row represents an
+                  - code [ref=e530]: OrderFilled
+                  - text: event from the Polygon blockchain.
+                - table [ref=e532]:
+                  - rowgroup [ref=e533]:
+                    - row "Column Type Description" [ref=e534]:
+                      - columnheader "Column" [ref=e535]
+                      - columnheader "Type" [ref=e536]
+                      - columnheader "Description" [ref=e537]
+                  - rowgroup [ref=e538]:
+                    - row "block_number int Polygon block number" [ref=e539]:
+                      - cell "block_number" [ref=e540]:
+                        - code [ref=e541]: block_number
+                      - cell "int" [ref=e542]
+                      - cell "Polygon block number" [ref=e543]
+                    - row "transaction_hash string Blockchain transaction hash" [ref=e544]:
+                      - cell "transaction_hash" [ref=e545]:
+                        - code [ref=e546]: transaction_hash
+                      - cell "string" [ref=e547]
+                      - cell "Blockchain transaction hash" [ref=e548]
+                    - row "log_index int Log index within transaction" [ref=e549]:
+                      - cell "log_index" [ref=e550]:
+                        - code [ref=e551]: log_index
+                      - cell "int" [ref=e552]
+                      - cell "Log index within transaction" [ref=e553]
+                    - row "order_hash string Unique order identifier" [ref=e554]:
+                      - cell "order_hash" [ref=e555]:
+                        - code [ref=e556]: order_hash
+                      - cell "string" [ref=e557]
+                      - cell "Unique order identifier" [ref=e558]
+                    - row "maker string Address of limit order placer" [ref=e559]:
+                      - cell "maker" [ref=e560]:
+                        - code [ref=e561]: maker
+                      - cell "string" [ref=e562]
+                      - cell "Address of limit order placer" [ref=e563]
+                    - row "taker string Address that filled the order" [ref=e564]:
+                      - cell "taker" [ref=e565]:
+                        - code [ref=e566]: taker
+                      - cell "string" [ref=e567]
+                      - cell "Address that filled the order" [ref=e568]
+                    - row "maker_asset_id int Asset ID maker provided (0=USDC)" [ref=e569]:
+                      - cell "maker_asset_id" [ref=e570]:
+                        - code [ref=e571]: maker_asset_id
+                      - cell "int" [ref=e572]
+                      - cell "Asset ID maker provided (0=USDC)" [ref=e573]
+                    - row "taker_asset_id int Asset ID taker provided" [ref=e574]:
+                      - cell "taker_asset_id" [ref=e575]:
+                        - code [ref=e576]: taker_asset_id
+                      - cell "int" [ref=e577]
+                      - cell "Asset ID taker provided" [ref=e578]
+                    - row "maker_amount int Amount maker gave (6 decimals)" [ref=e579]:
+                      - cell "maker_amount" [ref=e580]:
+                        - code [ref=e581]: maker_amount
+                      - cell "int" [ref=e582]
+                      - cell "Amount maker gave (6 decimals)" [ref=e583]
+                    - row "taker_amount int Amount taker gave (6 decimals)" [ref=e584]:
+                      - cell "taker_amount" [ref=e585]:
+                        - code [ref=e586]: taker_amount
+                      - cell "int" [ref=e587]
+                      - cell "Amount taker gave (6 decimals)" [ref=e588]
+                    - row "fee int Trading fee (6 decimals)" [ref=e589]:
+                      - cell "fee" [ref=e590]:
+                        - code [ref=e591]: fee
+                      - cell "int" [ref=e592]
+                      - cell "Trading fee (6 decimals)" [ref=e593]
+                    - row "_fetched_at datetime When this record was fetched" [ref=e594]:
+                      - cell "_fetched_at" [ref=e595]:
+                        - code [ref=e596]: _fetched_at
+                      - cell "datetime" [ref=e597]
+                      - cell "When this record was fetched" [ref=e598]
+                    - row "_contract string Contract name (CTF Exchange or NegRisk)" [ref=e599]:
+                      - cell "_contract" [ref=e600]:
+                        - code [ref=e601]: _contract
+                      - cell "string" [ref=e602]
+                      - cell "Contract name (CTF Exchange or NegRisk)" [ref=e603]
+                - paragraph [ref=e604]:
+                  - strong [ref=e605]: "Note on Polymarket prices:"
+                  - text: "Prices are decimals between 0 and 1. A price of 0.65 means the contract costs $0.65 and pays $1.00 if the outcome wins (implied probability: 65%)."
+                - generic [ref=e606]:
+                  - heading "Polymarket Legacy Trades (FPMM)" [level=2] [ref=e607]
+                  - 'link "Permalink: Polymarket Legacy Trades (FPMM)" [ref=e608] [cursor=pointer]':
+                    - /url: "#polymarket-legacy-trades-fpmm"
+                    - img [ref=e609]
+                - paragraph [ref=e611]:
+                  - text: Each row represents an
+                  - code [ref=e612]: FPMMBuy
+                  - text: or
+                  - code [ref=e613]: FPMMSell
+                  - text: event from the legacy Fixed Product Market Maker contracts on Polygon. These are trades from before Polymarket migrated to the CTF Exchange (roughly 2020-2022).
+                - table [ref=e615]:
+                  - rowgroup [ref=e616]:
+                    - row "Column Type Description" [ref=e617]:
+                      - columnheader "Column" [ref=e618]
+                      - columnheader "Type" [ref=e619]
+                      - columnheader "Description" [ref=e620]
+                  - rowgroup [ref=e621]:
+                    - row "block_number int Polygon block number" [ref=e622]:
+                      - cell "block_number" [ref=e623]:
+                        - code [ref=e624]: block_number
+                      - cell "int" [ref=e625]
+                      - cell "Polygon block number" [ref=e626]
+                    - row "transaction_hash string Blockchain transaction hash" [ref=e627]:
+                      - cell "transaction_hash" [ref=e628]:
+                        - code [ref=e629]: transaction_hash
+                      - cell "string" [ref=e630]
+                      - cell "Blockchain transaction hash" [ref=e631]
+                    - row "log_index int Log index within transaction" [ref=e632]:
+                      - cell "log_index" [ref=e633]:
+                        - code [ref=e634]: log_index
+                      - cell "int" [ref=e635]
+                      - cell "Log index within transaction" [ref=e636]
+                    - row "fpmm_address string FPMM contract (market) address" [ref=e637]:
+                      - cell "fpmm_address" [ref=e638]:
+                        - code [ref=e639]: fpmm_address
+                      - cell "string" [ref=e640]
+                      - cell "FPMM contract (market) address" [ref=e641]
+                    - row "trader string Buyer or seller address" [ref=e642]:
+                      - cell "trader" [ref=e643]:
+                        - code [ref=e644]: trader
+                      - cell "string" [ref=e645]
+                      - cell "Buyer or seller address" [ref=e646]
+                    - row "amount string Investment amount (buy) or return amount (sell) in collateral units (6 decimals for USDC)" [ref=e647]:
+                      - cell "amount" [ref=e648]:
+                        - code [ref=e649]: amount
+                      - cell "string" [ref=e650]
+                      - cell "Investment amount (buy) or return amount (sell) in collateral units (6 decimals for USDC)" [ref=e651]
+                    - row "fee_amount string Trading fee in collateral units" [ref=e652]:
+                      - cell "fee_amount" [ref=e653]:
+                        - code [ref=e654]: fee_amount
+                      - cell "string" [ref=e655]
+                      - cell "Trading fee in collateral units" [ref=e656]
+                    - row "outcome_index int Index of the outcome traded (0 or 1)" [ref=e657]:
+                      - cell "outcome_index" [ref=e658]:
+                        - code [ref=e659]: outcome_index
+                      - cell "int" [ref=e660]
+                      - cell "Index of the outcome traded (0 or 1)" [ref=e661]
+                    - row "outcome_tokens string Outcome tokens bought or sold (18 decimals)" [ref=e662]:
+                      - cell "outcome_tokens" [ref=e663]:
+                        - code [ref=e664]: outcome_tokens
+                      - cell "string" [ref=e665]
+                      - cell "Outcome tokens bought or sold (18 decimals)" [ref=e666]
+                    - row "is_buy bool True for buy, False for sell" [ref=e667]:
+                      - cell "is_buy" [ref=e668]:
+                        - code [ref=e669]: is_buy
+                      - cell "bool" [ref=e670]
+                      - cell "True for buy, False for sell" [ref=e671]
+                    - row "timestamp int (nullable) Unix timestamp (if enriched)" [ref=e672]:
+                      - cell "timestamp" [ref=e673]:
+                        - code [ref=e674]: timestamp
+                      - cell "int (nullable)" [ref=e675]
+                      - cell "Unix timestamp (if enriched)" [ref=e676]
+                    - row "_fetched_at datetime When this record was fetched" [ref=e677]:
+                      - cell "_fetched_at" [ref=e678]:
+                        - code [ref=e679]: _fetched_at
+                      - cell "datetime" [ref=e680]
+                      - cell "When this record was fetched" [ref=e681]
+                - paragraph [ref=e682]:
+                  - strong [ref=e683]: "Note on legacy trade amounts:"
+                  - text: The
+                  - code [ref=e684]: amount
+                  - text: ","
+                  - code [ref=e685]: fee_amount
+                  - text: ", and"
+                  - code [ref=e686]: outcome_tokens
+                  - text: fields are stored as strings to avoid integer overflow. Collateral amounts use 6 decimals (for USDC markets), while outcome tokens use 18 decimals.
+                - generic [ref=e687]:
+                  - heading "Polymarket FPMM Collateral Lookup" [level=2] [ref=e688]
+                  - 'link "Permalink: Polymarket FPMM Collateral Lookup" [ref=e689] [cursor=pointer]':
+                    - /url: "#polymarket-fpmm-collateral-lookup"
+                    - img [ref=e690]
+                - paragraph [ref=e692]:
+                  - text: Located at
+                  - code [ref=e693]: data/polymarket/fpmm_collateral_lookup.json
+                  - text: ", this file maps FPMM contract addresses to their collateral token information. Used to filter legacy trades to only include USDC-collateralized markets."
+                - generic [ref=e694]:
+                  - generic [ref=e695]:
+                    - text: "{ \"0x1234...\": { \"collateral_address\":"
+                    - generic [ref=e696]: "\"0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174\""
+                    - text: ", \"collateral_symbol\":"
+                    - generic [ref=e697]: "\"USDC\""
+                    - text: "} }"
+                  - button "Copy" [ref=e699] [cursor=pointer]:
+                    - img [ref=e700]
+                - table [ref=e704]:
+                  - rowgroup [ref=e705]:
+                    - row "Field Type Description" [ref=e706]:
+                      - columnheader "Field" [ref=e707]
+                      - columnheader "Type" [ref=e708]
+                      - columnheader "Description" [ref=e709]
+                  - rowgroup [ref=e710]:
+                    - row "collateral_address string ERC-20 token address used as collateral" [ref=e711]:
+                      - cell "collateral_address" [ref=e712]:
+                        - code [ref=e713]: collateral_address
+                      - cell "string" [ref=e714]
+                      - cell "ERC-20 token address used as collateral" [ref=e715]
+                    - row "collateral_symbol string Token symbol (e.g., USDC, USDT)" [ref=e716]:
+                      - cell "collateral_symbol" [ref=e717]:
+                        - code [ref=e718]: collateral_symbol
+                      - cell "string" [ref=e719]
+                      - cell "Token symbol (e.g., USDC, USDT)" [ref=e720]:
+                        - text: Token symbol (e.g.,
+                        - code [ref=e721]: USDC
+                        - text: ","
+                        - code [ref=e722]: USDT
+                        - text: )
+                - generic [ref=e723]:
+                  - heading "Polymarket Blocks" [level=2] [ref=e724]
+                  - 'link "Permalink: Polymarket Blocks" [ref=e725] [cursor=pointer]':
+                    - /url: "#polymarket-blocks"
+                    - img [ref=e726]
+                - paragraph [ref=e728]: Mapping from Polygon block numbers to timestamps.
+                - table [ref=e730]:
+                  - rowgroup [ref=e731]:
+                    - row "Column Type Description" [ref=e732]:
+                      - columnheader "Column" [ref=e733]
+                      - columnheader "Type" [ref=e734]
+                      - columnheader "Description" [ref=e735]
+                  - rowgroup [ref=e736]:
+                    - row "block_number int Polygon block number" [ref=e737]:
+                      - cell "block_number" [ref=e738]:
+                        - code [ref=e739]: block_number
+                      - cell "int" [ref=e740]
+                      - cell "Polygon block number" [ref=e741]
+                    - row "timestamp string ISO 8601 timestamp (e.g., 2024-01-15T12:30:00Z)" [ref=e742]:
+                      - cell "timestamp" [ref=e743]:
+                        - code [ref=e744]: timestamp
+                      - cell "string" [ref=e745]
+                      - cell "ISO 8601 timestamp (e.g., 2024-01-15T12:30:00Z)" [ref=e746]:
+                        - text: ISO 8601 timestamp (e.g.,
+                        - code [ref=e747]: 2024-01-15T12:30:00Z
+                        - text: )
+  - alert [ref=e751]

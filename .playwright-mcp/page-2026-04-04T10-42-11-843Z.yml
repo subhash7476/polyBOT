@@ -1,0 +1,945 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Request Body (JSON)" [ref=e146] [cursor=pointer]:
+              - /url: "#request-body-json"
+          - listitem [ref=e147]:
+            - link "Available Filters" [ref=e148] [cursor=pointer]:
+              - /url: "#available-filters"
+          - listitem [ref=e149]:
+            - link "Response Fields" [ref=e150] [cursor=pointer]:
+              - /url: "#response-fields"
+          - listitem [ref=e151]:
+            - link "Notes" [ref=e152] [cursor=pointer]:
+              - /url: "#notes"
+      - main [ref=e153]:
+        - generic [ref=e154]:
+          - generic [ref=e155]:
+            - button "Copy page" [ref=e156] [cursor=pointer]:
+              - img "copy" [ref=e157]
+              - generic [ref=e159]: Copy
+            - button "More" [ref=e160] [cursor=pointer]:
+              - img "chevron-down" [ref=e161]
+          - navigation "Breadcrumb" [ref=e163]:
+            - list [ref=e164]:
+              - listitem [ref=e165]:
+                - link "📈 Market Intelligence" [ref=e166] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence
+                  - generic [ref=e167]: 📈
+                  - text: Market Intelligence
+          - heading "👛 Falcon Wallet 360" [level=1] [ref=e168]:
+            - generic [ref=e169]: 👛
+            - text: Falcon Wallet 360
+          - paragraph [ref=e170]: Wallet 360 provides a deeper evaluation of trader behavior by analyzing trading patterns, win/loss dynamics, capital efficiency, risk-adjusted performance, and market participation.
+        - generic [ref=e171]:
+          - heading "Direct link to heading Request Body (JSON)" [level=3] [ref=e172]:
+            - link "Direct link to heading" [ref=e174] [cursor=pointer]:
+              - /url: "#request-body-json"
+              - img "hashtag" [ref=e175]
+            - generic [ref=e177]: Request Body (JSON)
+          - generic [ref=e179]:
+            - button "Copy" [ref=e180] [cursor=pointer]:
+              - generic [ref=e181]: Copy
+            - code [ref=e183]:
+              - generic [ref=e185]: "{"
+              - generic [ref=e187]: "\"agent_id\": 581,"
+              - generic [ref=e189]: "\"params\": {"
+              - generic [ref=e191]: "\"proxy_wallet\": \"0x204f72f35326db932158cba6adff0b9a1da95e14\","
+              - generic [ref=e193]: "\"window_days\": \"3\""
+              - generic [ref=e195]: "},"
+              - generic [ref=e197]: "\"pagination\": {"
+              - generic [ref=e199]: "\"limit\": 100,"
+              - generic [ref=e201]: "\"offset\": 0"
+              - generic [ref=e203]: "},"
+              - generic [ref=e205]: "\"formatter_config\": {"
+              - generic [ref=e207]: "\"format_type\": \"raw\""
+              - generic [ref=e209]: "}"
+              - generic [ref=e211]: "}"
+          - heading "Direct link to heading Available Filters" [level=3] [ref=e212]:
+            - link "Direct link to heading" [ref=e214] [cursor=pointer]:
+              - /url: "#available-filters"
+              - img "hashtag" [ref=e215]
+            - generic [ref=e217]: Available Filters
+          - generic [ref=e220]:
+            - rowgroup [ref=e221]:
+              - row "Parameter Type Description Example" [ref=e222]:
+                - columnheader "Parameter" [ref=e223]
+                - columnheader "Type" [ref=e224]
+                - columnheader "Description" [ref=e225]
+                - columnheader "Example" [ref=e226]
+            - table [ref=e227]:
+              - rowgroup [ref=e228]:
+                - row "proxy_wallet String Wallet address to analyze \"0xabc123...\"" [ref=e229]:
+                  - cell "proxy_wallet" [ref=e230]:
+                    - paragraph [ref=e232]:
+                      - code [ref=e233]: proxy_wallet
+                  - cell "String" [ref=e234]:
+                    - paragraph [ref=e236]: String
+                  - cell "Wallet address to analyze" [ref=e237]:
+                    - paragraph [ref=e239]: Wallet address to analyze
+                  - cell "\"0xabc123...\"" [ref=e240]:
+                    - paragraph [ref=e242]:
+                      - code [ref=e243]: "\"0xabc123...\""
+                - 'row "window_days String Metric calculation window. Options: 1, 3, 7, 15 \"1\"" [ref=e244]':
+                  - cell "window_days" [ref=e245]:
+                    - paragraph [ref=e247]:
+                      - code [ref=e248]: window_days
+                  - cell "String" [ref=e249]:
+                    - paragraph [ref=e251]: String
+                  - 'cell "Metric calculation window. Options: 1, 3, 7, 15" [ref=e252]':
+                    - paragraph [ref=e254]:
+                      - text: "Metric calculation window. Options:"
+                      - code [ref=e255]: "1"
+                      - text: ","
+                      - code [ref=e256]: "3"
+                      - text: ","
+                      - code [ref=e257]: "7"
+                      - text: ","
+                      - code [ref=e258]: "15"
+                  - cell "\"1\"" [ref=e259]:
+                    - paragraph [ref=e261]:
+                      - code [ref=e262]: "\"1\""
+          - group [ref=e263]:
+            - generic "chevron-right Example Request (cURL) Direct link to heading" [ref=e264] [cursor=pointer]:
+              - img "chevron-right" [ref=e265]
+              - text: Example Request (cURL)
+              - link "Direct link to heading" [ref=e267]:
+                - /url: "#example-request-curl"
+                - img "hashtag" [ref=e268]
+          - separator [ref=e270]
+          - heading "Direct link to heading Response Fields" [level=3] [ref=e271]:
+            - link "Direct link to heading" [ref=e273] [cursor=pointer]:
+              - /url: "#response-fields"
+              - img "hashtag" [ref=e274]
+            - generic [ref=e276]: Response Fields
+          - table [ref=e280]:
+            - rowgroup [ref=e281]:
+              - row "date String (ISO 8601) Aggregation date" [ref=e282]:
+                - cell "date" [ref=e283]:
+                  - paragraph [ref=e285]:
+                    - code [ref=e286]: date
+                - cell "String (ISO 8601)" [ref=e287]:
+                  - paragraph [ref=e289]: String (ISO 8601)
+                - cell "Aggregation date" [ref=e290]:
+                  - paragraph [ref=e292]: Aggregation date
+              - row "proxy_wallet String Wallet address" [ref=e293]:
+                - cell "proxy_wallet" [ref=e294]:
+                  - paragraph [ref=e296]:
+                    - code [ref=e297]: proxy_wallet
+                - cell "String" [ref=e298]:
+                  - paragraph [ref=e300]: String
+                - cell "Wallet address" [ref=e301]:
+                  - paragraph [ref=e303]: Wallet address
+              - row "calculation_window_days Integer Number of days used for metric calculation" [ref=e304]:
+                - cell "calculation_window_days" [ref=e305]:
+                  - paragraph [ref=e307]:
+                    - code [ref=e308]: calculation_window_days
+                - cell "Integer" [ref=e309]:
+                  - paragraph [ref=e311]: Integer
+                - cell "Number of days used for metric calculation" [ref=e312]:
+                  - paragraph [ref=e314]: Number of days used for metric calculation
+              - row "date_range_start String (ISO 8601) Start date of calculation window" [ref=e315]:
+                - cell "date_range_start" [ref=e316]:
+                  - paragraph [ref=e318]:
+                    - code [ref=e319]: date_range_start
+                - cell "String (ISO 8601)" [ref=e320]:
+                  - paragraph [ref=e322]: String (ISO 8601)
+                - cell "Start date of calculation window" [ref=e323]:
+                  - paragraph [ref=e325]: Start date of calculation window
+              - row "date_range_end String (ISO 8601) End date of calculation window" [ref=e326]:
+                - cell "date_range_end" [ref=e327]:
+                  - paragraph [ref=e329]:
+                    - code [ref=e330]: date_range_end
+                - cell "String (ISO 8601)" [ref=e331]:
+                  - paragraph [ref=e333]: String (ISO 8601)
+                - cell "End date of calculation window" [ref=e334]:
+                  - paragraph [ref=e336]: End date of calculation window
+              - row "total_trades Integer Total number of trades" [ref=e337]:
+                - cell "total_trades" [ref=e338]:
+                  - paragraph [ref=e340]:
+                    - code [ref=e341]: total_trades
+                - cell "Integer" [ref=e342]:
+                  - paragraph [ref=e344]: Integer
+                - cell "Total number of trades" [ref=e345]:
+                  - paragraph [ref=e347]: Total number of trades
+              - row "winning_trades Integer Number of profitable trades" [ref=e348]:
+                - cell "winning_trades" [ref=e349]:
+                  - paragraph [ref=e351]:
+                    - code [ref=e352]: winning_trades
+                - cell "Integer" [ref=e353]:
+                  - paragraph [ref=e355]: Integer
+                - cell "Number of profitable trades" [ref=e356]:
+                  - paragraph [ref=e358]: Number of profitable trades
+              - row "losing_trades Integer Number of losing trades" [ref=e359]:
+                - cell "losing_trades" [ref=e360]:
+                  - paragraph [ref=e362]:
+                    - code [ref=e363]: losing_trades
+                - cell "Integer" [ref=e364]:
+                  - paragraph [ref=e366]: Integer
+                - cell "Number of losing trades" [ref=e367]:
+                  - paragraph [ref=e369]: Number of losing trades
+              - row "win_rate String (Decimal) Proportion of winning trades (0–1)" [ref=e370]:
+                - cell "win_rate" [ref=e371]:
+                  - paragraph [ref=e373]:
+                    - code [ref=e374]: win_rate
+                - cell "String (Decimal)" [ref=e375]:
+                  - paragraph [ref=e377]: String (Decimal)
+                - cell "Proportion of winning trades (0–1)" [ref=e378]:
+                  - paragraph [ref=e380]: Proportion of winning trades (0–1)
+              - row "total_pnl String (Decimal) Total profit and loss" [ref=e381]:
+                - cell "total_pnl" [ref=e382]:
+                  - paragraph [ref=e384]:
+                    - code [ref=e385]: total_pnl
+                - cell "String (Decimal)" [ref=e386]:
+                  - paragraph [ref=e388]: String (Decimal)
+                - cell "Total profit and loss" [ref=e389]:
+                  - paragraph [ref=e391]: Total profit and loss
+              - row "total_invested String (Decimal) Total capital invested" [ref=e392]:
+                - cell "total_invested" [ref=e393]:
+                  - paragraph [ref=e395]:
+                    - code [ref=e396]: total_invested
+                - cell "String (Decimal)" [ref=e397]:
+                  - paragraph [ref=e399]: String (Decimal)
+                - cell "Total capital invested" [ref=e400]:
+                  - paragraph [ref=e402]: Total capital invested
+              - row "roi String (Decimal) Return on investment" [ref=e403]:
+                - cell "roi" [ref=e404]:
+                  - paragraph [ref=e406]:
+                    - code [ref=e407]: roi
+                - cell "String (Decimal)" [ref=e408]:
+                  - paragraph [ref=e410]: String (Decimal)
+                - cell "Return on investment" [ref=e411]:
+                  - paragraph [ref=e413]: Return on investment
+              - row "markets_traded Integer Number of unique markets traded" [ref=e414]:
+                - cell "markets_traded" [ref=e415]:
+                  - paragraph [ref=e417]:
+                    - code [ref=e418]: markets_traded
+                - cell "Integer" [ref=e419]:
+                  - paragraph [ref=e421]: Integer
+                - cell "Number of unique markets traded" [ref=e422]:
+                  - paragraph [ref=e424]: Number of unique markets traded
+              - row "last_active String (ISO 8601) Timestamp of last activity" [ref=e425]:
+                - cell "last_active" [ref=e426]:
+                  - paragraph [ref=e428]:
+                    - code [ref=e429]: last_active
+                - cell "String (ISO 8601)" [ref=e430]:
+                  - paragraph [ref=e432]: String (ISO 8601)
+                - cell "Timestamp of last activity" [ref=e433]:
+                  - paragraph [ref=e435]: Timestamp of last activity
+              - row "avg_position_size String (Decimal) Average trade position size" [ref=e436]:
+                - cell "avg_position_size" [ref=e437]:
+                  - paragraph [ref=e439]:
+                    - code [ref=e440]: avg_position_size
+                - cell "String (Decimal)" [ref=e441]:
+                  - paragraph [ref=e443]: String (Decimal)
+                - cell "Average trade position size" [ref=e444]:
+                  - paragraph [ref=e446]: Average trade position size
+              - row "best_trade String (Decimal) Largest profitable trade" [ref=e447]:
+                - cell "best_trade" [ref=e448]:
+                  - paragraph [ref=e450]:
+                    - code [ref=e451]: best_trade
+                - cell "String (Decimal)" [ref=e452]:
+                  - paragraph [ref=e454]: String (Decimal)
+                - cell "Largest profitable trade" [ref=e455]:
+                  - paragraph [ref=e457]: Largest profitable trade
+              - row "worst_trade String (Decimal) Largest losing trade" [ref=e458]:
+                - cell "worst_trade" [ref=e459]:
+                  - paragraph [ref=e461]:
+                    - code [ref=e462]: worst_trade
+                - cell "String (Decimal)" [ref=e463]:
+                  - paragraph [ref=e465]: String (Decimal)
+                - cell "Largest losing trade" [ref=e466]:
+                  - paragraph [ref=e468]: Largest losing trade
+              - row "sharpe_ratio String (Decimal) Risk-adjusted return (Sharpe ratio)" [ref=e469]:
+                - cell "sharpe_ratio" [ref=e470]:
+                  - paragraph [ref=e472]:
+                    - code [ref=e473]: sharpe_ratio
+                - cell "String (Decimal)" [ref=e474]:
+                  - paragraph [ref=e476]: String (Decimal)
+                - cell "Risk-adjusted return (Sharpe ratio)" [ref=e477]:
+                  - paragraph [ref=e479]: Risk-adjusted return (Sharpe ratio)
+              - row "sortino_ratio String (Decimal) Downside risk-adjusted return" [ref=e480]:
+                - cell "sortino_ratio" [ref=e481]:
+                  - paragraph [ref=e483]:
+                    - code [ref=e484]: sortino_ratio
+                - cell "String (Decimal)" [ref=e485]:
+                  - paragraph [ref=e487]: String (Decimal)
+                - cell "Downside risk-adjusted return" [ref=e488]:
+                  - paragraph [ref=e490]: Downside risk-adjusted return
+              - row "calmar_ratio String (Decimal) Return relative to max drawdown" [ref=e491]:
+                - cell "calmar_ratio" [ref=e492]:
+                  - paragraph [ref=e494]:
+                    - code [ref=e495]: calmar_ratio
+                - cell "String (Decimal)" [ref=e496]:
+                  - paragraph [ref=e498]: String (Decimal)
+                - cell "Return relative to max drawdown" [ref=e499]:
+                  - paragraph [ref=e501]: Return relative to max drawdown
+              - row "max_drawdown String (Decimal) Maximum peak-to-trough decline" [ref=e502]:
+                - cell "max_drawdown" [ref=e503]:
+                  - paragraph [ref=e505]:
+                    - code [ref=e506]: max_drawdown
+                - cell "String (Decimal)" [ref=e507]:
+                  - paragraph [ref=e509]: String (Decimal)
+                - cell "Maximum peak-to-trough decline" [ref=e510]:
+                  - paragraph [ref=e512]: Maximum peak-to-trough decline
+              - row "profit_factor String (Decimal) Gross profit divided by gross loss" [ref=e513]:
+                - cell "profit_factor" [ref=e514]:
+                  - paragraph [ref=e516]:
+                    - code [ref=e517]: profit_factor
+                - cell "String (Decimal)" [ref=e518]:
+                  - paragraph [ref=e520]: String (Decimal)
+                - cell "Gross profit divided by gross loss" [ref=e521]:
+                  - paragraph [ref=e523]: Gross profit divided by gross loss
+              - row "ulcer_index String (Decimal) Drawdown severity index" [ref=e524]:
+                - cell "ulcer_index" [ref=e525]:
+                  - paragraph [ref=e527]:
+                    - code [ref=e528]: ulcer_index
+                - cell "String (Decimal)" [ref=e529]:
+                  - paragraph [ref=e531]: String (Decimal)
+                - cell "Drawdown severity index" [ref=e532]:
+                  - paragraph [ref=e534]: Drawdown severity index
+              - row "gain_to_pain_ratio String (Decimal) Total gains divided by total losses" [ref=e535]:
+                - cell "gain_to_pain_ratio" [ref=e536]:
+                  - paragraph [ref=e538]:
+                    - code [ref=e539]: gain_to_pain_ratio
+                - cell "String (Decimal)" [ref=e540]:
+                  - paragraph [ref=e542]: String (Decimal)
+                - cell "Total gains divided by total losses" [ref=e543]:
+                  - paragraph [ref=e545]: Total gains divided by total losses
+              - row "drawdown_frequency String (Decimal) Frequency of drawdowns" [ref=e546]:
+                - cell "drawdown_frequency" [ref=e547]:
+                  - paragraph [ref=e549]:
+                    - code [ref=e550]: drawdown_frequency
+                - cell "String (Decimal)" [ref=e551]:
+                  - paragraph [ref=e553]: String (Decimal)
+                - cell "Frequency of drawdowns" [ref=e554]:
+                  - paragraph [ref=e556]: Frequency of drawdowns
+              - row "recovery_time_avg String (Decimal) Average time to recover from drawdowns" [ref=e557]:
+                - cell "recovery_time_avg" [ref=e558]:
+                  - paragraph [ref=e560]:
+                    - code [ref=e561]: recovery_time_avg
+                - cell "String (Decimal)" [ref=e562]:
+                  - paragraph [ref=e564]: String (Decimal)
+                - cell "Average time to recover from drawdowns" [ref=e565]:
+                  - paragraph [ref=e567]: Average time to recover from drawdowns
+              - row "performance_trend String Performance trend classification (e.g., improving / stable / declining)" [ref=e568]:
+                - cell "performance_trend" [ref=e569]:
+                  - paragraph [ref=e571]:
+                    - code [ref=e572]: performance_trend
+                - cell "String" [ref=e573]:
+                  - paragraph [ref=e575]: String
+                - cell "Performance trend classification (e.g., improving / stable / declining)" [ref=e576]:
+                  - paragraph [ref=e578]: Performance trend classification (e.g., improving / stable / declining)
+              - row "edge_decay String (Decimal) Measure of strategy performance degradation" [ref=e579]:
+                - cell "edge_decay" [ref=e580]:
+                  - paragraph [ref=e582]:
+                    - code [ref=e583]: edge_decay
+                - cell "String (Decimal)" [ref=e584]:
+                  - paragraph [ref=e586]: String (Decimal)
+                - cell "Measure of strategy performance degradation" [ref=e587]:
+                  - paragraph [ref=e589]: Measure of strategy performance degradation
+              - row "performance_by_category JSON Performance breakdown by market category" [ref=e590]:
+                - cell "performance_by_category" [ref=e591]:
+                  - paragraph [ref=e593]:
+                    - code [ref=e594]: performance_by_category
+                - cell "JSON" [ref=e595]:
+                  - paragraph [ref=e597]: JSON
+                - cell "Performance breakdown by market category" [ref=e598]:
+                  - paragraph [ref=e600]: Performance breakdown by market category
+              - row "category_diversity_score String (Decimal) Diversification score across categories" [ref=e601]:
+                - cell "category_diversity_score" [ref=e602]:
+                  - paragraph [ref=e604]:
+                    - code [ref=e605]: category_diversity_score
+                - cell "String (Decimal)" [ref=e606]:
+                  - paragraph [ref=e608]: String (Decimal)
+                - cell "Diversification score across categories" [ref=e609]:
+                  - paragraph [ref=e611]: Diversification score across categories
+              - row "days_active Integer Number of active trading days" [ref=e612]:
+                - cell "days_active" [ref=e613]:
+                  - paragraph [ref=e615]:
+                    - code [ref=e616]: days_active
+                - cell "Integer" [ref=e617]:
+                  - paragraph [ref=e619]: Integer
+                - cell "Number of active trading days" [ref=e620]:
+                  - paragraph [ref=e622]: Number of active trading days
+              - row "annualized_return String (Decimal) Annualized return" [ref=e623]:
+                - cell "annualized_return" [ref=e624]:
+                  - paragraph [ref=e626]:
+                    - code [ref=e627]: annualized_return
+                - cell "String (Decimal)" [ref=e628]:
+                  - paragraph [ref=e630]: String (Decimal)
+                - cell "Annualized return" [ref=e631]:
+                  - paragraph [ref=e633]: Annualized return
+              - row "win_rate_last_30d String (Decimal) Win rate over last 30 days" [ref=e634]:
+                - cell "win_rate_last_30d" [ref=e635]:
+                  - paragraph [ref=e637]:
+                    - code [ref=e638]: win_rate_last_30d
+                - cell "String (Decimal)" [ref=e639]:
+                  - paragraph [ref=e641]: String (Decimal)
+                - cell "Win rate over last 30 days" [ref=e642]:
+                  - paragraph [ref=e644]: Win rate over last 30 days
+              - row "win_rate_z_score String (Decimal) Statistical deviation of win rate" [ref=e645]:
+                - cell "win_rate_z_score" [ref=e646]:
+                  - paragraph [ref=e648]:
+                    - code [ref=e649]: win_rate_z_score
+                - cell "String (Decimal)" [ref=e650]:
+                  - paragraph [ref=e652]: String (Decimal)
+                - cell "Statistical deviation of win rate" [ref=e653]:
+                  - paragraph [ref=e655]: Statistical deviation of win rate
+              - row "suspicious_win_rate_flag Boolean TRUE if win rate is statistically suspicious" [ref=e656]:
+                - cell "suspicious_win_rate_flag" [ref=e657]:
+                  - paragraph [ref=e659]:
+                    - code [ref=e660]: suspicious_win_rate_flag
+                - cell "Boolean" [ref=e661]:
+                  - paragraph [ref=e663]: Boolean
+                - cell "TRUE if win rate is statistically suspicious" [ref=e664]:
+                  - paragraph [ref=e666]: TRUE if win rate is statistically suspicious
+              - row "dominant_market_id String Market contributing most PnL" [ref=e667]:
+                - cell "dominant_market_id" [ref=e668]:
+                  - paragraph [ref=e670]:
+                    - code [ref=e671]: dominant_market_id
+                - cell "String" [ref=e672]:
+                  - paragraph [ref=e674]: String
+                - cell "Market contributing most PnL" [ref=e675]:
+                  - paragraph [ref=e677]: Market contributing most PnL
+              - row "dominant_market_pnl String (Decimal) PnL from dominant market" [ref=e678]:
+                - cell "dominant_market_pnl" [ref=e679]:
+                  - paragraph [ref=e681]:
+                    - code [ref=e682]: dominant_market_pnl
+                - cell "String (Decimal)" [ref=e683]:
+                  - paragraph [ref=e685]: String (Decimal)
+                - cell "PnL from dominant market" [ref=e686]:
+                  - paragraph [ref=e688]: PnL from dominant market
+              - row "market_concentration_ratio String (Decimal) Concentration of returns in top market" [ref=e689]:
+                - cell "market_concentration_ratio" [ref=e690]:
+                  - paragraph [ref=e692]:
+                    - code [ref=e693]: market_concentration_ratio
+                - cell "String (Decimal)" [ref=e694]:
+                  - paragraph [ref=e696]: String (Decimal)
+                - cell "Concentration of returns in top market" [ref=e697]:
+                  - paragraph [ref=e699]: Concentration of returns in top market
+              - row "num_markets_traded Integer Total distinct markets traded" [ref=e700]:
+                - cell "num_markets_traded" [ref=e701]:
+                  - paragraph [ref=e703]:
+                    - code [ref=e704]: num_markets_traded
+                - cell "Integer" [ref=e705]:
+                  - paragraph [ref=e707]: Integer
+                - cell "Total distinct markets traded" [ref=e708]:
+                  - paragraph [ref=e710]: Total distinct markets traded
+              - row "single_market_dependence_flag Boolean TRUE if wallet depends heavily on one market" [ref=e711]:
+                - cell "single_market_dependence_flag" [ref=e712]:
+                  - paragraph [ref=e714]:
+                    - code [ref=e715]: single_market_dependence_flag
+                - cell "Boolean" [ref=e716]:
+                  - paragraph [ref=e718]: Boolean
+                - cell "TRUE if wallet depends heavily on one market" [ref=e719]:
+                  - paragraph [ref=e721]: TRUE if wallet depends heavily on one market
+              - row "suspicious_timing_trades Integer Number of trades flagged for suspicious timing" [ref=e722]:
+                - cell "suspicious_timing_trades" [ref=e723]:
+                  - paragraph [ref=e725]:
+                    - code [ref=e726]: suspicious_timing_trades
+                - cell "Integer" [ref=e727]:
+                  - paragraph [ref=e729]: Integer
+                - cell "Number of trades flagged for suspicious timing" [ref=e730]:
+                  - paragraph [ref=e732]: Number of trades flagged for suspicious timing
+              - row "total_timed_trades Integer Total trades evaluated for timing analysis" [ref=e733]:
+                - cell "total_timed_trades" [ref=e734]:
+                  - paragraph [ref=e736]:
+                    - code [ref=e737]: total_timed_trades
+                - cell "Integer" [ref=e738]:
+                  - paragraph [ref=e740]: Integer
+                - cell "Total trades evaluated for timing analysis" [ref=e741]:
+                  - paragraph [ref=e743]: Total trades evaluated for timing analysis
+              - row "timing_hit_rate String (Decimal) Success rate of timing-based trades" [ref=e744]:
+                - cell "timing_hit_rate" [ref=e745]:
+                  - paragraph [ref=e747]:
+                    - code [ref=e748]: timing_hit_rate
+                - cell "String (Decimal)" [ref=e749]:
+                  - paragraph [ref=e751]: String (Decimal)
+                - cell "Success rate of timing-based trades" [ref=e752]:
+                  - paragraph [ref=e754]: Success rate of timing-based trades
+              - row "timing_z_score String (Decimal) Statistical deviation of timing performance" [ref=e755]:
+                - cell "timing_z_score" [ref=e756]:
+                  - paragraph [ref=e758]:
+                    - code [ref=e759]: timing_z_score
+                - cell "String (Decimal)" [ref=e760]:
+                  - paragraph [ref=e762]: String (Decimal)
+                - cell "Statistical deviation of timing performance" [ref=e763]:
+                  - paragraph [ref=e765]: Statistical deviation of timing performance
+              - row "timing_anomaly_flag Boolean TRUE if anomalous timing behavior detected" [ref=e766]:
+                - cell "timing_anomaly_flag" [ref=e767]:
+                  - paragraph [ref=e769]:
+                    - code [ref=e770]: timing_anomaly_flag
+                - cell "Boolean" [ref=e771]:
+                  - paragraph [ref=e773]: Boolean
+                - cell "TRUE if anomalous timing behavior detected" [ref=e774]:
+                  - paragraph [ref=e776]: TRUE if anomalous timing behavior detected
+              - row "stddev_position_size String (Decimal) Standard deviation of trade size" [ref=e777]:
+                - cell "stddev_position_size" [ref=e778]:
+                  - paragraph [ref=e780]:
+                    - code [ref=e781]: stddev_position_size
+                - cell "String (Decimal)" [ref=e782]:
+                  - paragraph [ref=e784]: String (Decimal)
+                - cell "Standard deviation of trade size" [ref=e785]:
+                  - paragraph [ref=e787]: Standard deviation of trade size
+              - row "coefficient_of_variation String (Decimal) Relative variability of position size" [ref=e788]:
+                - cell "coefficient_of_variation" [ref=e789]:
+                  - paragraph [ref=e791]:
+                    - code [ref=e792]: coefficient_of_variation
+                - cell "String (Decimal)" [ref=e793]:
+                  - paragraph [ref=e795]: String (Decimal)
+                - cell "Relative variability of position size" [ref=e796]:
+                  - paragraph [ref=e798]: Relative variability of position size
+              - row "position_size_volatility_flag Boolean TRUE if position sizing is unusually volatile" [ref=e799]:
+                - cell "position_size_volatility_flag" [ref=e800]:
+                  - paragraph [ref=e802]:
+                    - code [ref=e803]: position_size_volatility_flag
+                - cell "Boolean" [ref=e804]:
+                  - paragraph [ref=e806]: Boolean
+                - cell "TRUE if position sizing is unusually volatile" [ref=e807]:
+                  - paragraph [ref=e809]: TRUE if position sizing is unusually volatile
+              - row "similar_wallets_count Integer Number of wallets with correlated behavior" [ref=e810]:
+                - cell "similar_wallets_count" [ref=e811]:
+                  - paragraph [ref=e813]:
+                    - code [ref=e814]: similar_wallets_count
+                - cell "Integer" [ref=e815]:
+                  - paragraph [ref=e817]: Integer
+                - cell "Number of wallets with correlated behavior" [ref=e818]:
+                  - paragraph [ref=e820]: Number of wallets with correlated behavior
+              - row "trade_timing_correlation_max String (Decimal) Maximum timing correlation with other wallets" [ref=e821]:
+                - cell "trade_timing_correlation_max" [ref=e822]:
+                  - paragraph [ref=e824]:
+                    - code [ref=e825]: trade_timing_correlation_max
+                - cell "String (Decimal)" [ref=e826]:
+                  - paragraph [ref=e828]: String (Decimal)
+                - cell "Maximum timing correlation with other wallets" [ref=e829]:
+                  - paragraph [ref=e831]: Maximum timing correlation with other wallets
+              - row "sybil_risk_score String (Decimal) Probability score of Sybil behavior" [ref=e832]:
+                - cell "sybil_risk_score" [ref=e833]:
+                  - paragraph [ref=e835]:
+                    - code [ref=e836]: sybil_risk_score
+                - cell "String (Decimal)" [ref=e837]:
+                  - paragraph [ref=e839]: String (Decimal)
+                - cell "Probability score of Sybil behavior" [ref=e840]:
+                  - paragraph [ref=e842]: Probability score of Sybil behavior
+              - row "sybil_risk_flag Boolean TRUE if Sybil risk detected" [ref=e843]:
+                - cell "sybil_risk_flag" [ref=e844]:
+                  - paragraph [ref=e846]:
+                    - code [ref=e847]: sybil_risk_flag
+                - cell "Boolean" [ref=e848]:
+                  - paragraph [ref=e850]: Boolean
+                - cell "TRUE if Sybil risk detected" [ref=e851]:
+                  - paragraph [ref=e853]: TRUE if Sybil risk detected
+              - row "perfect_entry_count Integer Count of statistically perfect entries" [ref=e854]:
+                - cell "perfect_entry_count" [ref=e855]:
+                  - paragraph [ref=e857]:
+                    - code [ref=e858]: perfect_entry_count
+                - cell "Integer" [ref=e859]:
+                  - paragraph [ref=e861]: Integer
+                - cell "Count of statistically perfect entries" [ref=e862]:
+                  - paragraph [ref=e864]: Count of statistically perfect entries
+              - row "perfect_exit_count Integer Count of statistically perfect exits" [ref=e865]:
+                - cell "perfect_exit_count" [ref=e866]:
+                  - paragraph [ref=e868]:
+                    - code [ref=e869]: perfect_exit_count
+                - cell "Integer" [ref=e870]:
+                  - paragraph [ref=e872]: Integer
+                - cell "Count of statistically perfect exits" [ref=e873]:
+                  - paragraph [ref=e875]: Count of statistically perfect exits
+              - row "total_closed_positions Integer Total fully closed positions" [ref=e876]:
+                - cell "total_closed_positions" [ref=e877]:
+                  - paragraph [ref=e879]:
+                    - code [ref=e880]: total_closed_positions
+                - cell "Integer" [ref=e881]:
+                  - paragraph [ref=e883]: Integer
+                - cell "Total fully closed positions" [ref=e884]:
+                  - paragraph [ref=e886]: Total fully closed positions
+              - row "perfect_timing_score String (Decimal) Composite perfect timing score" [ref=e887]:
+                - cell "perfect_timing_score" [ref=e888]:
+                  - paragraph [ref=e890]:
+                    - code [ref=e891]: perfect_timing_score
+                - cell "String (Decimal)" [ref=e892]:
+                  - paragraph [ref=e894]: String (Decimal)
+                - cell "Composite perfect timing score" [ref=e895]:
+                  - paragraph [ref=e897]: Composite perfect timing score
+              - row "perfect_timing_flag Boolean TRUE if timing performance is statistically abnormal" [ref=e898]:
+                - cell "perfect_timing_flag" [ref=e899]:
+                  - paragraph [ref=e901]:
+                    - code [ref=e902]: perfect_timing_flag
+                - cell "Boolean" [ref=e903]:
+                  - paragraph [ref=e905]: Boolean
+                - cell "TRUE if timing performance is statistically abnormal" [ref=e906]:
+                  - paragraph [ref=e908]: TRUE if timing performance is statistically abnormal
+              - row "combined_risk_score String (Decimal) Aggregate behavioral risk score" [ref=e909]:
+                - cell "combined_risk_score" [ref=e910]:
+                  - paragraph [ref=e912]:
+                    - code [ref=e913]: combined_risk_score
+                - cell "String (Decimal)" [ref=e914]:
+                  - paragraph [ref=e916]: String (Decimal)
+                - cell "Aggregate behavioral risk score" [ref=e917]:
+                  - paragraph [ref=e919]: Aggregate behavioral risk score
+              - row "risk_level String Risk classification (e.g., LOW / MEDIUM / HIGH)" [ref=e920]:
+                - cell "risk_level" [ref=e921]:
+                  - paragraph [ref=e923]:
+                    - code [ref=e924]: risk_level
+                - cell "String" [ref=e925]:
+                  - paragraph [ref=e927]: String
+                - cell "Risk classification (e.g., LOW / MEDIUM / HIGH)" [ref=e928]:
+                  - paragraph [ref=e930]: Risk classification (e.g., LOW / MEDIUM / HIGH)
+              - row "flagged_metrics Array[String] List of triggered risk metric identifiers" [ref=e931]:
+                - cell "flagged_metrics" [ref=e932]:
+                  - paragraph [ref=e934]:
+                    - code [ref=e935]: flagged_metrics
+                - cell "Array[String]" [ref=e936]:
+                  - paragraph [ref=e938]: Array[String]
+                - cell "List of triggered risk metric identifiers" [ref=e939]:
+                  - paragraph [ref=e941]: List of triggered risk metric identifiers
+              - row "statistical_confidence String (Decimal) Confidence level of statistical evaluation" [ref=e942]:
+                - cell "statistical_confidence" [ref=e943]:
+                  - paragraph [ref=e945]:
+                    - code [ref=e946]: statistical_confidence
+                - cell "String (Decimal)" [ref=e947]:
+                  - paragraph [ref=e949]: String (Decimal)
+                - cell "Confidence level of statistical evaluation" [ref=e950]:
+                  - paragraph [ref=e952]: Confidence level of statistical evaluation
+              - row "curve_smoothness String (Decimal) Smoothness metric of equity curve" [ref=e953]:
+                - cell "curve_smoothness" [ref=e954]:
+                  - paragraph [ref=e956]:
+                    - code [ref=e957]: curve_smoothness
+                - cell "String (Decimal)" [ref=e958]:
+                  - paragraph [ref=e960]: String (Decimal)
+                - cell "Smoothness metric of equity curve" [ref=e961]:
+                  - paragraph [ref=e963]: Smoothness metric of equity curve
+              - row "equity_curve_pattern String Equity curve pattern classification" [ref=e964]:
+                - cell "equity_curve_pattern" [ref=e965]:
+                  - paragraph [ref=e967]:
+                    - code [ref=e968]: equity_curve_pattern
+                - cell "String" [ref=e969]:
+                  - paragraph [ref=e971]: String
+                - cell "Equity curve pattern classification" [ref=e972]:
+                  - paragraph [ref=e974]: Equity curve pattern classification
+              - row "trade_size_stdev String (Decimal) Standard deviation of trade sizes" [ref=e975]:
+                - cell "trade_size_stdev" [ref=e976]:
+                  - paragraph [ref=e978]:
+                    - code [ref=e979]: trade_size_stdev
+                - cell "String (Decimal)" [ref=e980]:
+                  - paragraph [ref=e982]: String (Decimal)
+                - cell "Standard deviation of trade sizes" [ref=e983]:
+                  - paragraph [ref=e985]: Standard deviation of trade sizes
+              - row "max_position_pct String (Decimal) Maximum single position as % of capital" [ref=e986]:
+                - cell "max_position_pct" [ref=e987]:
+                  - paragraph [ref=e989]:
+                    - code [ref=e990]: max_position_pct
+                - cell "String (Decimal)" [ref=e991]:
+                  - paragraph [ref=e993]: String (Decimal)
+                - cell "Maximum single position as % of capital" [ref=e994]:
+                  - paragraph [ref=e996]: Maximum single position as % of capital
+              - row "position_size_consistency String (Decimal) Consistency metric of position sizing" [ref=e997]:
+                - cell "position_size_consistency" [ref=e998]:
+                  - paragraph [ref=e1000]:
+                    - code [ref=e1001]: position_size_consistency
+                - cell "String (Decimal)" [ref=e1002]:
+                  - paragraph [ref=e1004]: String (Decimal)
+                - cell "Consistency metric of position sizing" [ref=e1005]:
+                  - paragraph [ref=e1007]: Consistency metric of position sizing
+          - group [ref=e1008]:
+            - generic "chevron-right Example Response Direct link to heading" [ref=e1009] [cursor=pointer]:
+              - img "chevron-right" [ref=e1010]
+              - text: Example Response
+              - link "Direct link to heading" [ref=e1012]:
+                - /url: "#example-response"
+                - img "hashtag" [ref=e1013]
+          - separator [ref=e1015]
+          - heading "Direct link to heading Notes" [level=3] [ref=e1016]:
+            - link "Direct link to heading" [ref=e1018] [cursor=pointer]:
+              - /url: "#notes"
+              - img "hashtag" [ref=e1019]
+            - generic [ref=e1021]: Notes
+          - list [ref=e1022]:
+            - listitem [ref=e1023]:
+              - generic [ref=e1025]: •
+              - paragraph [ref=e1027]:
+                - text: Use smaller
+                - code [ref=e1028]: window_days
+                - text: values (e.g.
+                - code [ref=e1029]: "\"1\""
+                - text: or
+                - code [ref=e1030]: "\"3\""
+                - text: ) to analyze
+                - strong [ref=e1031]: short-term trading behavior
+                - text: ", while larger windows (e.g."
+                - code [ref=e1032]: "\"7\""
+                - text: or
+                - code [ref=e1033]: "\"15\""
+                - text: ) provide a better view of overall strategy consistency.
+            - listitem [ref=e1034]:
+              - generic [ref=e1036]: •
+              - paragraph [ref=e1038]:
+                - text: Evaluate
+                - code [ref=e1039]: roi
+                - text: ","
+                - code [ref=e1040]: sharpe_ratio
+                - text: ", and"
+                - code [ref=e1041]: sortino_ratio
+                - text: together to understand
+                - strong [ref=e1042]: profitability relative to risk
+                - text: ", rather than relying on raw PnL alone."
+            - listitem [ref=e1043]:
+              - generic [ref=e1045]: •
+              - paragraph [ref=e1047]:
+                - text: Monitor
+                - code [ref=e1048]: max_drawdown
+                - text: ","
+                - code [ref=e1049]: ulcer_index
+                - text: ", and"
+                - code [ref=e1050]: recovery_time_avg
+                - text: to assess
+                - strong [ref=e1051]: how a trader handles losses and recovers from drawdowns
+                - text: .
+            - listitem [ref=e1052]:
+              - generic [ref=e1054]: •
+              - paragraph [ref=e1056]:
+                - text: Use
+                - code [ref=e1057]: market_concentration_ratio
+                - text: and
+                - code [ref=e1058]: single_market_dependence_flag
+                - text: to identify wallets that
+                - strong [ref=e1059]: rely heavily on a small number of markets
+                - text: ", which may increase risk."
+            - listitem [ref=e1060]:
+              - generic [ref=e1062]: •
+              - paragraph [ref=e1064]:
+                - text: Analyze
+                - code [ref=e1065]: position_size_consistency
+                - text: ","
+                - code [ref=e1066]: trade_size_stdev
+                - text: ", and"
+                - code [ref=e1067]: coefficient_of_variation
+                - text: to understand
+                - strong [ref=e1068]: how consistently a trader sizes their positions
+                - text: .
+            - listitem [ref=e1069]:
+              - generic [ref=e1071]: •
+              - paragraph [ref=e1073]:
+                - text: Check
+                - code [ref=e1074]: sybil_risk_score
+                - text: ","
+                - code [ref=e1075]: sybil_risk_flag
+                - text: ", and"
+                - code [ref=e1076]: similar_wallets_count
+                - text: to detect
+                - strong [ref=e1077]: coordinated or suspicious trading behavior
+                - text: .
+            - listitem [ref=e1078]:
+              - generic [ref=e1080]: •
+              - paragraph [ref=e1082]:
+                - text: Use
+                - code [ref=e1083]: performance_trend
+                - text: and
+                - code [ref=e1084]: edge_decay
+                - text: to determine whether a trader’s
+                - strong [ref=e1085]: strategy performance is improving, stable, or deteriorating over time
+                - text: .
+            - listitem [ref=e1086]:
+              - generic [ref=e1088]: •
+              - paragraph [ref=e1090]:
+                - text: Review
+                - code [ref=e1091]: combined_risk_score
+                - text: ","
+                - code [ref=e1092]: risk_level
+                - text: ", and"
+                - code [ref=e1093]: flagged_metrics
+                - text: to quickly identify wallets with
+                - strong [ref=e1094]: statistically abnormal or high-risk trading patterns
+                - text: .
+        - generic [ref=e1095]:
+          - link "Previous Falcon Leaderboard API chevron-left" [ref=e1096] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+            - generic [ref=e1097]:
+              - generic [ref=e1098]: Previous
+              - generic [ref=e1099]: Falcon Leaderboard API
+            - img "chevron-left" [ref=e1100]
+          - link "Next API Structure chevron-right" [ref=e1102] [cursor=pointer]:
+            - /url: /falcon-api/reference/api-structure
+            - generic [ref=e1103]:
+              - generic [ref=e1104]: Next
+              - generic [ref=e1105]: API Structure
+            - img "chevron-right" [ref=e1106]
+        - paragraph [ref=e1109]:
+          - text: Last updated
+          - time [ref=e1110]: 9 days ago

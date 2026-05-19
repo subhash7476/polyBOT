@@ -1,0 +1,1 @@
+{"fill_id": "tok1-buy-0.5000-1000000000", "session_id": "s1", "ts": 1000000.0, "token_id": "tok1", "question": "Q", "side": "BUY", "price": 0.5, "size": 1.0, "cash_flow": -0.5, "realized_pnl": 0.0, "inventory_after": 1.0}

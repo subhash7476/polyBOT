@@ -1,0 +1,538 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Request Body (JSON)" [ref=e146] [cursor=pointer]:
+              - /url: "#request-body-json"
+          - listitem [ref=e147]:
+            - link "Available Filters" [ref=e148] [cursor=pointer]:
+              - /url: "#available-filters"
+          - listitem [ref=e149]:
+            - link "Response Fields" [ref=e150] [cursor=pointer]:
+              - /url: "#response-fields"
+          - listitem [ref=e151]:
+            - link "Notes" [ref=e152] [cursor=pointer]:
+              - /url: "#notes"
+      - main [ref=e153]:
+        - generic [ref=e154]:
+          - generic [ref=e155]:
+            - button "Copy page" [ref=e156] [cursor=pointer]:
+              - img "copy" [ref=e157]
+              - generic [ref=e159]: Copy
+            - button "More" [ref=e160] [cursor=pointer]:
+              - img "chevron-down" [ref=e161]
+          - navigation "Breadcrumb" [ref=e163]:
+            - list [ref=e164]:
+              - listitem [ref=e165]:
+                - link "📈 Market Intelligence" [ref=e166] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence
+                  - generic [ref=e167]: 📈
+                  - text: Market Intelligence
+          - heading "🎖️ Falcon Leaderboard API" [level=1] [ref=e168]:
+            - generic [ref=e169]: 🎖️
+            - text: Falcon Leaderboard API
+          - paragraph [ref=e170]: Rank Polymarket traders using the proprietary Falcon Score, a composite metric designed to highlight consistent, high-quality traders while filtering out bots, short lucky streaks, and wash trading.
+        - generic [ref=e171]:
+          - heading "Direct link to heading Request Body (JSON)" [level=3] [ref=e172]:
+            - link "Direct link to heading" [ref=e174] [cursor=pointer]:
+              - /url: "#request-body-json"
+              - img "hashtag" [ref=e175]
+            - generic [ref=e177]: Request Body (JSON)
+          - generic [ref=e179]:
+            - button "Copy" [ref=e180] [cursor=pointer]:
+              - generic [ref=e181]: Copy
+            - code [ref=e183]:
+              - generic [ref=e185]: "{"
+              - generic [ref=e187]: "\"agent_id\": 584,"
+              - generic [ref=e189]: "\"params\": {"
+              - generic [ref=e191]: "\"min_win_rate_15d\": \"0.45\","
+              - generic [ref=e193]: "\"max_win_rate_15d\": \"0.95\","
+              - generic [ref=e195]: "\"min_roi_15d\": \"0\","
+              - generic [ref=e197]: "\"min_total_trades_15d\": \"50\","
+              - generic [ref=e199]: "\"max_total_trades_15d\": \"100000\","
+              - generic [ref=e201]: "\"min_pnl_15d\": \"5000\","
+              - generic [ref=e203]: "\"sort_by\": \"roi\""
+              - generic [ref=e205]: "},"
+              - generic [ref=e207]: "\"pagination\": {"
+              - generic [ref=e209]: "\"limit\": 50,"
+              - generic [ref=e211]: "\"offset\": 0"
+              - generic [ref=e213]: "},"
+              - generic [ref=e215]: "\"formatter_config\": {"
+              - generic [ref=e217]: "\"format_type\": \"raw\""
+              - generic [ref=e219]: "}"
+              - generic [ref=e221]: "}"
+          - heading "Direct link to heading Available Filters" [level=3] [ref=e222]:
+            - link "Direct link to heading" [ref=e224] [cursor=pointer]:
+              - /url: "#available-filters"
+              - img "hashtag" [ref=e225]
+            - generic [ref=e227]: Available Filters
+          - generic [ref=e230]:
+            - rowgroup [ref=e231]:
+              - row "Parameter Type Description Example" [ref=e232]:
+                - columnheader "Parameter" [ref=e233]
+                - columnheader "Type" [ref=e234]
+                - columnheader "Description" [ref=e235]
+                - columnheader "Example" [ref=e236]
+            - table [ref=e237]:
+              - rowgroup [ref=e238]:
+                - row "min_roi_15d String Minimum ROI over the last 15 days \"0.2\"" [ref=e239]:
+                  - cell "min_roi_15d" [ref=e240]:
+                    - paragraph [ref=e242]:
+                      - code [ref=e243]: min_roi_15d
+                  - cell "String" [ref=e244]:
+                    - paragraph [ref=e246]: String
+                  - cell "Minimum ROI over the last 15 days" [ref=e247]:
+                    - paragraph [ref=e249]: Minimum ROI over the last 15 days
+                  - cell "\"0.2\"" [ref=e250]:
+                    - paragraph [ref=e252]:
+                      - code [ref=e253]: "\"0.2\""
+                - row "min_win_rate_15d String Minimum win rate over the last 15 days (0–1) \"0.45\"" [ref=e254]:
+                  - cell "min_win_rate_15d" [ref=e255]:
+                    - paragraph [ref=e257]:
+                      - code [ref=e258]: min_win_rate_15d
+                  - cell "String" [ref=e259]:
+                    - paragraph [ref=e261]: String
+                  - cell "Minimum win rate over the last 15 days (0–1)" [ref=e262]:
+                    - paragraph [ref=e264]: Minimum win rate over the last 15 days (0–1)
+                  - cell "\"0.45\"" [ref=e265]:
+                    - paragraph [ref=e267]:
+                      - code [ref=e268]: "\"0.45\""
+                - row "max_win_rate_15d String Maximum win rate over the last 15 days (0–1) \"0.95\"" [ref=e269]:
+                  - cell "max_win_rate_15d" [ref=e270]:
+                    - paragraph [ref=e272]:
+                      - code [ref=e273]: max_win_rate_15d
+                  - cell "String" [ref=e274]:
+                    - paragraph [ref=e276]: String
+                  - cell "Maximum win rate over the last 15 days (0–1)" [ref=e277]:
+                    - paragraph [ref=e279]: Maximum win rate over the last 15 days (0–1)
+                  - cell "\"0.95\"" [ref=e280]:
+                    - paragraph [ref=e282]:
+                      - code [ref=e283]: "\"0.95\""
+                - row "min_total_trades_15d String Minimum trades executed in the last 15 days \"50\"" [ref=e284]:
+                  - cell "min_total_trades_15d" [ref=e285]:
+                    - paragraph [ref=e287]:
+                      - code [ref=e288]: min_total_trades_15d
+                  - cell "String" [ref=e289]:
+                    - paragraph [ref=e291]: String
+                  - cell "Minimum trades executed in the last 15 days" [ref=e292]:
+                    - paragraph [ref=e294]: Minimum trades executed in the last 15 days
+                  - cell "\"50\"" [ref=e295]:
+                    - paragraph [ref=e297]:
+                      - code [ref=e298]: "\"50\""
+                - row "max_total_trades_15d String Maximum trades executed in the last 15 days \"20000\"" [ref=e299]:
+                  - cell "max_total_trades_15d" [ref=e300]:
+                    - paragraph [ref=e302]:
+                      - code [ref=e303]: max_total_trades_15d
+                  - cell "String" [ref=e304]:
+                    - paragraph [ref=e306]: String
+                  - cell "Maximum trades executed in the last 15 days" [ref=e307]:
+                    - paragraph [ref=e309]: Maximum trades executed in the last 15 days
+                  - cell "\"20000\"" [ref=e310]:
+                    - paragraph [ref=e312]:
+                      - code [ref=e313]: "\"20000\""
+                - row "min_pnl_15d String Minimum realized PnL over the last 15 days (USD) \"50000\"" [ref=e314]:
+                  - cell "min_pnl_15d" [ref=e315]:
+                    - paragraph [ref=e317]:
+                      - code [ref=e318]: min_pnl_15d
+                  - cell "String" [ref=e319]:
+                    - paragraph [ref=e321]: String
+                  - cell "Minimum realized PnL over the last 15 days (USD)" [ref=e322]:
+                    - paragraph [ref=e324]: Minimum realized PnL over the last 15 days (USD)
+                  - cell "\"50000\"" [ref=e325]:
+                    - paragraph [ref=e327]:
+                      - code [ref=e328]: "\"50000\""
+                - 'row "sort_by String Sort metric. Default: h_score. Options: h_score, roi, pnl, win_rate, trades, sharpe \"pnl\"" [ref=e329]':
+                  - cell "sort_by" [ref=e330]:
+                    - paragraph [ref=e332]:
+                      - code [ref=e333]: sort_by
+                  - cell "String" [ref=e334]:
+                    - paragraph [ref=e336]: String
+                  - 'cell "Sort metric. Default: h_score. Options: h_score, roi, pnl, win_rate, trades, sharpe" [ref=e337]':
+                    - paragraph [ref=e339]:
+                      - text: "Sort metric. Default:"
+                      - code [ref=e340]: h_score
+                      - text: ". Options:"
+                      - code [ref=e341]: h_score
+                      - text: ","
+                      - code [ref=e342]: roi
+                      - text: ","
+                      - code [ref=e343]: pnl
+                      - text: ","
+                      - code [ref=e344]: win_rate
+                      - text: ","
+                      - code [ref=e345]: trades
+                      - text: ","
+                      - code [ref=e346]: sharpe
+                  - cell "\"pnl\"" [ref=e347]:
+                    - paragraph [ref=e349]:
+                      - code [ref=e350]: "\"pnl\""
+          - group [ref=e351]:
+            - generic "chevron-right Example Request (curl) Direct link to heading" [ref=e352] [cursor=pointer]:
+              - img "chevron-right" [ref=e353]
+              - text: Example Request (curl)
+              - link "Direct link to heading" [ref=e355]:
+                - /url: "#example-request-curl"
+                - img "hashtag" [ref=e356]
+          - separator [ref=e358]
+          - heading "Direct link to heading Response Fields" [level=3] [ref=e359]:
+            - link "Direct link to heading" [ref=e361] [cursor=pointer]:
+              - /url: "#response-fields"
+              - img "hashtag" [ref=e362]
+            - generic [ref=e364]: Response Fields
+          - generic [ref=e367]:
+            - rowgroup [ref=e368]:
+              - row "Field Type Description" [ref=e369]:
+                - columnheader "Field" [ref=e370]
+                - columnheader "Type" [ref=e371]
+                - columnheader "Description" [ref=e372]
+            - table [ref=e373]:
+              - rowgroup [ref=e374]:
+                - row "leaderboard_rank Integer Rank based on Falcon Score" [ref=e375]:
+                  - cell "leaderboard_rank" [ref=e376]:
+                    - paragraph [ref=e378]:
+                      - code [ref=e379]: leaderboard_rank
+                  - cell "Integer" [ref=e380]:
+                    - paragraph [ref=e382]: Integer
+                  - cell "Rank based on Falcon Score" [ref=e383]:
+                    - paragraph [ref=e385]: Rank based on Falcon Score
+                - row "wallet String Trader wallet address" [ref=e386]:
+                  - cell "wallet" [ref=e387]:
+                    - paragraph [ref=e389]:
+                      - code [ref=e390]: wallet
+                  - cell "String" [ref=e391]:
+                    - paragraph [ref=e393]: String
+                  - cell "Trader wallet address" [ref=e394]:
+                    - paragraph [ref=e396]: Trader wallet address
+                - row "tier String Falcon trader tier classification" [ref=e397]:
+                  - cell "tier" [ref=e398]:
+                    - paragraph [ref=e400]:
+                      - code [ref=e401]: tier
+                  - cell "String" [ref=e402]:
+                    - paragraph [ref=e404]: String
+                  - cell "Falcon trader tier classification" [ref=e405]:
+                    - paragraph [ref=e407]: Falcon trader tier classification
+                - row "h_score Decimal Falcon Score" [ref=e408]:
+                  - cell "h_score" [ref=e409]:
+                    - paragraph [ref=e411]:
+                      - code [ref=e412]: h_score
+                  - cell "Decimal" [ref=e413]:
+                    - paragraph [ref=e415]: Decimal
+                  - cell "Falcon Score" [ref=e416]:
+                    - paragraph [ref=e418]: Falcon Score
+                - row "roi_pct_15d Decimal 15-day return on investment" [ref=e419]:
+                  - cell "roi_pct_15d" [ref=e420]:
+                    - paragraph [ref=e422]:
+                      - code [ref=e423]: roi_pct_15d
+                  - cell "Decimal" [ref=e424]:
+                    - paragraph [ref=e426]: Decimal
+                  - cell "15-day return on investment" [ref=e427]:
+                    - paragraph [ref=e429]: 15-day return on investment
+                - row "win_rate_pct_15d Decimal 15-day win rate" [ref=e430]:
+                  - cell "win_rate_pct_15d" [ref=e431]:
+                    - paragraph [ref=e433]:
+                      - code [ref=e434]: win_rate_pct_15d
+                  - cell "Decimal" [ref=e435]:
+                    - paragraph [ref=e437]: Decimal
+                  - cell "15-day win rate" [ref=e438]:
+                    - paragraph [ref=e440]: 15-day win rate
+                - row "sharpe_ratio_15d Decimal 15-day Sharpe ratio" [ref=e441]:
+                  - cell "sharpe_ratio_15d" [ref=e442]:
+                    - paragraph [ref=e444]:
+                      - code [ref=e445]: sharpe_ratio_15d
+                  - cell "Decimal" [ref=e446]:
+                    - paragraph [ref=e448]: Decimal
+                  - cell "15-day Sharpe ratio" [ref=e449]:
+                    - paragraph [ref=e451]: 15-day Sharpe ratio
+                - row "total_trades_15d Integer Total trades executed in the last 15 days" [ref=e452]:
+                  - cell "total_trades_15d" [ref=e453]:
+                    - paragraph [ref=e455]:
+                      - code [ref=e456]: total_trades_15d
+                  - cell "Integer" [ref=e457]:
+                    - paragraph [ref=e459]: Integer
+                  - cell "Total trades executed in the last 15 days" [ref=e460]:
+                    - paragraph [ref=e462]: Total trades executed in the last 15 days
+                - row "markets_traded_15d Integer Unique markets traded" [ref=e463]:
+                  - cell "markets_traded_15d" [ref=e464]:
+                    - paragraph [ref=e466]:
+                      - code [ref=e467]: markets_traded_15d
+                  - cell "Integer" [ref=e468]:
+                    - paragraph [ref=e470]: Integer
+                  - cell "Unique markets traded" [ref=e471]:
+                    - paragraph [ref=e473]: Unique markets traded
+                - row "total_pnl_15d Decimal Realized PnL over 15 days" [ref=e474]:
+                  - cell "total_pnl_15d" [ref=e475]:
+                    - paragraph [ref=e477]:
+                      - code [ref=e478]: total_pnl_15d
+                  - cell "Decimal" [ref=e479]:
+                    - paragraph [ref=e481]: Decimal
+                  - cell "Realized PnL over 15 days" [ref=e482]:
+                    - paragraph [ref=e484]: Realized PnL over 15 days
+                - row "total_volume_15d Decimal Total trading volume" [ref=e485]:
+                  - cell "total_volume_15d" [ref=e486]:
+                    - paragraph [ref=e488]:
+                      - code [ref=e489]: total_volume_15d
+                  - cell "Decimal" [ref=e490]:
+                    - paragraph [ref=e492]: Decimal
+                  - cell "Total trading volume" [ref=e493]:
+                    - paragraph [ref=e495]: Total trading volume
+                - row "trajectory String Improving, stable, or declining" [ref=e496]:
+                  - cell "trajectory" [ref=e497]:
+                    - paragraph [ref=e499]:
+                      - code [ref=e500]: trajectory
+                  - cell "String" [ref=e501]:
+                    - paragraph [ref=e503]: String
+                  - cell "Improving, stable, or declining" [ref=e504]:
+                    - paragraph [ref=e506]: Improving, stable, or declining
+          - separator [ref=e507]
+          - heading "Direct link to heading Notes" [level=3] [ref=e508]:
+            - link "Direct link to heading" [ref=e510] [cursor=pointer]:
+              - /url: "#notes"
+              - img "hashtag" [ref=e511]
+            - generic [ref=e513]: Notes
+          - list [ref=e514]:
+            - listitem [ref=e515]:
+              - generic [ref=e517]: •
+              - paragraph [ref=e519]:
+                - text: Use the default
+                - code [ref=e520]: "sort_by: \"h_score\""
+                - text: to identify
+                - strong [ref=e521]: consistently high-quality traders
+                - text: ", as the H-Score balances profitability, win rate, risk management, and activity."
+            - listitem [ref=e522]:
+              - generic [ref=e524]: •
+              - paragraph [ref=e526]:
+                - text: Apply
+                - code [ref=e527]: min_total_trades_15d
+                - text: to filter out
+                - strong [ref=e528]: low-activity wallets
+                - text: ", which helps remove traders who appear successful due to a small number of lucky trades."
+            - listitem [ref=e529]:
+              - generic [ref=e531]: •
+              - paragraph [ref=e533]:
+                - text: Combine
+                - code [ref=e534]: min_roi_15d
+                - text: with
+                - code [ref=e535]: min_win_rate_15d
+                - text: to identify traders with both
+                - strong [ref=e536]: strong returns and high accuracy
+                - text: .
+            - listitem [ref=e537]:
+              - generic [ref=e539]: •
+              - paragraph [ref=e541]:
+                - text: Use
+                - code [ref=e542]: min_pnl_15d
+                - text: to filter for traders generating
+                - strong [ref=e543]: meaningful realized profits
+                - text: ", especially when analyzing top-performing wallets."
+            - listitem [ref=e544]:
+              - generic [ref=e546]: •
+              - paragraph [ref=e548]:
+                - text: Adjust
+                - code [ref=e549]: sort_by
+                - text: "to analyze different aspects of performance, for example: -"
+                - code [ref=e550]: roi
+                - text: to rank by highest returns -
+                - code [ref=e551]: pnl
+                - text: to rank by total profit -
+                - code [ref=e552]: win_rate
+                - text: to find highly accurate traders -
+                - code [ref=e553]: sharpe
+                - text: to prioritize risk-adjusted performance
+            - listitem [ref=e554]:
+              - generic [ref=e556]: •
+              - paragraph [ref=e558]:
+                - text: Monitor the
+                - code [ref=e559]: trajectory
+                - text: field to quickly identify traders whose performance is
+                - strong [ref=e560]: improving, stable, or declining
+                - text: over the recent period.
+        - generic [ref=e561]:
+          - link "Previous Social Pulse chevron-left" [ref=e562] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/social-pulse
+            - generic [ref=e563]:
+              - generic [ref=e564]: Previous
+              - generic [ref=e565]: Social Pulse
+            - img "chevron-left" [ref=e566]
+          - link "Next Falcon Wallet 360 chevron-right" [ref=e568] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/falcon-wallet-360
+            - generic [ref=e569]:
+              - generic [ref=e570]: Next
+              - generic [ref=e571]: Falcon Wallet 360
+            - img "chevron-right" [ref=e572]
+        - paragraph [ref=e575]:
+          - text: Last updated
+          - time [ref=e576]: 9 days ago

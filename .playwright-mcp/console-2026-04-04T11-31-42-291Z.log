@@ -1,0 +1,67 @@
+[     641ms] [ERROR] Failed to load resource: the server responded with a status of 405 () @ https://claude.ai/sentry?o=1158394&p=4504646202490880:0
+[    2859ms] [ERROR] Failed to load resource: net::ERR_TOO_MANY_REDIRECTS @ https://claude.ai/login:0
+[    2861ms] [ERROR] Failed to fetch RSC payload for https://claude.ai/login?selectAccount=true&returnTo=%2Foauth%2Fauthorize%3Fclient_id%3Ddae2cad8-15c5-43d2-9046-fcaecc135fa4%26response_type%3Dcode%26scope%3Duser%253Aprofile%2Buser%253Ainference%2Buser%253Achat%26redirect_uri%3Dchrome-extension%253A%252F%252Ffcoeoabgfenejglbffodgkkbkcdhcgfn%252Foauth_callback.html%26state%3DrEGHQjk2zeSarQPuTsjsp0mbGWnxYbWwHPDUL89JbHY%26code_challenge%3D3GjDLb-U7zGsj9-vP1pR5d5Q8Sf06Nh5rNbG0HmwYmQ%26code_challenge_method%3DS256. Falling back to browser navigation. TypeError: Failed to fetch (claude.ai)
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:12:1612
+    at m (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:86035)
+    at _ (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:84905)
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:8965
+    at Object.o [as task] (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:1:2116)
+    at u.c (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:1:2821)
+    at u.enqueue (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:1:2246)
+    at c (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:8928)
+    at l (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:8444)
+    at e (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:47674)
+    at f (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:1:15350)
+    at Object.action (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:121705)
+    at p (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:120932)
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:121373
+    at Object.dispatch (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:121665)
+    at o (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:111540)
+    at i (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:111470)
+    at y (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:122313)
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:123224
+    at t.startTransition (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:18:157675)
+    at Object.push (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:123212)
+    at Object.apply (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:16:11962)
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/app/(ssr)/oauth/authorize/page-33812f616cd413bf.js:1:37561
+    at https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/app/(ssr)/oauth/authorize/page-33812f616cd413bf.js:1:37845
+    at o1 (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:89711)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105603)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105648)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105648)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105648)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105648)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583)
+    at ux (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105487)
+    at uE (https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/87c73c54-1748cec33284d13b.js:1:105583) @ https://assets-proxy.anthropic.com/claude-ai/v1/_next/static/chunks/4511-6b36a4f4a2669f20.js:11
+[    5168ms] [INFO] [O11Y] [DatadogRUM] Initialized {service: claude-ai, env: production, version: c54235956b} @ https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:1
+[    6752ms] [WARNING] [Intercom] The App ID in your code snippet has not been set. Set it to your App ID found in settings to complete installation: https://app.intercom.com/a/apps/_/settings/web @ https://js.intercomcdn.com/frame-modern.40aacdf2.js:0
+[    9378ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://accounts.google.com/gsi/client:131
+[    9379ms] [ERROR] Cross-Origin-Opener-Policy policy would block the window.closed call. @ https://accounts.google.com/gsi/client:131
+[   13621ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://claude.ai/oauth/api/arkose/verify:0
+[   13624ms] [ERROR] [REACT_QUERY_CLIENT] QueryClient error: Co: Not Found
+    at wo (https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:2:5915)
+    at https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:3:72562
+    at async Object.mutationFn (https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:3:73332) @ https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:1
+[   13632ms] Co: Not Found
+    at wo (https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:2:5915)
+    at https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:3:72562
+    at async Object.mutationFn (https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:3:73332)
+[   18259ms] [INFO] [O11Y] [DatadogRUM] Initialized {service: claude-ai, env: production, version: c54235956b} @ https://assets-proxy.anthropic.com/claude-ai/v2/assets/v1/index-BlyncG8U.js:1

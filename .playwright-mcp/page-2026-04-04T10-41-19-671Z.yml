@@ -1,0 +1,599 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Request Body (JSON)" [ref=e146] [cursor=pointer]:
+              - /url: "#request-body-json"
+          - listitem [ref=e147]:
+            - link "Available Filters" [ref=e148] [cursor=pointer]:
+              - /url: "#available-filters"
+          - listitem [ref=e149]:
+            - link "Example Use Cases" [ref=e150] [cursor=pointer]:
+              - /url: "#example-use-cases"
+          - listitem [ref=e151]:
+            - link "Response Fields" [ref=e152] [cursor=pointer]:
+              - /url: "#response-fields"
+          - listitem [ref=e153]:
+            - link "Notes" [ref=e154] [cursor=pointer]:
+              - /url: "#notes"
+      - main [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - button "Copy page" [ref=e158] [cursor=pointer]:
+              - img "copy" [ref=e159]
+              - generic [ref=e161]: Copy
+            - button "More" [ref=e162] [cursor=pointer]:
+              - img "chevron-down" [ref=e163]
+          - navigation "Breadcrumb" [ref=e165]:
+            - list [ref=e166]:
+              - listitem [ref=e167]:
+                - link "🧠 Traders" [ref=e168] [cursor=pointer]:
+                  - /url: /falcon-api/traders
+                  - generic [ref=e169]: 🧠
+                  - text: Traders
+          - heading "🥇 Top Traders" [level=1] [ref=e170]:
+            - generic [ref=e171]: 🥇
+            - text: Top Traders
+          - paragraph [ref=e172]: Returns ranked trader performance data from the Polymarket leaderboard for a selected time period. This endpoint allows you to view the highest performing wallets and filter based on performance.
+        - generic [ref=e173]:
+          - heading "Direct link to heading Request Body (JSON)" [level=3] [ref=e174]:
+            - link "Direct link to heading" [ref=e176] [cursor=pointer]:
+              - /url: "#request-body-json"
+              - img "hashtag" [ref=e177]
+            - generic [ref=e179]: Request Body (JSON)
+          - generic [ref=e181]:
+            - button "Copy" [ref=e182] [cursor=pointer]:
+              - generic [ref=e183]: Copy
+            - code [ref=e185]:
+              - generic [ref=e187]: "{"
+              - generic [ref=e189]: "\"agent_id\": 579,"
+              - generic [ref=e191]: "\"params\": {"
+              - generic [ref=e193]: "\"wallet_address\": \"ALL\","
+              - generic [ref=e195]: "\"leaderboard_period\": \"1d\""
+              - generic [ref=e197]: "},"
+              - generic [ref=e199]: "\"pagination\": {"
+              - generic [ref=e201]: "\"limit\": 50,"
+              - generic [ref=e203]: "\"offset\": 0"
+              - generic [ref=e205]: "},"
+              - generic [ref=e207]: "\"formatter_config\": {"
+              - generic [ref=e209]: "\"format_type\": \"raw\""
+              - generic [ref=e211]: "}"
+              - generic [ref=e213]: "}"
+          - separator [ref=e214]
+          - heading "Direct link to heading Available Filters" [level=3] [ref=e215]:
+            - link "Direct link to heading" [ref=e217] [cursor=pointer]:
+              - /url: "#available-filters"
+              - img "hashtag" [ref=e218]
+            - generic [ref=e220]: Available Filters
+          - generic [ref=e223]:
+            - rowgroup [ref=e224]:
+              - row "Parameter Type Description Example" [ref=e225]:
+                - columnheader "Parameter" [ref=e226]
+                - columnheader "Type" [ref=e227]
+                - columnheader "Description" [ref=e228]
+                - columnheader "Example" [ref=e229]
+            - table [ref=e230]:
+              - rowgroup [ref=e231]:
+                - row "wallet_address String Wallet address filter. Use \"ALL\" to return all traders. \"0xabc123...\"" [ref=e232]:
+                  - cell "wallet_address" [ref=e233]:
+                    - paragraph [ref=e235]:
+                      - code [ref=e236]: wallet_address
+                  - cell "String" [ref=e237]:
+                    - paragraph [ref=e239]: String
+                  - cell "Wallet address filter. Use \"ALL\" to return all traders." [ref=e240]:
+                    - paragraph [ref=e242]:
+                      - text: Wallet address filter. Use
+                      - code [ref=e243]: "\"ALL\""
+                      - text: to return all traders.
+                  - cell "\"0xabc123...\"" [ref=e244]:
+                    - paragraph [ref=e246]:
+                      - code [ref=e247]: "\"0xabc123...\""
+                - 'row "leaderboard_period String Ranking window. Allowed values: 1d, 3d, 7d, 30d \"7d\"" [ref=e248]':
+                  - cell "leaderboard_period" [ref=e249]:
+                    - paragraph [ref=e251]:
+                      - code [ref=e252]: leaderboard_period
+                  - cell "String" [ref=e253]:
+                    - paragraph [ref=e255]: String
+                  - 'cell "Ranking window. Allowed values: 1d, 3d, 7d, 30d" [ref=e256]':
+                    - paragraph [ref=e258]:
+                      - text: "Ranking window. Allowed values:"
+                      - code [ref=e259]: 1d
+                      - text: ","
+                      - code [ref=e260]: 3d
+                      - text: ","
+                      - code [ref=e261]: 7d
+                      - text: ","
+                      - code [ref=e262]: 30d
+                  - cell "\"7d\"" [ref=e263]:
+                    - paragraph [ref=e265]:
+                      - code [ref=e266]: "\"7d\""
+                - row "min_total_pnl String Minimum total PnL filter (inclusive). \"100\"" [ref=e267]:
+                  - cell "min_total_pnl" [ref=e268]:
+                    - paragraph [ref=e270]:
+                      - code [ref=e271]: min_total_pnl
+                  - cell "String" [ref=e272]:
+                    - paragraph [ref=e274]: String
+                  - cell "Minimum total PnL filter (inclusive)." [ref=e275]:
+                    - paragraph [ref=e277]: Minimum total PnL filter (inclusive).
+                  - cell "\"100\"" [ref=e278]:
+                    - paragraph [ref=e280]:
+                      - code [ref=e281]: "\"100\""
+                - row "max_total_pnl String Maximum total PnL filter (inclusive). \"1000\"" [ref=e282]:
+                  - cell "max_total_pnl" [ref=e283]:
+                    - paragraph [ref=e285]:
+                      - code [ref=e286]: max_total_pnl
+                  - cell "String" [ref=e287]:
+                    - paragraph [ref=e289]: String
+                  - cell "Maximum total PnL filter (inclusive)." [ref=e290]:
+                    - paragraph [ref=e292]: Maximum total PnL filter (inclusive).
+                  - cell "\"1000\"" [ref=e293]:
+                    - paragraph [ref=e295]:
+                      - code [ref=e296]: "\"1000\""
+                - row "min_win_rate String Minimum win rate (0–1). \"0.5\"" [ref=e297]:
+                  - cell "min_win_rate" [ref=e298]:
+                    - paragraph [ref=e300]:
+                      - code [ref=e301]: min_win_rate
+                  - cell "String" [ref=e302]:
+                    - paragraph [ref=e304]: String
+                  - cell "Minimum win rate (0–1)." [ref=e305]:
+                    - paragraph [ref=e307]: Minimum win rate (0–1).
+                  - cell "\"0.5\"" [ref=e308]:
+                    - paragraph [ref=e310]:
+                      - code [ref=e311]: "\"0.5\""
+                - row "max_win_rate String Maximum win rate (0–1). \"0.9\"" [ref=e312]:
+                  - cell "max_win_rate" [ref=e313]:
+                    - paragraph [ref=e315]:
+                      - code [ref=e316]: max_win_rate
+                  - cell "String" [ref=e317]:
+                    - paragraph [ref=e319]: String
+                  - cell "Maximum win rate (0–1)." [ref=e320]:
+                    - paragraph [ref=e322]: Maximum win rate (0–1).
+                  - cell "\"0.9\"" [ref=e323]:
+                    - paragraph [ref=e325]:
+                      - code [ref=e326]: "\"0.9\""
+                - row "min_sharpe_ratio String Minimum Sharpe ratio. \"1.0\"" [ref=e327]:
+                  - cell "min_sharpe_ratio" [ref=e328]:
+                    - paragraph [ref=e330]:
+                      - code [ref=e331]: min_sharpe_ratio
+                  - cell "String" [ref=e332]:
+                    - paragraph [ref=e334]: String
+                  - cell "Minimum Sharpe ratio." [ref=e335]:
+                    - paragraph [ref=e337]: Minimum Sharpe ratio.
+                  - cell "\"1.0\"" [ref=e338]:
+                    - paragraph [ref=e340]:
+                      - code [ref=e341]: "\"1.0\""
+                - row "max_sharpe_ratio String Maximum Sharpe ratio. \"2.0\"" [ref=e342]:
+                  - cell "max_sharpe_ratio" [ref=e343]:
+                    - paragraph [ref=e345]:
+                      - code [ref=e346]: max_sharpe_ratio
+                  - cell "String" [ref=e347]:
+                    - paragraph [ref=e349]: String
+                  - cell "Maximum Sharpe ratio." [ref=e350]:
+                    - paragraph [ref=e352]: Maximum Sharpe ratio.
+                  - cell "\"2.0\"" [ref=e353]:
+                    - paragraph [ref=e355]:
+                      - code [ref=e356]: "\"2.0\""
+          - group [ref=e357]:
+            - generic "chevron-right Example Request (cURL) Direct link to heading" [ref=e358] [cursor=pointer]:
+              - img "chevron-right" [ref=e359]
+              - text: Example Request
+              - strong [ref=e361]: (cURL)
+              - link "Direct link to heading" [ref=e362]:
+                - /url: "#example-request-curl"
+                - img "hashtag" [ref=e363]
+          - separator [ref=e365]
+          - heading "Direct link to heading Example Use Cases" [level=3] [ref=e366]:
+            - link "Direct link to heading" [ref=e368] [cursor=pointer]:
+              - /url: "#example-use-cases"
+              - img "hashtag" [ref=e369]
+            - generic [ref=e371]: Example Use Cases
+          - heading "Direct link to heading 1. Full 7 Day Leaderboard" [level=4] [ref=e372]:
+            - link "Direct link to heading" [ref=e374] [cursor=pointer]:
+              - /url: "#id-1.-full-7-day-leaderboard"
+              - img "hashtag" [ref=e375]
+            - generic [ref=e377]: 1. Full 7 Day Leaderboard
+          - paragraph [ref=e378]: Retrieve the top performing traders across the entire platform over the past 7 days.
+          - generic [ref=e380]:
+            - button "Copy" [ref=e381] [cursor=pointer]:
+              - generic [ref=e382]: Copy
+            - code [ref=e384]:
+              - generic [ref=e386]: "{"
+              - generic [ref=e388]: "\"agent_id\": 579,"
+              - generic [ref=e390]: "\"params\": {"
+              - generic [ref=e392]: "\"wallet_address\": \"ALL\","
+              - generic [ref=e394]: "\"leaderboard_period\": \"7d\""
+              - generic [ref=e396]: "}"
+              - generic [ref=e398]: "}"
+          - heading "Direct link to heading 2. High Performance Traders" [level=4] [ref=e399]:
+            - link "Direct link to heading" [ref=e401] [cursor=pointer]:
+              - /url: "#id-2.-high-performance-traders"
+              - img "hashtag" [ref=e402]
+            - generic [ref=e404]: 2. High Performance Traders
+          - paragraph [ref=e405]: Retrieve traders with strong performance metrics such as high PnL, win rate, and Sharpe ratio.
+          - generic [ref=e407]:
+            - button "Copy" [ref=e408] [cursor=pointer]:
+              - generic [ref=e409]: Copy
+            - code [ref=e411]:
+              - generic [ref=e413]: "{"
+              - generic [ref=e415]: "\"agent_id\": 579,"
+              - generic [ref=e417]: "\"params\": {"
+              - generic [ref=e419]: "\"wallet_address\": \"ALL\","
+              - generic [ref=e421]: "\"leaderboard_period\": \"30d\","
+              - generic [ref=e423]: "\"min_total_pnl\": \"1000\","
+              - generic [ref=e425]: "\"min_win_rate\": \"0.5\","
+              - generic [ref=e427]: "\"min_sharpe_ratio\": \"1.5\""
+              - generic [ref=e429]: "}"
+              - generic [ref=e431]: "}"
+          - heading "Direct link to heading 3. Single Wallet Lookup" [level=4] [ref=e432]:
+            - link "Direct link to heading" [ref=e434] [cursor=pointer]:
+              - /url: "#id-3.-single-wallet-lookup"
+              - img "hashtag" [ref=e435]
+            - generic [ref=e437]: 3. Single Wallet Lookup
+          - paragraph [ref=e438]: Retrieve leaderboard metrics for a specific wallet.
+          - generic [ref=e440]:
+            - button "Copy" [ref=e441] [cursor=pointer]:
+              - generic [ref=e442]: Copy
+            - code [ref=e444]:
+              - generic [ref=e446]: "{"
+              - generic [ref=e448]: "\"agent_id\": 579,"
+              - generic [ref=e450]: "\"params\": {"
+              - generic [ref=e452]: "\"wallet_address\": \"0x123...\","
+              - generic [ref=e454]: "\"leaderboard_period\": \"1d\""
+              - generic [ref=e456]: "}"
+              - generic [ref=e458]: "}"
+          - separator [ref=e459]
+          - heading "Direct link to heading Response Fields" [level=3] [ref=e460]:
+            - link "Direct link to heading" [ref=e462] [cursor=pointer]:
+              - /url: "#response-fields"
+              - img "hashtag" [ref=e463]
+            - generic [ref=e465]: Response Fields
+          - generic [ref=e468]:
+            - rowgroup [ref=e469]:
+              - row "Field Type Description" [ref=e470]:
+                - columnheader "Field" [ref=e471]
+                - columnheader "Type" [ref=e472]
+                - columnheader "Description" [ref=e473]
+            - table [ref=e474]:
+              - rowgroup [ref=e475]:
+                - row "rank Integer Trader ranking within the selected period" [ref=e476]:
+                  - cell "rank" [ref=e477]:
+                    - paragraph [ref=e479]:
+                      - code [ref=e480]: rank
+                  - cell "Integer" [ref=e481]:
+                    - paragraph [ref=e483]: Integer
+                  - cell "Trader ranking within the selected period" [ref=e484]:
+                    - paragraph [ref=e486]: Trader ranking within the selected period
+                - row "address String Wallet address" [ref=e487]:
+                  - cell "address" [ref=e488]:
+                    - paragraph [ref=e490]:
+                      - code [ref=e491]: address
+                  - cell "String" [ref=e492]:
+                    - paragraph [ref=e494]: String
+                  - cell "Wallet address" [ref=e495]:
+                    - paragraph [ref=e497]: Wallet address
+                - row "total_pnl String (Decimal) Total profit and loss" [ref=e498]:
+                  - cell "total_pnl" [ref=e499]:
+                    - paragraph [ref=e501]:
+                      - code [ref=e502]: total_pnl
+                  - cell "String (Decimal)" [ref=e503]:
+                    - paragraph [ref=e505]: String (Decimal)
+                  - cell "Total profit and loss" [ref=e506]:
+                    - paragraph [ref=e508]: Total profit and loss
+                - row "roi String (Decimal) Return on investment" [ref=e509]:
+                  - cell "roi" [ref=e510]:
+                    - paragraph [ref=e512]:
+                      - code [ref=e513]: roi
+                  - cell "String (Decimal)" [ref=e514]:
+                    - paragraph [ref=e516]: String (Decimal)
+                  - cell "Return on investment" [ref=e517]:
+                    - paragraph [ref=e519]: Return on investment
+                - row "win_rate String (Decimal) Win percentage" [ref=e520]:
+                  - cell "win_rate" [ref=e521]:
+                    - paragraph [ref=e523]:
+                      - code [ref=e524]: win_rate
+                  - cell "String (Decimal)" [ref=e525]:
+                    - paragraph [ref=e527]: String (Decimal)
+                  - cell "Win percentage" [ref=e528]:
+                    - paragraph [ref=e530]: Win percentage
+                - row "sharpe_ratio String (Decimal) Risk-adjusted return metric" [ref=e531]:
+                  - cell "sharpe_ratio" [ref=e532]:
+                    - paragraph [ref=e534]:
+                      - code [ref=e535]: sharpe_ratio
+                  - cell "String (Decimal)" [ref=e536]:
+                    - paragraph [ref=e538]: String (Decimal)
+                  - cell "Risk-adjusted return metric" [ref=e539]:
+                    - paragraph [ref=e541]: Risk-adjusted return metric
+                - row "total_volume String (Decimal) Total trading volume" [ref=e542]:
+                  - cell "total_volume" [ref=e543]:
+                    - paragraph [ref=e545]:
+                      - code [ref=e546]: total_volume
+                  - cell "String (Decimal)" [ref=e547]:
+                    - paragraph [ref=e549]: String (Decimal)
+                  - cell "Total trading volume" [ref=e550]:
+                    - paragraph [ref=e552]: Total trading volume
+                - row "markets_traded Integer Number of unique markets traded" [ref=e553]:
+                  - cell "markets_traded" [ref=e554]:
+                    - paragraph [ref=e556]:
+                      - code [ref=e557]: markets_traded
+                  - cell "Integer" [ref=e558]:
+                    - paragraph [ref=e560]: Integer
+                  - cell "Number of unique markets traded" [ref=e561]:
+                    - paragraph [ref=e563]: Number of unique markets traded
+                - row "total_trades Integer Total number of executed trades" [ref=e564]:
+                  - cell "total_trades" [ref=e565]:
+                    - paragraph [ref=e567]:
+                      - code [ref=e568]: total_trades
+                  - cell "Integer" [ref=e569]:
+                    - paragraph [ref=e571]: Integer
+                  - cell "Total number of executed trades" [ref=e572]:
+                    - paragraph [ref=e574]: Total number of executed trades
+          - group [ref=e575]:
+            - generic "chevron-right Example Response Direct link to heading" [ref=e576] [cursor=pointer]:
+              - img "chevron-right" [ref=e577]
+              - text: Example Response
+              - link "Direct link to heading" [ref=e579]:
+                - /url: "#example-response"
+                - img "hashtag" [ref=e580]
+          - separator [ref=e582]
+          - heading "Direct link to heading Notes" [level=3] [ref=e583]:
+            - link "Direct link to heading" [ref=e585] [cursor=pointer]:
+              - /url: "#notes"
+              - img "hashtag" [ref=e586]
+            - generic [ref=e588]: Notes
+          - list [ref=e589]:
+            - listitem [ref=e590]:
+              - generic [ref=e592]: •
+              - paragraph [ref=e594]:
+                - text: Use
+                - code [ref=e595]: leaderboard_period
+                - text: to control the
+                - strong [ref=e596]: time window for rankings
+                - text: . Shorter periods (e.g.
+                - code [ref=e597]: 1d
+                - text: ","
+                - code [ref=e598]: 3d
+                - text: ) highlight recent performance, while longer periods (e.g.
+                - code [ref=e599]: 7d
+                - text: ","
+                - code [ref=e600]: 30d
+                - text: ) provide a broader view of trading consistency.
+            - listitem [ref=e601]:
+              - generic [ref=e603]: •
+              - paragraph [ref=e605]:
+                - text: Apply
+                - code [ref=e606]: min_total_pnl
+                - text: and
+                - code [ref=e607]: max_total_pnl
+                - text: to
+                - strong [ref=e608]: filter traders by profitability
+                - text: ", which helps isolate top performers or remove low-activity wallets."
+            - listitem [ref=e609]:
+              - generic [ref=e611]: •
+              - paragraph [ref=e613]:
+                - text: Use
+                - code [ref=e614]: min_win_rate
+                - text: and
+                - code [ref=e615]: max_win_rate
+                - text: to
+                - strong [ref=e616]: analyze trader accuracy
+                - text: ", especially when evaluating wallets for copy trading strategies."
+            - listitem [ref=e617]:
+              - generic [ref=e619]: •
+              - paragraph [ref=e621]:
+                - text: Combine
+                - code [ref=e622]: min_sharpe_ratio
+                - text: with profit filters to identify
+                - strong [ref=e623]: traders with strong risk-adjusted performance
+                - text: ", not just high returns."
+            - listitem [ref=e624]:
+              - generic [ref=e626]: •
+              - paragraph [ref=e628]:
+                - text: Set
+                - code [ref=e629]: wallet_address
+                - text: to
+                - code [ref=e630]: "\"ALL\""
+                - text: to retrieve the
+                - strong [ref=e631]: full leaderboard
+                - text: ", or provide a specific wallet to quickly check its ranking and performance metrics."
+            - listitem [ref=e632]:
+              - generic [ref=e634]: •
+              - paragraph [ref=e636]:
+                - text: Compare
+                - code [ref=e637]: roi
+                - text: ","
+                - code [ref=e638]: total_pnl
+                - text: ", and"
+                - code [ref=e639]: sharpe_ratio
+                - text: together to better understand
+                - strong [ref=e640]: profitability versus risk efficiency
+                - text: .
+        - generic [ref=e641]:
+          - link "Previous Profit & Loss chevron-left" [ref=e642] [cursor=pointer]:
+            - /url: /falcon-api/traders/profit-and-loss
+            - generic [ref=e643]:
+              - generic [ref=e644]: Previous
+              - generic [ref=e645]: Profit & Loss
+            - img "chevron-left" [ref=e646]
+          - link "Next Market Insights chevron-right" [ref=e648] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/market-insights
+            - generic [ref=e649]:
+              - generic [ref=e650]: Next
+              - generic [ref=e651]: Market Insights
+            - img "chevron-right" [ref=e652]
+        - paragraph [ref=e655]:
+          - text: Last updated
+          - time [ref=e656]: 9 days ago

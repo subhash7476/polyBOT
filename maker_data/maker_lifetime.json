@@ -1,0 +1,2137 @@
+{
+  "last_date": "2026-05-18",
+  "total_fills": 8465,
+  "total_realized_pnl": 194.80406904975766,
+  "total_cash_pnl": 765.1796253531209,
+  "by_date": {
+    "2026-05-10": {
+      "fills": 722,
+      "realized_pnl": 15.40427861581167,
+      "cash_pnl": 75.19081192578564
+    },
+    "2026-05-11": {
+      "fills": 1077,
+      "realized_pnl": -8.088118965993534,
+      "cash_pnl": 50.83987833996775
+    },
+    "2026-05-12": {
+      "fills": 1234,
+      "realized_pnl": 30.10809217474884,
+      "cash_pnl": 105.80038799233954
+    },
+    "2026-05-13": {
+      "fills": 1164,
+      "realized_pnl": 64.7264041808419,
+      "cash_pnl": 134.0077338795715
+    },
+    "2026-05-14": {
+      "fills": 1120,
+      "realized_pnl": 21.55460011701109,
+      "cash_pnl": 82.63768734699251
+    },
+    "2026-05-15": {
+      "fills": 1102,
+      "realized_pnl": 45.03107863462881,
+      "cash_pnl": 130.88173738630908
+    },
+    "2026-05-16": {
+      "fills": 1011,
+      "realized_pnl": 24.95117106854576,
+      "cash_pnl": 104.11499163852434
+    },
+    "2026-05-17": {
+      "fills": 679,
+      "realized_pnl": -2.754767767368719,
+      "cash_pnl": -24.532404220456023
+    },
+    "2026-05-18": {
+      "fills": 356,
+      "realized_pnl": 3.871330991531835,
+      "cash_pnl": 106.23880106408797
+    }
+  },
+  "by_market": {
+    "43681413208091739377785454323681563819424949646797026856807579000995571747678": {
+      "fills": 12,
+      "realized_pnl": 2.0413787594588775,
+      "cash_pnl": -5.186693470040852,
+      "question": "Will the highest temperature in Hong Kong be 25\u00b0C on May 10?"
+    },
+    "41580445596780586623562968305558978220320575574345655399496597357840714706461": {
+      "fills": 8,
+      "realized_pnl": 1.804018422915823,
+      "cash_pnl": -1.5070011269751094,
+      "question": "Will the highest temperature in Hong Kong be 24\u00b0C on May 10?"
+    },
+    "71634047218945647363395171891674404459556716906851450020664198669471161667814": {
+      "fills": 60,
+      "realized_pnl": 0.8673730129788191,
+      "cash_pnl": 14.2049673176183,
+      "question": "Will Arsenal win the 2025\u201326 English Premier League?"
+    },
+    "93058271340459832022516325563308427244221099858468991970850549670085527371244": {
+      "fills": 20,
+      "realized_pnl": 0.6152500533712808,
+      "cash_pnl": -0.9799061150599984,
+      "question": "Will the highest temperature in London be 15\u00b0C on May 10?"
+    },
+    "478140280577075699711251852042738680026747801413112267882260723780824102130": {
+      "fills": 26,
+      "realized_pnl": -1.7791273266460759,
+      "cash_pnl": 7.599528568035221,
+      "question": "Will the highest temperature in Munich be 23\u00b0C on May 10?"
+    },
+    "6932331991988567219968067144983521568801660828685728998436915354903343873227": {
+      "fills": 69,
+      "realized_pnl": 0.56342589949352,
+      "cash_pnl": 0.5634258994935224,
+      "question": "Will the highest temperature in London be 14\u00b0C on May 10?"
+    },
+    "36396338769854195857226030848358533842316435791959575434881049039202593624201": {
+      "fills": 33,
+      "realized_pnl": -1.250034507166386,
+      "cash_pnl": -1.2500345071663828,
+      "question": "Will the highest temperature in New York City be between 70-71\u00b0F on May 10?"
+    },
+    "16684003019585301187556121691683382680088297222373235105315599633539481594481": {
+      "fills": 46,
+      "realized_pnl": 0.641608520883671,
+      "cash_pnl": 9.768025633146749,
+      "question": "Will Jannik Sinner win the 2026 Men's French Open?"
+    },
+    "78140458432174397862436707256368409182467606418188760097873260862383336868084": {
+      "fills": 106,
+      "realized_pnl": 4.1775540428936715,
+      "cash_pnl": 4.8223469015928355,
+      "question": "Will Manchester City win the 2025\u201326 English Premier League?"
+    },
+    "24312458527235965148793296541386459319125994502404804665228417710693945061504": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -11.012106559295066,
+      "question": "Will the highest temperature in Beijing be 33\u00b0C on May 10?"
+    },
+    "76184513907290761912636659055080401703643418316153242056949287928791438454394": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.1499994,
+      "question": "Will Arsenal win the 2025\u201326 Champions League?"
+    },
+    "114266735877811876021362945683127542532778925409590599016489267644246881997088": {
+      "fills": 248,
+      "realized_pnl": 5.269059040273781,
+      "cash_pnl": 15.848555272081736,
+      "question": "Will NVIDIA be the largest company in the world by market cap on June 30?"
+    },
+    "98802805985482342600894113675950779135763458884653283573395953208519724485713": {
+      "fills": 7,
+      "realized_pnl": 0.23537563844961973,
+      "cash_pnl": 10.101917275331202,
+      "question": "Will the highest temperature in Paris be 18\u00b0C on May 10?"
+    },
+    "111128191581505463501777127559667396812474366956707382672202929745167742497287": {
+      "fills": 120,
+      "realized_pnl": 3.322113024956442,
+      "cash_pnl": 15.89042261944564,
+      "question": "MicroStrategy sells any Bitcoin by December 31, 2026?"
+    },
+    "79329149166694233887750825702310528207626556437756991187247906682062602501449": {
+      "fills": 8,
+      "realized_pnl": 0.38450475024082564,
+      "cash_pnl": 1.4602671686360285,
+      "question": "Will the highest temperature in Miami be between 92-93\u00b0F on May 10?"
+    },
+    "68574117907658170871155505283959284649116613188893004122029208467042706131781": {
+      "fills": 10,
+      "realized_pnl": 1.599171902734622,
+      "cash_pnl": 7.611275145925182,
+      "question": "Will the highest temperature in Hong Kong be 26\u00b0C on May 10?"
+    },
+    "108641506714882194274726300931440199348392820685078554549353919749417771170644": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -2.6348762978330162,
+      "question": "Will the highest temperature in Shenzhen be 26\u00b0C on May 10?"
+    },
+    "50159594562995946489082572084618497878080171076279182071094706874430061245610": {
+      "fills": 27,
+      "realized_pnl": -1.5237216351667726,
+      "cash_pnl": 0.3813645609581542,
+      "question": "Will the Colorado Avalanche win the Western Conference?"
+    },
+    "61728875846650437692347164048880035780153394581661387362695301046334269449685": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": 7.1865722248847845,
+      "question": "Will the highest temperature in Shenzhen be 27\u00b0C on May 10?"
+    },
+    "101366856585421094427050198885197314324523153220654830477095682353161444839270": {
+      "fills": 6,
+      "realized_pnl": 0.9408972689082473,
+      "cash_pnl": 2.4840090124092513,
+      "question": "Will the highest temperature in Tel Aviv be 27\u00b0C on May 10?"
+    },
+    "35301036910131416585011880189139392774408342128253537504569033046108824690989": {
+      "fills": 82,
+      "realized_pnl": 7.420078013829777,
+      "cash_pnl": 8.309990513233528,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 10?"
+    },
+    "40149730471417217971880797842292950209803635320346863090221212278002303147289": {
+      "fills": 53,
+      "realized_pnl": -1.4504809235755438,
+      "cash_pnl": -1.4504809235755478,
+      "question": "Will the highest temperature in Madrid be 15\u00b0C on May 10?"
+    },
+    "10100352562458019189950666358595825353672409051809800937862194931209532268474": {
+      "fills": 15,
+      "realized_pnl": 0.41259302235353257,
+      "cash_pnl": 0.412593022353533,
+      "question": "Will the highest temperature in Madrid be 16\u00b0C on May 10?"
+    },
+    "56643357813665422705165394204597579875316442097968085657233876168472461600350": {
+      "fills": 29,
+      "realized_pnl": 0.06981882336331324,
+      "cash_pnl": 4.297532154085171,
+      "question": "Will the highest temperature in London be 12\u00b0C on May 10?"
+    },
+    "110251828161543119357013227499774714771527179764174739487025581227481937033858": {
+      "fills": 115,
+      "realized_pnl": -0.2737005828945147,
+      "cash_pnl": -10.623859251222942,
+      "question": "MicroStrategy sells any Bitcoin by June 30, 2026?"
+    },
+    "73771268047051200824760386198689216056597262949413420589663890618717788933148": {
+      "fills": 10,
+      "realized_pnl": 0.18493684262046628,
+      "cash_pnl": 0.1849368426204695,
+      "question": "Will the highest temperature in New York City be between 68-69\u00b0F on May 10?"
+    },
+    "19915706715274072642069105791904052108390251788342482954221829200922569595456": {
+      "fills": 10,
+      "realized_pnl": 0.9719245189032577,
+      "cash_pnl": 0.9719245189032586,
+      "question": "Will the highest temperature in New York City be between 74-75\u00b0F on May 10?"
+    },
+    "66190897641630372045608647883244881313479512376690183941782188084976523290801": {
+      "fills": 14,
+      "realized_pnl": -1.2183256876755362,
+      "cash_pnl": -1.218325687675537,
+      "question": "Will the highest temperature in Atlanta be between 80-81\u00b0F on May 10?"
+    },
+    "75966627907462671315953505375098658923686654073190733482970240881256586404774": {
+      "fills": 63,
+      "realized_pnl": -0.9841153906023425,
+      "cash_pnl": 0.015883609397661425,
+      "question": "Will the highest temperature in New York City be between 72-73\u00b0F on May 10?"
+    },
+    "8429841566719599516834899501426784405103734887407645093840970712161816505927": {
+      "fills": 21,
+      "realized_pnl": 1.0133840959375195,
+      "cash_pnl": 7.650387363306198,
+      "question": "Will the highest temperature in Milan be 16\u00b0C on May 10?"
+    },
+    "8123535475846292133414185622904211631309235799847901782546736316721310047372": {
+      "fills": 30,
+      "realized_pnl": -0.022121454505880322,
+      "cash_pnl": 1.8519193261337665,
+      "question": "Will Sunrisers Hyderabad win the 2026 Indian Premier League?"
+    },
+    "78489029628428171560629478176830507283782902711569001590212217854909060316276": {
+      "fills": 34,
+      "realized_pnl": 0.7183325347368594,
+      "cash_pnl": 6.050043731636318,
+      "question": "Will Royal Challengers Bengaluru win the 2026 Indian Premier League?"
+    },
+    "93640842770483461016456889320283445702434898889889600681435732186059788568994": {
+      "fills": 23,
+      "realized_pnl": -0.8612467419622272,
+      "cash_pnl": -2.1425010976826604,
+      "question": "Will Alphabet be the largest company in the world by market cap on June 30?"
+    },
+    "57814003418910386314888584404141221431807664086605829941430741319671177699071": {
+      "fills": 22,
+      "realized_pnl": 1.241684025964302,
+      "cash_pnl": 0.23140260708565874,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 11?"
+    },
+    "14522583102583807162965471441686604394144375438090029019147604628792414272208": {
+      "fills": 11,
+      "realized_pnl": -0.1481941624100891,
+      "cash_pnl": 1.7372448436241745,
+      "question": "Will the highest temperature in Seoul be 18\u00b0C on May 11?"
+    },
+    "38570553320114259307184913484106498641325843916445519949038572121793338203616": {
+      "fills": 76,
+      "realized_pnl": -2.9227619305658976,
+      "cash_pnl": -2.9227619305658936,
+      "question": "Will the highest temperature in New York City be between 60-61\u00b0F on May 11?"
+    },
+    "29202382488693681038243695233440113231026668096903189463326796308540543910262": {
+      "fills": 10,
+      "realized_pnl": -0.05474981948554003,
+      "cash_pnl": -0.05474981948554131,
+      "question": "Will the highest temperature in Seoul be 20\u00b0C on May 11?"
+    },
+    "3984616423194530948071484088101383550752729740555612260169262905210851632809": {
+      "fills": 17,
+      "realized_pnl": 0.11115043768767574,
+      "cash_pnl": -1.0892790926409992,
+      "question": "Will AJ Dybantsa be the first pick in the 2026 NBA draft?"
+    },
+    "36051381891314934305295802404289149888029968022353753023407256241092757756560": {
+      "fills": 8,
+      "realized_pnl": 0.1290721987982799,
+      "cash_pnl": 1.220923800148661,
+      "question": "Will the highest temperature in New York City be between 66-67\u00b0F on May 11?"
+    },
+    "82423275671664323348322668908231476534552305093669724117897540432637322871066": {
+      "fills": 60,
+      "realized_pnl": -0.4364411396696273,
+      "cash_pnl": 3.871204836996701,
+      "question": "Will the highest temperature in London be 12\u00b0C on May 11?"
+    },
+    "111615694922589471518709913330752256579066965027597319186712737482564226971621": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.635,
+      "question": "Will Discord\u2019s market cap be less than $15B at market close on IPO day?"
+    },
+    "20573234737390994726293656003084860848482043685312816816681507397449223536952": {
+      "fills": 2,
+      "realized_pnl": -0.03254622306529953,
+      "cash_pnl": 0.6715999208800276,
+      "question": "Will the highest temperature in Sao Paulo be 20\u00b0C on May 11?"
+    },
+    "89100300572961661248412035875094620277626993219272148960177154247835023648810": {
+      "fills": 6,
+      "realized_pnl": -0.6606494414938062,
+      "cash_pnl": -3.495117116207073,
+      "question": "Will the highest temperature in Seoul be 21\u00b0C on May 11?"
+    },
+    "49500299856831034491021962156746701298730459370557900271970866855042624695770": {
+      "fills": 174,
+      "realized_pnl": 3.416057334262776,
+      "cash_pnl": 12.558412939847097,
+      "question": "Will the Oklahoma City Thunder win the 2026 NBA Finals?"
+    },
+    "5566553693074043041334186288721761522535416169288846999699067845171119949500": {
+      "fills": 15,
+      "realized_pnl": -3.8755076622066085,
+      "cash_pnl": -5.8379467276807215,
+      "question": "Will the highest temperature in Tokyo be 25\u00b0C or higher on May 11?"
+    },
+    "86768599362015620226146662698060970806679433721849515010555490218459277561813": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.35869304,
+      "question": "Will the highest temperature in Wellington be 12\u00b0C on May 11?"
+    },
+    "106911638301244689308367016187607123566018227756373523780699890400813948178917": {
+      "fills": 24,
+      "realized_pnl": 0.3741405203063266,
+      "cash_pnl": 5.47787402546351,
+      "question": "Will the highest temperature in Munich be 19\u00b0C or higher on May 11?"
+    },
+    "95556043366890586290929583942891520379463643279261886149451149414427677085401": {
+      "fills": 3,
+      "realized_pnl": 1.5045000000000002,
+      "cash_pnl": 3.4933869,
+      "question": "Will the highest temperature in Dallas be between 76-77\u00b0F on May 11?"
+    },
+    "90724103613644523627058472605271801049003456591123407291530524617384007800204": {
+      "fills": 31,
+      "realized_pnl": -2.145136833813485,
+      "cash_pnl": -6.496622392173014,
+      "question": "Will the highest temperature in Hong Kong be 28\u00b0C on May 11?"
+    },
+    "64183571419522287315932209872021986990944426010966432766026984416154902572529": {
+      "fills": 21,
+      "realized_pnl": -5.404393027291341,
+      "cash_pnl": -1.4545674959463728,
+      "question": "Will the highest temperature in Shanghai be 30\u00b0C on May 11?"
+    },
+    "83117479517647395563550164424852393943479340014120550020508099882550696357897": {
+      "fills": 9,
+      "realized_pnl": 0.5937922044657569,
+      "cash_pnl": -5.229177680168592,
+      "question": "Will the highest temperature in Shanghai be 28\u00b0C on May 11?"
+    },
+    "16702231768524761517475179217058199311536480245178448500138680255380117151766": {
+      "fills": 26,
+      "realized_pnl": 3.9830821470883464,
+      "cash_pnl": 11.710422447470215,
+      "question": "Will the highest temperature in Shanghai be 29\u00b0C on May 11?"
+    },
+    "75592721848795942020480761940382278679398130914566150246753412700415418380477": {
+      "fills": 10,
+      "realized_pnl": 4.571240023115109,
+      "cash_pnl": 4.571240023115111,
+      "question": "Will the highest temperature in Tokyo be 24\u00b0C on May 11?"
+    },
+    "31297432975649623717008452511829137188921721439161408496877419632339387330590": {
+      "fills": 5,
+      "realized_pnl": 0.039529332485258806,
+      "cash_pnl": 2.263270816137326,
+      "question": "Will the highest temperature in Hong Kong be 27\u00b0C on May 11?"
+    },
+    "20410552657442367392629811313367608218618175424724919234862419637907061366081": {
+      "fills": 21,
+      "realized_pnl": -0.5088340345987827,
+      "cash_pnl": 4.234547589046807,
+      "question": "Will the highest temperature in Singapore be 33\u00b0C on May 11?"
+    },
+    "69510547277682986771642722472219291292361235178019906004446800486529364066834": {
+      "fills": 17,
+      "realized_pnl": -1.6379182205300182,
+      "cash_pnl": 6.0001648189317365,
+      "question": "Will the highest temperature in Singapore be 32\u00b0C on May 11?"
+    },
+    "90413670843725562828249596992427332399513731831635189191300390523446013486429": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 0.99999966,
+      "question": "Will the highest temperature in Milan be 18\u00b0C on May 11?"
+    },
+    "9789536427720554419828482083888982655547363407755700131375656366767008469931": {
+      "fills": 17,
+      "realized_pnl": 0.7057085493028126,
+      "cash_pnl": 0.7057085493028172,
+      "question": "Will the highest temperature in Hong Kong be 30\u00b0C or higher on May 11?"
+    },
+    "78350585633674511619764671629401779342423732150022323832302554790190888900466": {
+      "fills": 6,
+      "realized_pnl": -0.05612286822751855,
+      "cash_pnl": -0.2862526661859264,
+      "question": "Will the highest temperature in Beijing be 30\u00b0C on May 11?"
+    },
+    "44773921039712088215182448304894576960610820432436007109402404882742483903793": {
+      "fills": 50,
+      "realized_pnl": -3.492987503938675,
+      "cash_pnl": -4.164287503938677,
+      "question": "Will the highest temperature in Hong Kong be 29\u00b0C on May 11?"
+    },
+    "38063568240773941010126427816771616914505420168306840729035289519113277823254": {
+      "fills": 5,
+      "realized_pnl": -0.428092146019857,
+      "cash_pnl": 1.66223714022267,
+      "question": "Will the highest temperature in Ankara be 20\u00b0C on May 11?"
+    },
+    "50883395031925210016782075713684497410004507556633513248245637574060030090584": {
+      "fills": 34,
+      "realized_pnl": 0.1780228150268659,
+      "cash_pnl": 6.927613097896964,
+      "question": "Will the highest temperature in Munich be 18\u00b0C on May 11?"
+    },
+    "60889176578259087927897346503204261166686389854907348342014787657675273269299": {
+      "fills": 52,
+      "realized_pnl": 0.32178746598308194,
+      "cash_pnl": 4.500898312074305,
+      "question": "Will the highest temperature in London be 11\u00b0C on May 11?"
+    },
+    "68076525098321972329852028804085782207363963781048553665246505916556368572706": {
+      "fills": 10,
+      "realized_pnl": 1.2626754226348655,
+      "cash_pnl": 0.04917955662970293,
+      "question": "Will the highest temperature in Munich be 17\u00b0C on May 11?"
+    },
+    "14242992956126395662569926516936631163924642906361215983720274827873277040119": {
+      "fills": 9,
+      "realized_pnl": -1.3944201128426386,
+      "cash_pnl": 6.086142744597058,
+      "question": "Will the highest temperature in Ankara be 21\u00b0C on May 11?"
+    },
+    "15012326790984328286400631477626616004259536756623193436928912911050902895981": {
+      "fills": 40,
+      "realized_pnl": -0.42791162396634164,
+      "cash_pnl": 7.86861144893332,
+      "question": "Will the highest temperature in Paris be 14\u00b0C on May 11?"
+    },
+    "68065977384185994110526241453624724551065774552688300546136247566652580759333": {
+      "fills": 43,
+      "realized_pnl": -1.9170512106895465,
+      "cash_pnl": -1.917051210689546,
+      "question": "Will the highest temperature in New York City be between 62-63\u00b0F on May 11?"
+    },
+    "44067918968269299416506315060984716361869922537930638851996877672670698271028": {
+      "fills": 26,
+      "realized_pnl": 2.17740036993424,
+      "cash_pnl": 2.1774003699342397,
+      "question": "Will the highest temperature in Paris be 15\u00b0C on May 11?"
+    },
+    "65006694548543837783135042370363061145260092380139004801999329159326188447211": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.4522000000000002,
+      "question": "Will John Cavanaugh be the Democratic nominee for NE-02?"
+    },
+    "49548669433041710357422529984001266412316114428541521158023070696483383772502": {
+      "fills": 10,
+      "realized_pnl": 0.7062152296749709,
+      "cash_pnl": 0.26175522967497356,
+      "question": "Will the highest temperature in London be 10\u00b0C on May 11?"
+    },
+    "27631008090669262855105593586094350096991591011016391361246090041137568985294": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 15.40639802034181,
+      "question": "Will the highest temperature in Tel Aviv be 27\u00b0C on May 11?"
+    },
+    "34554555827438551101000555305203609600029621153428996114009350892614396532498": {
+      "fills": 677,
+      "realized_pnl": -1.9554943039699983,
+      "cash_pnl": -1.9497795431077487,
+      "question": "Starmer out by June 30, 2026?"
+    },
+    "113442693367203468967228316383478240333132047279974982226370099854701322861029": {
+      "fills": 4,
+      "realized_pnl": -0.030120424999999784,
+      "cash_pnl": -10.702061909688263,
+      "question": "Will the highest temperature in Ankara be 22\u00b0C on May 11?"
+    },
+    "32863355488137196877340686607830796260766176705812309317082190851453773806906": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.4655354831708698,
+      "question": "Will the highest temperature in Ankara be 23\u00b0C on May 11?"
+    },
+    "107224353247026658227574216428878305116180069771832354828997869343507919482728": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 12.813197416839863,
+      "question": "Will the highest temperature in Warsaw be 23\u00b0C on May 11?"
+    },
+    "12439066716997105461820744741982029787856779510876822881899635862649504115679": {
+      "fills": 5,
+      "realized_pnl": 0.12600000000000122,
+      "cash_pnl": 10.91044827967593,
+      "question": "Will the highest temperature in Milan be 21\u00b0C on May 11?"
+    },
+    "6667987859455857074440737389796125857997231424909111086778690662333461964528": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -2.6795463185082284,
+      "question": "Will the highest temperature in Milan be 22\u00b0C or higher on May 11?"
+    },
+    "12866799940662656056152356026987469758859898784235281757099313888450156450763": {
+      "fills": 18,
+      "realized_pnl": 1.9609805398964646,
+      "cash_pnl": 0.35740365270863433,
+      "question": "Will the highest temperature in New York City be between 64-65\u00b0F on May 11?"
+    },
+    "51582464786593383454977735402652499233289949712883490204884204732557521988611": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.601141656744363,
+      "question": "Will the highest temperature in Paris be 13\u00b0C on May 11?"
+    },
+    "13418307738858000565128503347120264432875156584759149737917965213809654817455": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 4.784810117920507,
+      "question": "Will the highest temperature in Madrid be 18\u00b0C on May 11?"
+    },
+    "112850322230611301644333420032081706732579973466873265180364633588040970933755": {
+      "fills": 4,
+      "realized_pnl": 0.42086337666900064,
+      "cash_pnl": 0.43826550155913463,
+      "question": "Will the highest temperature in Buenos Aires be 19\u00b0C on May 11?"
+    },
+    "90481240177377786662370539517122442995495808252576130487799798034966893590028": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": -7.514859220282478,
+      "question": "Will the highest temperature in Madrid be 19\u00b0C on May 11?"
+    },
+    "20778198929859293228205178051767348056152880383764093118045434446806734631259": {
+      "fills": 26,
+      "realized_pnl": 0.5120640127027976,
+      "cash_pnl": 5.0803746831056955,
+      "question": "Will Vitality win IEM Cologne Major 2026?"
+    },
+    "82294265279517788069388087838037305194656998172027244775425123449776048199682": {
+      "fills": 9,
+      "realized_pnl": 0.10640803399934917,
+      "cash_pnl": -2.078016975553397,
+      "question": "Will Greece win Eurovision 2026?"
+    },
+    "29681638867490911167690573050913031383655640364491338575196153371741176054013": {
+      "fills": 7,
+      "realized_pnl": 0.553078136127457,
+      "cash_pnl": -0.609386384310201,
+      "question": "Will Gujarat Titans win the 2026 Indian Premier League?"
+    },
+    "86098172129735979203348786646315644717604722168723203089309432600371519461274": {
+      "fills": 52,
+      "realized_pnl": 1.882671993804955,
+      "cash_pnl": 4.349416630836657,
+      "question": "Will the highest temperature in Hong Kong be 30\u00b0C on May 12?"
+    },
+    "21501584071606142044706692928603365748684803251201184622783874182587988417160": {
+      "fills": 35,
+      "realized_pnl": 2.237135213214084,
+      "cash_pnl": 2.237135213214087,
+      "question": "Will the highest temperature in Hong Kong be 31\u00b0C or higher on May 12?"
+    },
+    "40971770225839907987839430167804028659192244871441058945182324876628578858016": {
+      "fills": 21,
+      "realized_pnl": 1.2675799338958713,
+      "cash_pnl": -0.6335145833469442,
+      "question": "Will the highest temperature in Hong Kong be 29\u00b0C on May 12?"
+    },
+    "32650224977904172471867710903430579666100919722500365117011944091443695770043": {
+      "fills": 27,
+      "realized_pnl": -0.7641791487674441,
+      "cash_pnl": 2.2737654053617224,
+      "question": "Will the highest temperature in Shanghai be 29\u00b0C on May 12?"
+    },
+    "101610393145327502837217877943567760000114544336093538113704566506722583065706": {
+      "fills": 58,
+      "realized_pnl": -0.23175591151811936,
+      "cash_pnl": -0.3917559115181184,
+      "question": "Will the highest temperature in Seoul be 20\u00b0C on May 12?"
+    },
+    "14484441965407984883638327818180258418030251713334463453151775688338682660120": {
+      "fills": 46,
+      "realized_pnl": -0.7193296959555608,
+      "cash_pnl": -0.7193296959555632,
+      "question": "Will the highest temperature in Atlanta be between 74-75\u00b0F on May 12?"
+    },
+    "96777657657042599090875405425022447527162492636730121743907352105512000339133": {
+      "fills": 4,
+      "realized_pnl": 0.24499999999999922,
+      "cash_pnl": 2.587339420054897,
+      "question": "Will the highest temperature in Seoul be 19\u00b0C on May 12?"
+    },
+    "23651262276952096320334149494542602487659081978799292696053486379301536885952": {
+      "fills": 43,
+      "realized_pnl": 6.645251732327138,
+      "cash_pnl": 4.49395780039603,
+      "question": "Will the highest temperature in Seoul be 22\u00b0C or higher on May 12?"
+    },
+    "102583793762743975143809230475336402966485441601419745040649179013532971062261": {
+      "fills": 6,
+      "realized_pnl": -0.5988004863367671,
+      "cash_pnl": 4.763287820997746,
+      "question": "Will the highest temperature in Shanghai be 30\u00b0C on May 12?"
+    },
+    "26545601923003940930640964146263632440154749456786777214616887930552188373675": {
+      "fills": 75,
+      "realized_pnl": -1.354830819930596,
+      "cash_pnl": 8.805532556870377,
+      "question": "Will the highest temperature in Paris be 16\u00b0C on May 12?"
+    },
+    "50896535166830862659761003675354690572669905368632748041669301550982908771821": {
+      "fills": 13,
+      "realized_pnl": 0.724234114000387,
+      "cash_pnl": 0.03036086875014532,
+      "question": "Will the highest temperature in Paris be 17\u00b0C on May 12?"
+    },
+    "34598772660342396799713473380041302798629991553827394167217737512853883718765": {
+      "fills": 40,
+      "realized_pnl": 0.17951239403491925,
+      "cash_pnl": 0.17951239403491692,
+      "question": "Will the highest temperature in Atlanta be between 72-73\u00b0F on May 12?"
+    },
+    "95604842069332143045150707656242401822620095996831832358564633845585667267058": {
+      "fills": 7,
+      "realized_pnl": 0.0710999999999995,
+      "cash_pnl": 3.6097915554902125,
+      "question": "Will the highest temperature in Shanghai be 31\u00b0C on May 12?"
+    },
+    "10051828308616822244798922219928668031710991999740942415164395848448302280106": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.5850134396583092,
+      "question": "Will the highest temperature in Singapore be 33\u00b0C on May 12?"
+    },
+    "24723819297980524172338785770980887727790242570358597313792699273584501354282": {
+      "fills": 10,
+      "realized_pnl": -0.04441653235780585,
+      "cash_pnl": -0.04441653235780535,
+      "question": "Will the highest temperature in Tokyo be 25\u00b0C or higher on May 12?"
+    },
+    "112912234318240741338498611205687324515802977379882551322202867715991522856081": {
+      "fills": 47,
+      "realized_pnl": 1.6170386734985343,
+      "cash_pnl": 12.57553684320246,
+      "question": "Will the highest temperature in Seoul be 21\u00b0C on May 12?"
+    },
+    "2037490701508852549665914201964600701494176138030470635448017064111361601568": {
+      "fills": 6,
+      "realized_pnl": -1.8300531025578008,
+      "cash_pnl": 3.822967581197887,
+      "question": "Will the highest temperature in Shanghai be 28\u00b0C on May 12?"
+    },
+    "31482326285998069561691623347170083506564472721223560987234287030748192132826": {
+      "fills": 10,
+      "realized_pnl": -2.122188296570802,
+      "cash_pnl": -2.1221882965708034,
+      "question": "Will the highest temperature in Singapore be 31\u00b0C on May 12?"
+    },
+    "50111932460777290187052779906639485352116730904314763324798870479851327676393": {
+      "fills": 69,
+      "realized_pnl": 1.1448769972193569,
+      "cash_pnl": 1.144876997219374,
+      "question": "Will the highest temperature in Los Angeles be between 64-65\u00b0F on May 12?"
+    },
+    "105240427283988594942273228887973332402743845571125385737323270243330841646075": {
+      "fills": 23,
+      "realized_pnl": 0.5988669524561523,
+      "cash_pnl": -0.4070617877026418,
+      "question": "Will the highest temperature in London be 15\u00b0C on May 12?"
+    },
+    "32072369445369328055388953602147099543499948037563639810116604633274126213759": {
+      "fills": 10,
+      "realized_pnl": 0.377056004106862,
+      "cash_pnl": 5.082887563467887,
+      "question": "Will the highest temperature in Austin be 84\u00b0F or higher on May 12?"
+    },
+    "113720977217053235770094660441358603467348513680346601912803671197318820720829": {
+      "fills": 49,
+      "realized_pnl": 4.865128780319697,
+      "cash_pnl": 5.828328780319696,
+      "question": "Will the highest temperature in London be 17\u00b0C on May 12?"
+    },
+    "89713310017342371529447615952526859881880157777308040232071661000481682687767": {
+      "fills": 8,
+      "realized_pnl": 0.5123979487700474,
+      "cash_pnl": 10.17737925985532,
+      "question": "Will the highest temperature in Chongqing be 24\u00b0C on May 12?"
+    },
+    "71253537142791079772152162105977347344469895420300991297590197485726381310811": {
+      "fills": 31,
+      "realized_pnl": 1.6897123615593372,
+      "cash_pnl": 2.290158814059373,
+      "question": "Will Punjab Kings win the 2026 Indian Premier League?"
+    },
+    "58532283160948639754300830661184122222187166697834139382449645690952057609507": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -2.051235186954554,
+      "question": "Will the highest temperature in Beijing be 34\u00b0C on May 12?"
+    },
+    "94852630940663003777190081953617302178683191056972102619509259792030724458026": {
+      "fills": 31,
+      "realized_pnl": -0.3208669318690962,
+      "cash_pnl": -0.32086693186909265,
+      "question": "Will the highest temperature in London be 16\u00b0C on May 12?"
+    },
+    "85280682544550137975611169275358150151259125436640313220211672530710793681466": {
+      "fills": 4,
+      "realized_pnl": -2.3025798704554408,
+      "cash_pnl": 0.016427148118871582,
+      "question": "Will the highest temperature in Chongqing be 26\u00b0C on May 12?"
+    },
+    "101240508501708787076677635603705716689711318582407280717911985007023742041009": {
+      "fills": 13,
+      "realized_pnl": -1.9593578821582227,
+      "cash_pnl": 6.161244735832577,
+      "question": "Will the highest temperature in Beijing be 32\u00b0C on May 12?"
+    },
+    "57203009677288543927606582436051751732280160849487839825276145065858271428895": {
+      "fills": 14,
+      "realized_pnl": -0.5365123736111137,
+      "cash_pnl": -0.5365123736111148,
+      "question": "Will the highest temperature in New York City be between 64-65\u00b0F on May 12?"
+    },
+    "48998054479219187169130075139358395521363476161896654101941413563664404554436": {
+      "fills": 6,
+      "realized_pnl": -0.26086033838681644,
+      "cash_pnl": 3.5140788391278166,
+      "question": "Will the highest temperature in Beijing be 33\u00b0C on May 12?"
+    },
+    "47931822019442574512114583124846704325177255279287022363926190492948529244960": {
+      "fills": 17,
+      "realized_pnl": 2.1753701315622997,
+      "cash_pnl": 5.107963272247354,
+      "question": "Will the highest temperature in Munich be 11\u00b0C on May 12?"
+    },
+    "32536510346926159431576926248103220625353189239208382267882979641383668896859": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 4.36028542335063,
+      "question": "Will the highest temperature in Chongqing be 25\u00b0C on May 12?"
+    },
+    "36737042871191561033691939681456161095774396713977860121847905767057694737975": {
+      "fills": 7,
+      "realized_pnl": -0.45709112625198856,
+      "cash_pnl": 2.3434505306344606,
+      "question": "Will the highest temperature in Tel Aviv be 34\u00b0C or higher on May 12?"
+    },
+    "68845517296737764208638484612875076777456181200778387191118027331538472272748": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.737095292347514,
+      "question": "Will the highest temperature in Atlanta be between 76-77\u00b0F on May 12?"
+    },
+    "18248390538738263592982866380986101636709513433666804771748005851266400321937": {
+      "fills": 15,
+      "realized_pnl": 4.135488180731517,
+      "cash_pnl": 3.540362647079647,
+      "question": "Will the highest temperature in Paris be 15\u00b0C on May 12?"
+    },
+    "37131622087138266374458035304231312960234098132169316018562336502944016414939": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -5.721735435821804,
+      "question": "Will the highest temperature in Ankara be 22\u00b0C on May 12?"
+    },
+    "58873788538158354139784828715433671463420229656976288764720877083435787571624": {
+      "fills": 5,
+      "realized_pnl": 0.03881671861733338,
+      "cash_pnl": 1.9831822685740703,
+      "question": "Will the highest temperature in Madrid be 16\u00b0C or below on May 12?"
+    },
+    "7195585267908031610652270339797796833835278614168133511508624302344193339034": {
+      "fills": 10,
+      "realized_pnl": 5.426554225958686,
+      "cash_pnl": 0.7775809587889804,
+      "question": "Will the highest temperature in Ankara be 24\u00b0C on May 12?"
+    },
+    "60278518301375122737564819497874398612406700725580645922006281701070593943864": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -4.989482441920259,
+      "question": "Will the highest temperature in Ankara be 25\u00b0C on May 12?"
+    },
+    "95880365705920962179094498748914806408761058715624808909318034651095306893113": {
+      "fills": 30,
+      "realized_pnl": 1.959965863295455,
+      "cash_pnl": 1.9599658632954626,
+      "question": "Will the highest temperature in Madrid be 19\u00b0C on May 12?"
+    },
+    "20428503830397750784581110955615630588994933436965057257375984124644768201648": {
+      "fills": 8,
+      "realized_pnl": -0.24984618852775853,
+      "cash_pnl": -0.24984618852775944,
+      "question": "Will the highest temperature in Madrid be 17\u00b0C on May 12?"
+    },
+    "104690409804462732863498129255151255512425984504900642505554262962748063044534": {
+      "fills": 23,
+      "realized_pnl": -1.9792873835740679,
+      "cash_pnl": -10.984252757321798,
+      "question": "Will the highest temperature in Munich be 9\u00b0C on May 12?"
+    },
+    "37689542709286701750360020445656144376680297696237435847770287015856179261527": {
+      "fills": 12,
+      "realized_pnl": 0.19175955108971365,
+      "cash_pnl": 0.19175955108972342,
+      "question": "Will the highest temperature in New York City be between 66-67\u00b0F on May 12?"
+    },
+    "80437499290503073857269308528875995192807205148425027889636972915905954695322": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 10.002160454335652,
+      "question": "Will the highest temperature in Milan be 20\u00b0C on May 12?"
+    },
+    "108316178995883236846221878976559421040082801696265706373056253137936479882870": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 11.331241860866477,
+      "question": "Will the highest temperature in Madrid be 18\u00b0C on May 12?"
+    },
+    "38266642099227950976263580897120960484805552108089585825821180143962572857770": {
+      "fills": 12,
+      "realized_pnl": 1.2183911430250376,
+      "cash_pnl": 2.575705167752811,
+      "question": "Will the highest temperature in Sao Paulo be 19\u00b0C or below on May 12?"
+    },
+    "65007010217429014774158090138416981122479021356783472624428935648305375805300": {
+      "fills": 9,
+      "realized_pnl": 0.6310424160912618,
+      "cash_pnl": -5.988993626072103,
+      "question": "Will the highest temperature in Seoul be 23\u00b0C or higher on May 13?"
+    },
+    "96952715645347933668193353345178687845203269202425706704597436723653923173021": {
+      "fills": 52,
+      "realized_pnl": 7.801381276875418,
+      "cash_pnl": 14.544114802061806,
+      "question": "Will the highest temperature in Hong Kong be 31\u00b0C or higher on May 13?"
+    },
+    "27491063539522072453735216013482155157240525668817858075055886237170532845792": {
+      "fills": 37,
+      "realized_pnl": 0.6410310648391899,
+      "cash_pnl": 0.1817203846804425,
+      "question": "Will the highest temperature in Singapore be 32\u00b0C on May 13?"
+    },
+    "108920687236677423495002196644801661743321409118405873331006502056394614902475": {
+      "fills": 48,
+      "realized_pnl": 4.954523714593023,
+      "cash_pnl": 12.316522221276717,
+      "question": "Will the highest temperature in Tokyo be 26\u00b0C or higher on May 13?"
+    },
+    "77809380206760496358055332023206786694120788116551923604170177964424180121482": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.9656000000000002,
+      "question": "Will inflation reach more than 4% in 2026?"
+    },
+    "108866437563064503396839262799947760284957497371661753756694564982956933081768": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 1.4000000000000001,
+      "question": "Will Bitcoin reach $84,000 May 11-17?"
+    },
+    "113379839734351069617987084078322474966003108854908079701423911002443710490196": {
+      "fills": 21,
+      "realized_pnl": 0.37192682030254787,
+      "cash_pnl": 3.3600590087764415,
+      "question": "Will 1 Fed rate cut happen in 2026?"
+    },
+    "92200158326810490684223151181467244436531832263564319668018409548263583262256": {
+      "fills": 37,
+      "realized_pnl": 2.1075835288708475,
+      "cash_pnl": -1.5039984176655796,
+      "question": "Will the highest temperature in Seoul be 21\u00b0C on May 13?"
+    },
+    "77240896294436477747566700382766993846390391153252695719273342300863173890056": {
+      "fills": 46,
+      "realized_pnl": -4.420760678851266,
+      "cash_pnl": -4.420760678851245,
+      "question": "Will the highest temperature in Shanghai be 25\u00b0C on May 13?"
+    },
+    "65117355277398818985782267436042412080585608130907860417798220175733673692691": {
+      "fills": 27,
+      "realized_pnl": -0.28061726641190177,
+      "cash_pnl": -2.5813237280750947,
+      "question": "Will the highest temperature in Seoul be 22\u00b0C on May 13?"
+    },
+    "69804040448944966225255659168076596834388449456291771549740078528610385088124": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 1.036596016324627,
+      "question": "Will the highest temperature in Singapore be 30\u00b0C on May 13?"
+    },
+    "113132997871229505753620514107807224441553826470490784130755357026347619611618": {
+      "fills": 7,
+      "realized_pnl": 0.31633296612629636,
+      "cash_pnl": -0.9641104321779121,
+      "question": "Will the highest temperature in Shanghai be 27\u00b0C on May 13?"
+    },
+    "66823202511511208025085598819892532740746040369560940703027053329618085686518": {
+      "fills": 84,
+      "realized_pnl": 15.108677606727078,
+      "cash_pnl": 15.328492206962185,
+      "question": "Will the highest temperature in Hong Kong be 30\u00b0C on May 13?"
+    },
+    "43107575503429285346457134420922541594774967549210826670446518909197971720230": {
+      "fills": 16,
+      "realized_pnl": 6.181672282046883,
+      "cash_pnl": 2.376314445232269,
+      "question": "Will the highest temperature in Seoul be 20\u00b0C on May 13?"
+    },
+    "17378233736855408679201277740679579951910539266427590510884929027380028910391": {
+      "fills": 27,
+      "realized_pnl": 5.885553074218755,
+      "cash_pnl": 12.043975990416659,
+      "question": "Will the highest temperature in Shanghai be 24\u00b0C on May 13?"
+    },
+    "105277017848180944847192054219831282675717378407823673013135572572991428926028": {
+      "fills": 18,
+      "realized_pnl": 1.141467827490004,
+      "cash_pnl": 5.312780495679695,
+      "question": "Will the highest temperature in Shanghai be 23\u00b0C on May 13?"
+    },
+    "87533489928624754583968313739623488948265782179616002575028848287114042327772": {
+      "fills": 47,
+      "realized_pnl": -1.4415991789395406,
+      "cash_pnl": 3.531425114791576,
+      "question": "Will the highest temperature in Chicago be between 58-59\u00b0F on May 13?"
+    },
+    "68265704291109888116531430162357548568452607152000620963690908190610838029905": {
+      "fills": 12,
+      "realized_pnl": 0.03937664168496724,
+      "cash_pnl": 0.03937664168497118,
+      "question": "Will the highest temperature in Shenzhen be 33\u00b0C or higher on May 13?"
+    },
+    "4444908506207948805491366168064082362313189098372619373735528243860291980954": {
+      "fills": 7,
+      "realized_pnl": 3.650254449783148,
+      "cash_pnl": 0.9909379023721601,
+      "question": "Will the highest temperature in Tokyo be 25\u00b0C on May 13?"
+    },
+    "56131160447500607584005723910816057263294744210163886142536481773330521586300": {
+      "fills": 68,
+      "realized_pnl": 4.53120362353836,
+      "cash_pnl": 6.122576296876157,
+      "question": "Will the highest temperature in Shanghai be 26\u00b0C on May 13?"
+    },
+    "74558355730491987262468921013259453851187667842749008721251299660914785862563": {
+      "fills": 7,
+      "realized_pnl": -0.6769906144094051,
+      "cash_pnl": 0.1520539371667728,
+      "question": "Will the highest temperature in Chicago be 64\u00b0F or higher on May 13?"
+    },
+    "109455459417911547196276340693923069779713233784044006976891347277740240345161": {
+      "fills": 8,
+      "realized_pnl": 4.590307849389006,
+      "cash_pnl": 3.9190735744471383,
+      "question": "Will the highest temperature in Shenzhen be 32\u00b0C on May 13?"
+    },
+    "34781158521928327855487950520408975874214537226612495957902667937745222884821": {
+      "fills": 15,
+      "realized_pnl": -4.396250429091978,
+      "cash_pnl": -4.396250429091984,
+      "question": "Will the highest temperature in Beijing be 33\u00b0C on May 13?"
+    },
+    "56357233215442464878921328418339653412623017131692571864293709153960139274928": {
+      "fills": 31,
+      "realized_pnl": 1.824182701216941,
+      "cash_pnl": 1.824182701216938,
+      "question": "Will the highest temperature in Chicago be between 62-63\u00b0F on May 13?"
+    },
+    "39915589632524828609703024447836760957488667040350413151941038252148441999703": {
+      "fills": 5,
+      "realized_pnl": 0.39955747690950716,
+      "cash_pnl": 3.0998945464384047,
+      "question": "Will the highest temperature in Chongqing be 31\u00b0C on May 13?"
+    },
+    "77234724314253675858061954841118060235014992584845494630216352656035353516515": {
+      "fills": 13,
+      "realized_pnl": -0.013544959519961708,
+      "cash_pnl": -2.629491345284356,
+      "question": "Will the highest temperature in London be 14\u00b0C on May 13?"
+    },
+    "67274598100185758696334720789763594191391963261037730481360871861018825911361": {
+      "fills": 8,
+      "realized_pnl": 0.22498764839004082,
+      "cash_pnl": 1.1302617475287016,
+      "question": "Will the highest temperature in London be 12\u00b0C on May 13?"
+    },
+    "22722140325895252008881018982078677032976059664658234256718533386059691162042": {
+      "fills": 25,
+      "realized_pnl": 0.39307309221028675,
+      "cash_pnl": 0.6559105670357418,
+      "question": "Will Oh Se-hoon win the 2026 Seoul Mayoral Election"
+    },
+    "58722465581040391951564372894527043297339291642663580715125039588707529366748": {
+      "fills": 36,
+      "realized_pnl": 3.1402291344575985,
+      "cash_pnl": 12.14825968394998,
+      "question": "Will the highest temperature in Paris be 14\u00b0C on May 13?"
+    },
+    "49442245874348652084556047939474444114339274321260147557077258988905149698294": {
+      "fills": 22,
+      "realized_pnl": -0.07775688342728415,
+      "cash_pnl": 3.138815640399778,
+      "question": "Will the highest temperature in Paris be 15\u00b0C on May 13?"
+    },
+    "5416296146036111672459948253194775144721769117684749726014787636603580467160": {
+      "fills": 4,
+      "realized_pnl": 0.026600000000001955,
+      "cash_pnl": 7.464600587317446,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 13?"
+    },
+    "11459047284049145978475785929850192204138465583344097454857157774313787179981": {
+      "fills": 40,
+      "realized_pnl": 0.4115236941788254,
+      "cash_pnl": -0.6825155371867582,
+      "question": "Will the highest temperature in New York City be between 68-69\u00b0F on May 13?"
+    },
+    "103761441718117191575307529718835432928775240801294505281221396557654026381634": {
+      "fills": 33,
+      "realized_pnl": 2.81465769943307,
+      "cash_pnl": 2.814657699433074,
+      "question": "Will the highest temperature in New York City be between 70-71\u00b0F on May 13?"
+    },
+    "48481685320333394493713603377559016646172925903763751709028982377138023861037": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.295920533709984,
+      "question": "Will the highest temperature in Munich be 16\u00b0C on May 13?"
+    },
+    "12648482757095886180217865534246183073737643998224386809426324417512879089934": {
+      "fills": 7,
+      "realized_pnl": 0.40803809606093466,
+      "cash_pnl": 1.9245219945781369,
+      "question": "Will the highest temperature in Seattle be between 54-55\u00b0F on May 13?"
+    },
+    "55774259540293810930987073121800680062902024697201529697372957780760200759600": {
+      "fills": 15,
+      "realized_pnl": 2.78913236099352,
+      "cash_pnl": 8.452813728269767,
+      "question": "Will the highest temperature in Tel Aviv be 26\u00b0C on May 13?"
+    },
+    "70356863005612115044574144950091391670562360096490149184478554252097433958395": {
+      "fills": 9,
+      "realized_pnl": -0.06695482702727418,
+      "cash_pnl": 2.230826207276906,
+      "question": "Will the highest temperature in New York City be between 66-67\u00b0F on May 13?"
+    },
+    "86557446425032760377102502309080619283305659839578983781117578187240979024812": {
+      "fills": 7,
+      "realized_pnl": 0.17926490518733829,
+      "cash_pnl": 9.326401785606375,
+      "question": "Will the highest temperature in Ankara be 22\u00b0C on May 13?"
+    },
+    "61850614137212396283356720742893427958841820405207239408888964001188055775576": {
+      "fills": 28,
+      "realized_pnl": -0.037328156505267884,
+      "cash_pnl": 2.5778907772213957,
+      "question": "Will the highest temperature in Milan be 20\u00b0C or higher on May 13?"
+    },
+    "76225317449268306450069898534065098673715856205766725756131169707826720670614": {
+      "fills": 5,
+      "realized_pnl": 0.0,
+      "cash_pnl": -3.376452891421188,
+      "question": "Will the highest temperature in Ankara be 23\u00b0C on May 13?"
+    },
+    "56658717753009768956606993593514497964298710540976375724805746193000867331973": {
+      "fills": 18,
+      "realized_pnl": -0.9591379487251146,
+      "cash_pnl": 7.516987954544176,
+      "question": "Will the highest temperature in Milan be 19\u00b0C on May 13?"
+    },
+    "51429111945737528510895327217665678874464815081870817767365770361147550054620": {
+      "fills": 17,
+      "realized_pnl": 2.1386237296730144,
+      "cash_pnl": 10.463714178650797,
+      "question": "Will the highest temperature in Madrid be 21\u00b0C on May 13?"
+    },
+    "105050023154022897670491388318852985284793743906880944914978547796352997390316": {
+      "fills": 6,
+      "realized_pnl": 1.8378825471073554,
+      "cash_pnl": 1.638661833933314,
+      "question": "Will the highest temperature in New York City be between 72-73\u00b0F on May 13?"
+    },
+    "8819730217966236987749527070744923429340470146277768375889264015094506909930": {
+      "fills": 5,
+      "realized_pnl": 0.23394192676144598,
+      "cash_pnl": -3.5485838587729632,
+      "question": "Will the highest temperature in Munich be 14\u00b0C on May 13?"
+    },
+    "46046425992754118935195936590541905392582613220868712449601520448395724186720": {
+      "fills": 16,
+      "realized_pnl": 0.3479763856649214,
+      "cash_pnl": 0.3479763856649396,
+      "question": "Will Darryn Peterson be the first pick in the 2026 NBA draft?"
+    },
+    "115174307179370007385439050910304711684977523786342125016744114213066682763408": {
+      "fills": 47,
+      "realized_pnl": 1.8467403108148943,
+      "cash_pnl": 4.542186276269401,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 14?"
+    },
+    "26317221552758114877706590988577586928498848752513159204378082276448918033274": {
+      "fills": 82,
+      "realized_pnl": 10.364465137612413,
+      "cash_pnl": 1.475040092401604,
+      "question": "Will the highest temperature in Seoul be 27\u00b0C or higher on May 14?"
+    },
+    "22705070151310234573063141210535292230597808034363435783492251809200384622195": {
+      "fills": 2,
+      "realized_pnl": 0.08834658720981281,
+      "cash_pnl": -0.4195445832163388,
+      "question": "Will the highest temperature in Seoul be 24\u00b0C on May 14?"
+    },
+    "95757409362721400012818452575545334452889626984536402180740405232654366796048": {
+      "fills": 26,
+      "realized_pnl": 2.302679575384815,
+      "cash_pnl": 2.0393459494466084,
+      "question": "Will the highest temperature in Seattle be between 56-57\u00b0F on May 14?"
+    },
+    "101936922205609942707091491251890640536562069521464790923009954275126311981511": {
+      "fills": 3,
+      "realized_pnl": -0.10371949605666941,
+      "cash_pnl": -0.10371949605667313,
+      "question": "Will the highest temperature in London be 14\u00b0C on May 14?"
+    },
+    "45431105275197038093840317610040404397149880527773884765336437915469969295719": {
+      "fills": 44,
+      "realized_pnl": 0.07153507600013143,
+      "cash_pnl": 4.255170823281747,
+      "question": "Will the highest temperature in Seoul be 26\u00b0C on May 14?"
+    },
+    "12570204048902784391096359566057538481763859171838056791803660227313436511236": {
+      "fills": 32,
+      "realized_pnl": 4.327634051615462,
+      "cash_pnl": 3.4828802925278413,
+      "question": "Will the highest temperature in Seoul be 25\u00b0C on May 14?"
+    },
+    "32695827299311969383487790880227446929595147115323858538744122655568704482458": {
+      "fills": 79,
+      "realized_pnl": -2.3932323156585937,
+      "cash_pnl": -0.7578483242159993,
+      "question": "Will the highest temperature in Paris be 11\u00b0C on May 14?"
+    },
+    "59031056038197183876760634391880677384299672536158930699700582260753899376609": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 1.7985136362723122,
+      "question": "Will the highest temperature in Toronto be 14\u00b0C or higher on May 14?"
+    },
+    "72091063099085411907122308764252820381328601048146449935897773514713818541727": {
+      "fills": 10,
+      "realized_pnl": 0.2650570291094141,
+      "cash_pnl": 1.5935555312201508,
+      "question": "Will the highest temperature in Miami be between 88-89\u00b0F on May 14?"
+    },
+    "101510509263937385763239398807241919547603044371854622677698225036514157014167": {
+      "fills": 17,
+      "realized_pnl": 1.979648874211307,
+      "cash_pnl": 5.579032721679009,
+      "question": "Will the highest temperature in Seattle be between 60-61\u00b0F on May 14?"
+    },
+    "9084239824844286657980012282672754848426580501374834004009130049910819329865": {
+      "fills": 20,
+      "realized_pnl": 0.6053711468636465,
+      "cash_pnl": 0.6053711468636451,
+      "question": "Will the highest temperature in New York City be between 60-61\u00b0F on May 14?"
+    },
+    "57226492536499109381396778207373207848366966444736027036525324139134228741079": {
+      "fills": 25,
+      "realized_pnl": 0.37010835828367306,
+      "cash_pnl": 0.29646309740869203,
+      "question": "Will the highest temperature in Hong Kong be 30\u00b0C on May 14?"
+    },
+    "104762145440404278271259816144298335671414849802900303542303449110530060821655": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.65,
+      "question": "Will Elena Rybakina be the 2026 Women\u2019s Wimbledon Winner?"
+    },
+    "61806200928199655602657962438653168183668672665571069157359624954674090146719": {
+      "fills": 64,
+      "realized_pnl": -0.945945757967408,
+      "cash_pnl": -5.191723771867051,
+      "question": "Will the highest temperature in Munich be 14\u00b0C or higher on May 14?"
+    },
+    "111205811963363052942348288726305725802326163941798563318185371740853137382301": {
+      "fills": 11,
+      "realized_pnl": 0.7297530386512676,
+      "cash_pnl": 3.427744452501112,
+      "question": "Will the highest temperature in Hong Kong be 29\u00b0C on May 14?"
+    },
+    "93830142634378913889093806613155457069161489871499294419051276201110025484296": {
+      "fills": 7,
+      "realized_pnl": 0.13856101109500685,
+      "cash_pnl": 0.8739228095599028,
+      "question": "Will the highest temperature in Tokyo be 26\u00b0C on May 14?"
+    },
+    "90596439826504120954925127140784187890988668929333676240204098937782483376563": {
+      "fills": 4,
+      "realized_pnl": 0.21253842332913564,
+      "cash_pnl": 0.21253842332913153,
+      "question": "Will the highest temperature in Munich be 12\u00b0C on May 14?"
+    },
+    "5312543830623497182533618020987916235244964488583406871963443328472555489212": {
+      "fills": 8,
+      "realized_pnl": -0.7832574811106667,
+      "cash_pnl": 6.735145242070742,
+      "question": "Will the highest temperature in Tokyo be 24\u00b0C on May 14?"
+    },
+    "93529640580297731840082370009997250815890062036719365702137824328316692053710": {
+      "fills": 58,
+      "realized_pnl": -1.4033079775887387,
+      "cash_pnl": 1.3913700362363022,
+      "question": "Will the highest temperature in London be 11\u00b0C on May 14?"
+    },
+    "64147223059347949052201840246129781452985909456188606306255459004309987722062": {
+      "fills": 10,
+      "realized_pnl": -0.3257669431792607,
+      "cash_pnl": -3.54249319241798,
+      "question": "Will the highest temperature in Shanghai be 24\u00b0C on May 14?"
+    },
+    "71827636307288901698740504079885083569426164614446087211503179392790565850276": {
+      "fills": 21,
+      "realized_pnl": -0.43028762944163645,
+      "cash_pnl": 0.5605639152094894,
+      "question": "Will the highest temperature in Shanghai be 25\u00b0C on May 14?"
+    },
+    "104993641936525761922793557243759316450305819743349614510016851690603255962940": {
+      "fills": 14,
+      "realized_pnl": 0.7351746117336972,
+      "cash_pnl": 0.7351746117337143,
+      "question": "Will the highest temperature in Tokyo be 25\u00b0C on May 14?"
+    },
+    "86412359706582730431639524880708729853203052007971743000161103995990167821283": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 13.459334245234546,
+      "question": "Will the highest temperature in Beijing be 33\u00b0C or below on May 14?"
+    },
+    "108805226331181789150569275532879201221011965391887727693054039157640574237227": {
+      "fills": 55,
+      "realized_pnl": -0.7303316695122675,
+      "cash_pnl": -0.730331669512228,
+      "question": "Will the highest temperature in London be 12\u00b0C on May 14?"
+    },
+    "47368450429658911080409304494975004373120997245044163666379785988140718095275": {
+      "fills": 44,
+      "realized_pnl": -0.2482838305838584,
+      "cash_pnl": -0.2482838305838756,
+      "question": "Will the highest temperature in New York City be between 62-63\u00b0F on May 14?"
+    },
+    "36232218498355771138638222317056896159467354506560685933049907594071997248382": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.88784493732244,
+      "question": "Will the highest temperature in Singapore be 34\u00b0C on May 14?"
+    },
+    "29499218473884268412053885726461149574262154292297368730529680681472966429411": {
+      "fills": 51,
+      "realized_pnl": 2.156333877564009,
+      "cash_pnl": -0.7735841991340688,
+      "question": "Will the highest temperature in Munich be 13\u00b0C on May 14?"
+    },
+    "40575917729430420018201721264939288854004272693941153667917029008022826333487": {
+      "fills": 7,
+      "realized_pnl": 0.04919999999999902,
+      "cash_pnl": 2.3882810309509397,
+      "question": "Will the highest temperature in Ankara be 20\u00b0C on May 14?"
+    },
+    "41876300165676851709394474195197377622158597806237046323206297926633777600017": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.6926079148240163,
+      "question": "Will the highest temperature in Ankara be 19\u00b0C on May 14?"
+    },
+    "64297314745749944038241350273338372133285264217679475430329584156029835274237": {
+      "fills": 51,
+      "realized_pnl": -1.6586170774685343,
+      "cash_pnl": 3.2117249250199205,
+      "question": "Will the highest temperature in Paris be 12\u00b0C on May 14?"
+    },
+    "37942667671377521248024144142991249214091908205510315666444135520438253267126": {
+      "fills": 60,
+      "realized_pnl": -0.08238059963835553,
+      "cash_pnl": 3.7379083967365982,
+      "question": "Will the highest temperature in New York City be between 66-67\u00b0F on May 14?"
+    },
+    "27808618391522170867950505339798166641860626398227469738815627479663620401134": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.526894300664675,
+      "question": "Will the highest temperature in Paris be 13\u00b0C on May 14?"
+    },
+    "68785692520955516792802033139326918011362640342919364176595098193324773976189": {
+      "fills": 6,
+      "realized_pnl": 0.9619802919056184,
+      "cash_pnl": 1.05536619184599,
+      "question": "Will the highest temperature in Ankara be 23\u00b0C on May 14?"
+    },
+    "84133195787062579725265823436896847959360551874426359509852059689976405065049": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 11.619035758780154,
+      "question": "Will the highest temperature in Ankara be 22\u00b0C on May 14?"
+    },
+    "63524151038904431111755015445972615380950462787360567487280741380397195916502": {
+      "fills": 19,
+      "realized_pnl": 0.41398337949067354,
+      "cash_pnl": 2.0024111218932017,
+      "question": "Will the highest temperature in New York City be between 64-65\u00b0F on May 14?"
+    },
+    "107345704157169717140307449078486629197832595570518760854573297039161184509193": {
+      "fills": 14,
+      "realized_pnl": -0.8181213655293504,
+      "cash_pnl": 1.6904915470264341,
+      "question": "Will the highest temperature in London be 10\u00b0C on May 14?"
+    },
+    "3968862406242988875061218900954915639702360586187819393496388617180506914514": {
+      "fills": 7,
+      "realized_pnl": -0.14952211733007914,
+      "cash_pnl": -0.14952211733008192,
+      "question": "Will the highest temperature in Miami be between 94-95\u00b0F on May 14?"
+    },
+    "74528708561834522929812274614876439156526275385346537453123934479129249295639": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 10.13249033557516,
+      "question": "Will the highest temperature in Milan be 18\u00b0C on May 14?"
+    },
+    "52645655163058619253414214081883989254539651707871992211258429436235178511824": {
+      "fills": 21,
+      "realized_pnl": -0.8208710731317694,
+      "cash_pnl": -8.545106798010277,
+      "question": "Will the highest temperature in Madrid be 21\u00b0C on May 14?"
+    },
+    "82930183159026766528200693864702694446653449781989390767079350247662547628118": {
+      "fills": 28,
+      "realized_pnl": 1.1137009488248424,
+      "cash_pnl": -1.477604448635971,
+      "question": "Will the highest temperature in Los Angeles be between 68-69\u00b0F on May 14?"
+    },
+    "66729993100702694918319166622826889741879818904169974785751042765825058777976": {
+      "fills": 7,
+      "realized_pnl": 0.508823774239687,
+      "cash_pnl": -0.15502372015781563,
+      "question": "Will the highest temperature in New York City be between 68-69\u00b0F on May 14?"
+    },
+    "15327233517413498338383856334016400513836531715629263986579839166536515775564": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -3.608852141583493,
+      "question": "Will the highest temperature in Madrid be 22\u00b0C on May 14?"
+    },
+    "64629026662599391785804814295273070437728369871369866131241929416770231194107": {
+      "fills": 38,
+      "realized_pnl": 2.5492761265549433,
+      "cash_pnl": 3.33974438365224,
+      "question": "Will the highest temperature in Paris be 14\u00b0C on May 15?"
+    },
+    "14395533933450291847777626394536523052615048214524668144930848745578282711381": {
+      "fills": 7,
+      "realized_pnl": -0.6955548036430628,
+      "cash_pnl": 8.544745890324524,
+      "question": "Will the highest temperature in Seoul be 26\u00b0C or higher on May 15?"
+    },
+    "10591699413074540154131817343094214180861777587754649342419417333763110553208": {
+      "fills": 50,
+      "realized_pnl": 0.2390742609308063,
+      "cash_pnl": 1.1644205241784413,
+      "question": "Will the highest temperature in Sao Paulo be 20\u00b0C or below on May 15?"
+    },
+    "30902845420083263545734124664200197372161117101542460461331578363847237475451": {
+      "fills": 45,
+      "realized_pnl": 2.920909768081515,
+      "cash_pnl": 2.9209097680814997,
+      "question": "Will the highest temperature in Shanghai be 24\u00b0C on May 15?"
+    },
+    "115586177997558157632001952570379958670244748914775941960520746646941695321524": {
+      "fills": 34,
+      "realized_pnl": 4.037796614456752,
+      "cash_pnl": 2.20112421834653,
+      "question": "Will the highest temperature in Hong Kong be 29\u00b0C or higher on May 15?"
+    },
+    "114200804136247578226690556719438688679724356447437805635373479727957174212209": {
+      "fills": 4,
+      "realized_pnl": 0.09784878615541004,
+      "cash_pnl": 8.083457169372066,
+      "question": "Will the highest temperature in Beijing be 31\u00b0C or below on May 15?"
+    },
+    "38472302739134252116012049098397051831785555305578201447134358922368365526205": {
+      "fills": 47,
+      "realized_pnl": 0.12270327008710069,
+      "cash_pnl": 2.87222887681965,
+      "question": "Will the highest temperature in Chicago be 74\u00b0F or higher on May 15?"
+    },
+    "94529568305136792355299447016752627510735685157430183268158725040771483878776": {
+      "fills": 25,
+      "realized_pnl": 0.6136569007681203,
+      "cash_pnl": 4.84000229790517,
+      "question": "Will the highest temperature in Hong Kong be 27\u00b0C on May 15?"
+    },
+    "24169642959855268806170205328966441916982669122890696207397667319618028247214": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.2810012921387397,
+      "question": "Will the highest temperature in Shenzhen be 27\u00b0C on May 15?"
+    },
+    "101425532986317494059165546717009504470888634553548777888953703711714515971562": {
+      "fills": 28,
+      "realized_pnl": 11.256396367504692,
+      "cash_pnl": 17.207686556824868,
+      "question": "Will the highest temperature in Singapore be 29\u00b0C on May 15?"
+    },
+    "104259436423064082971150541232006260758664018969024622611484550356541952860834": {
+      "fills": 39,
+      "realized_pnl": 0.6350963575671216,
+      "cash_pnl": 9.787914577762278,
+      "question": "Will PSG win the 2025\u201326 Champions League?"
+    },
+    "27018493782217080295125947420827868056359893458100503259827280504957513538769": {
+      "fills": 8,
+      "realized_pnl": 0.9159367101856191,
+      "cash_pnl": 4.9113182942241735,
+      "question": "Will the highest temperature in Wellington be 13\u00b0C on May 15?"
+    },
+    "13187343660479209340596441807732561204283254354527943007424755052279742307341": {
+      "fills": 4,
+      "realized_pnl": 0.2628325977898527,
+      "cash_pnl": 1.1450832771280108,
+      "question": "Will the highest temperature in Seoul be 25\u00b0C on May 15?"
+    },
+    "60839233522385218593091567722911352138199692767739876023547368665718996524369": {
+      "fills": 5,
+      "realized_pnl": 0.3148870880400523,
+      "cash_pnl": -1.155160261519345,
+      "question": "Will the highest temperature in Taipei be 30\u00b0C on May 15?"
+    },
+    "7172838367232799834593755625014301891779724373361881024188725456338337000726": {
+      "fills": 6,
+      "realized_pnl": 6.207463354121245,
+      "cash_pnl": 6.207463354121234,
+      "question": "Will the highest temperature in Shenzhen be 30\u00b0C or higher on May 15?"
+    },
+    "55271794807807632357509478677620087878660602812263552803154922851613583240877": {
+      "fills": 22,
+      "realized_pnl": -4.691939899498607,
+      "cash_pnl": 0.9951342074219025,
+      "question": "Will the highest temperature in Tokyo be 22\u00b0C on May 15?"
+    },
+    "66006690507851626758591299401259780654938271005192692222336686925341556832370": {
+      "fills": 14,
+      "realized_pnl": 1.223083086939539,
+      "cash_pnl": 2.412825656936416,
+      "question": "Will the highest temperature in Paris be 12\u00b0C on May 15?"
+    },
+    "30475084407338032423902535908763283547537004395967903042380721235040520009335": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 11.101664138304978,
+      "question": "Will the highest temperature in Shenzhen be 28\u00b0C on May 15?"
+    },
+    "29738689214886164946478259056057262905328483139863586335740195853093706844088": {
+      "fills": 49,
+      "realized_pnl": 2.5900980741237163,
+      "cash_pnl": 1.5366499008593502,
+      "question": "Will the highest temperature in Singapore be 30\u00b0C on May 15?"
+    },
+    "100128239920880287575387282940517179505161240985025397914823792044473774275654": {
+      "fills": 8,
+      "realized_pnl": 0.5516719601398847,
+      "cash_pnl": 0.5516719601398871,
+      "question": "Will the highest temperature in Tokyo be 24\u00b0C on May 15?"
+    },
+    "51613747884775338403048532593501002815493456993186085199166251198124067896705": {
+      "fills": 23,
+      "realized_pnl": -2.106968633206037,
+      "cash_pnl": -3.2067444152840547,
+      "question": "Will the highest temperature in Tokyo be 23\u00b0C on May 15?"
+    },
+    "109527615836207537153404265695516500942517211995529288913753856104276095868308": {
+      "fills": 13,
+      "realized_pnl": 2.057058621761513,
+      "cash_pnl": 2.724538964080498,
+      "question": "Will the highest temperature in Shanghai be 25\u00b0C on May 15?"
+    },
+    "20367040750297258313128272543897674317472481639579496518677340924110714269119": {
+      "fills": 9,
+      "realized_pnl": -0.8692187490339336,
+      "cash_pnl": -1.46718292171475,
+      "question": "Will the highest temperature in Taipei be 29\u00b0C on May 15?"
+    },
+    "78303740838350809431780608278874427165281291819688534819299603169404353329185": {
+      "fills": 17,
+      "realized_pnl": 0.10589390694318013,
+      "cash_pnl": 0.8485928852819421,
+      "question": "Will Australia win Eurovision 2026?"
+    },
+    "70364657290228044448461397404440906092275799648915793839023224483022545171360": {
+      "fills": 11,
+      "realized_pnl": -0.09174724603053619,
+      "cash_pnl": -2.5623773212185523,
+      "question": "Will Finland win Eurovision 2026?"
+    },
+    "5013836397583170206118585551740767979973957181759716024625202518930320062507": {
+      "fills": 35,
+      "realized_pnl": 0.38601027081151074,
+      "cash_pnl": 2.501992445022811,
+      "question": "Will the highest temperature in London be 15\u00b0C on May 15?"
+    },
+    "93616293707434981312713058477259271203032175836177062993005492781872849808057": {
+      "fills": 66,
+      "realized_pnl": 0.8927565801496371,
+      "cash_pnl": -9.618003931174087,
+      "question": "Will the highest temperature in London be 14\u00b0C on May 15?"
+    },
+    "20496560500111977492417235523421281561651368231187120971028828026301456234563": {
+      "fills": 39,
+      "realized_pnl": 3.3070485632231623,
+      "cash_pnl": 4.636042735224043,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 15?"
+    },
+    "23739060984073150027576088373384548810117630139465334831160955513202180766916": {
+      "fills": 21,
+      "realized_pnl": 0.0035796092844577743,
+      "cash_pnl": 0.003579609284430574,
+      "question": "Will the highest temperature in Los Angeles be between 68-69\u00b0F on May 15?"
+    },
+    "13964819367634198451298641333128317418278473845573825343781469090456058500543": {
+      "fills": 25,
+      "realized_pnl": 2.774254155068377,
+      "cash_pnl": -5.26269388695996,
+      "question": "Will the highest temperature in Paris be 13\u00b0C on May 15?"
+    },
+    "12339092191731397534090025762329114313858432151765352497013945067516821614061": {
+      "fills": 43,
+      "realized_pnl": -0.2593005835891802,
+      "cash_pnl": 8.919607731322678,
+      "question": "Will the highest temperature in Munich be 14\u00b0C on May 15?"
+    },
+    "29092430401211063646185003596683333195151408519324676429777469942778571730924": {
+      "fills": 25,
+      "realized_pnl": 0.23299846144271896,
+      "cash_pnl": 0.23299846144277292,
+      "question": "Will the highest temperature in New York City be between 66-67\u00b0F on May 15?"
+    },
+    "65042437521153646761184016056719363253949769805496297064924675594300960567626": {
+      "fills": 56,
+      "realized_pnl": 4.2281533631910975,
+      "cash_pnl": 4.2281533631911605,
+      "question": "Will the highest temperature in New York City be between 64-65\u00b0F on May 15?"
+    },
+    "75388344620741186811543629494866022194255016598192936177466689592689630254": {
+      "fills": 19,
+      "realized_pnl": 3.794110444412496,
+      "cash_pnl": 3.794110444412486,
+      "question": "Will the highest temperature in Madrid be 17\u00b0C on May 15?"
+    },
+    "43713769860482535406423249042286945115896233472653596624953044136218620107496": {
+      "fills": 18,
+      "realized_pnl": 0.3575350900251806,
+      "cash_pnl": 6.317979088411848,
+      "question": "Will the highest temperature in Munich be 15\u00b0C on May 15?"
+    },
+    "79523338812022501724839065955977826509681399482977389899903247899052913304236": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -4.895487147212411,
+      "question": "Will the highest temperature in Munich be 13\u00b0C on May 15?"
+    },
+    "12530391719467893974076412175514818493992592498045694409559001325271197494845": {
+      "fills": 24,
+      "realized_pnl": -2.7070413191655973,
+      "cash_pnl": 3.307214210116917,
+      "question": "Will the highest temperature in Madrid be 16\u00b0C on May 15?"
+    },
+    "84535800323381227016292472363525577649476770326690846937577834243418343636971": {
+      "fills": 4,
+      "realized_pnl": 0.04159999999998831,
+      "cash_pnl": 10.127632732225958,
+      "question": "Will the highest temperature in Ankara be 16\u00b0C on May 15?"
+    },
+    "70370735531213733422342454747174988886632541320066241864170011699825344455816": {
+      "fills": 5,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.3724267803083556,
+      "question": "Will the highest temperature in Madrid be 18\u00b0C on May 15?"
+    },
+    "64743292268168078594546190988673511367269640972424406583969046080651227514846": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.8974384294770408,
+      "question": "Will the highest temperature in Miami be between 88-89\u00b0F on May 15?"
+    },
+    "83129770256663924688925990809425207853826666433616325810856734238516697684840": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 13.427869798425643,
+      "question": "Will the highest temperature in Milan be 13\u00b0C on May 15?"
+    },
+    "8447490071089963395442264544330207052705118369414975510775922677277264472371": {
+      "fills": 213,
+      "realized_pnl": 5.79209903975817,
+      "cash_pnl": 14.9200798572652,
+      "question": "Will Thomas Massie be the Republican nominee for KY-04?"
+    },
+    "11114770929989160167013738934095777053634630002390930429285074519742060785787": {
+      "fills": 71,
+      "realized_pnl": -0.3635593407980764,
+      "cash_pnl": -6.296119138161317,
+      "question": "Will Ed Gallrein be the Republican nominee for KY-04?"
+    },
+    "78851068021324895283900116699166732733907005817372833903089338681283211953991": {
+      "fills": 8,
+      "realized_pnl": 0.24425792387501133,
+      "cash_pnl": -6.498576228375001,
+      "question": "Will Derek Dooley be the Republican nominee for Senate in Georgia?"
+    },
+    "111904280129217850471121023311290242591677026761509028959077627230995569845666": {
+      "fills": 47,
+      "realized_pnl": 4.456137024457661,
+      "cash_pnl": 1.871863387260388,
+      "question": "Will the highest temperature in Seoul be 25\u00b0C on May 16?"
+    },
+    "14461826440688473107356459486740528462894316638997659882403234672548194270425": {
+      "fills": 53,
+      "realized_pnl": 6.478996068898056,
+      "cash_pnl": 4.441514741075629,
+      "question": "Will the highest temperature in Seoul be 26\u00b0C or higher on May 16?"
+    },
+    "32575081522090469365782797435853332105236009064991176963134206772394766840726": {
+      "fills": 19,
+      "realized_pnl": 3.4977697107536585,
+      "cash_pnl": -2.044141554733058,
+      "question": "Will the highest temperature in Seoul be 24\u00b0C on May 16?"
+    },
+    "3279304864959948810186518054523476341137606027267598537919562319820309180329": {
+      "fills": 106,
+      "realized_pnl": 5.9207192780922355,
+      "cash_pnl": 8.23540396290242,
+      "question": "Will the highest temperature in Paris be 16\u00b0C on May 16?"
+    },
+    "2235190556695343194348906911883039937217596770585187070258379670997344258734": {
+      "fills": 89,
+      "realized_pnl": -1.9014880780648014,
+      "cash_pnl": 7.969711257944989,
+      "question": "Will the highest temperature in Paris be 15\u00b0C on May 16?"
+    },
+    "91599623375649206047443510589636513228077634018109738508638977156444735937544": {
+      "fills": 44,
+      "realized_pnl": -4.883706527654283,
+      "cash_pnl": 8.53205051931266,
+      "question": "Will the highest temperature in London be 15\u00b0C on May 16?"
+    },
+    "108744287791572034543316066821932949384469077383325165971965758912696087087541": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.5828603359779452,
+      "question": "Will the highest temperature in Wellington be 14\u00b0C on May 16?"
+    },
+    "41320403230956239668609139909364577654116084697708294525314169154411304325690": {
+      "fills": 23,
+      "realized_pnl": -2.0499202689190668,
+      "cash_pnl": 7.414091132448158,
+      "question": "Will the highest temperature in Singapore be 28\u00b0C on May 16?"
+    },
+    "100353571608216435125231546658400297861997758553485825361209555763708200951209": {
+      "fills": 10,
+      "realized_pnl": -0.1673311896163341,
+      "cash_pnl": -2.6118553671370908,
+      "question": "Will the highest temperature in Hong Kong be 27\u00b0C on May 16?"
+    },
+    "64004303571613117548183747159390886848502912007215146755119337072300527756362": {
+      "fills": 35,
+      "realized_pnl": 1.8789504232108527,
+      "cash_pnl": -4.601459452337654,
+      "question": "Will the highest temperature in Tokyo be 25\u00b0C on May 16?"
+    },
+    "88743322336653643416898206156365099001210621618646332007804708019992113042422": {
+      "fills": 16,
+      "realized_pnl": 0.2850053332798268,
+      "cash_pnl": -0.536042116945812,
+      "question": "Will the highest temperature in Tokyo be 24\u00b0C on May 16?"
+    },
+    "772820938561247221679172181579648227536020465529777598453044115589189171592": {
+      "fills": 21,
+      "realized_pnl": -3.165253744675738,
+      "cash_pnl": -3.165253744675685,
+      "question": "Will the highest temperature in Hong Kong be 25\u00b0C on May 16?"
+    },
+    "33318246272726066629413042307005892244598016758335359101257498426167920101647": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 4.328674358940834,
+      "question": "Will the highest temperature in Wellington be 13\u00b0C on May 16?"
+    },
+    "115322837005206331780281221759782880143911877666640856227124929575588887142432": {
+      "fills": 39,
+      "realized_pnl": -0.7092930802413377,
+      "cash_pnl": -3.2834370851315278,
+      "question": "Will the highest temperature in Singapore be 29\u00b0C on May 16?"
+    },
+    "17420140083007515515101385198422598652637699289881099698546741416285012414506": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.8586718597726097,
+      "question": "Will the highest temperature in Singapore be 31\u00b0C on May 16?"
+    },
+    "63125595624521513613286231678401034047549098606194941329026258055113262214478": {
+      "fills": 18,
+      "realized_pnl": 1.37076345549076,
+      "cash_pnl": -0.9716148762491097,
+      "question": "Will the highest temperature in Hong Kong be 26\u00b0C on May 16?"
+    },
+    "37406832182189759535722537285006932580031289438686576430149475160776978878421": {
+      "fills": 38,
+      "realized_pnl": 2.7981826680400275,
+      "cash_pnl": 7.301298141977521,
+      "question": "Will the highest temperature in Tokyo be 26\u00b0C on May 16?"
+    },
+    "81456500618028252305650799799974121018878285834988043163436470613994752153627": {
+      "fills": 14,
+      "realized_pnl": -0.5660937284096974,
+      "cash_pnl": 6.076658083055271,
+      "question": "Will the highest temperature in Taipei be 30\u00b0C on May 16?"
+    },
+    "85321137231218676909633167288351429480771344393498276514993940391087292450327": {
+      "fills": 9,
+      "realized_pnl": -0.45094463144428687,
+      "cash_pnl": -2.122445157427188,
+      "question": "Will the highest temperature in Paris be 17\u00b0C on May 16?"
+    },
+    "104825976275201498240260205169411213618353016940645204071758534586673876512443": {
+      "fills": 24,
+      "realized_pnl": 0.1746292879471696,
+      "cash_pnl": -2.218406535462666,
+      "question": "Will the highest temperature in Shanghai be 25\u00b0C on May 16?"
+    },
+    "1755681703982173107340487409167244757802183466192351959877844813470420290898": {
+      "fills": 5,
+      "realized_pnl": 0.09252164697232956,
+      "cash_pnl": -1.6249983243755513,
+      "question": "Will the highest temperature in Singapore be 30\u00b0C on May 16?"
+    },
+    "78054723006282868821771486611942177735200660325800276646064685984419683430523": {
+      "fills": 27,
+      "realized_pnl": -0.0991583272580101,
+      "cash_pnl": -0.09915832725801899,
+      "question": "Will the highest temperature in Taipei be 31\u00b0C or higher on May 16?"
+    },
+    "57487523878389252321008328225996307050702667490671611156090000250500913763317": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": 2.867566928857418,
+      "question": "Will the highest temperature in Warsaw be 14\u00b0C on May 16?"
+    },
+    "3425894235734780405446106642674041839010086071917608697422040708622530314414": {
+      "fills": 8,
+      "realized_pnl": 0.4512389687918983,
+      "cash_pnl": 11.683945836795848,
+      "question": "Will the highest temperature in Shanghai be 26\u00b0C on May 16?"
+    },
+    "19129097408110998841243705928553798670293425111091856361872685617986869158344": {
+      "fills": 24,
+      "realized_pnl": 0.07046304234933132,
+      "cash_pnl": 3.513012641609184,
+      "question": "Will the highest temperature in London be 14\u00b0C on May 16?"
+    },
+    "90288158884209242301621480123305301600006123153581773777354357887389963194858": {
+      "fills": 32,
+      "realized_pnl": 0.06135827052523268,
+      "cash_pnl": 0.061358270525257795,
+      "question": "Will the highest temperature in New York City be between 74-75\u00b0F on May 16?"
+    },
+    "56695438332749827076132720082530270068455374296747910082721527489612574233458": {
+      "fills": 3,
+      "realized_pnl": 0.20936601063141325,
+      "cash_pnl": 1.0599025921371739,
+      "question": "Will the highest temperature in Shanghai be 27\u00b0C on May 16?"
+    },
+    "75708183245498688559394254880827401531031157653414150356994539895750219253054": {
+      "fills": 46,
+      "realized_pnl": -0.8195407268558768,
+      "cash_pnl": -0.8195407268558645,
+      "question": "Will the highest temperature in Miami be between 86-87\u00b0F on May 16?"
+    },
+    "25785054822813246812833169378044936592360293371489899526589959934129321665941": {
+      "fills": 9,
+      "realized_pnl": 0.22001150415536586,
+      "cash_pnl": 9.129813312047357,
+      "question": "Will the highest temperature in Shenzhen be 26\u00b0C on May 16?"
+    },
+    "76541692146046510342270672939289821614871777140681083421396492362021485532777": {
+      "fills": 13,
+      "realized_pnl": 0.33394651350096183,
+      "cash_pnl": -1.193538219841981,
+      "question": "Will the highest temperature in London be 13\u00b0C on May 16?"
+    },
+    "99847707120826188370135896041977397379773009616139903304704759009111495899040": {
+      "fills": 4,
+      "realized_pnl": 0.2387805190786878,
+      "cash_pnl": 2.4013341637202865,
+      "question": "Will the highest temperature in Shenzhen be 28\u00b0C on May 16?"
+    },
+    "58124655593083510843334877805888439380711478132126437680664157579874451182725": {
+      "fills": 2,
+      "realized_pnl": 0.04609375000001137,
+      "cash_pnl": -0.012499999999999956,
+      "question": "Will Falcons win IEM Cologne Major 2026?"
+    },
+    "909996868720768547539842010101016371561978160866788649655886527718264314812": {
+      "fills": 9,
+      "realized_pnl": -0.4256998668610663,
+      "cash_pnl": -1.1402809151243911,
+      "question": "Will the highest temperature in New York City be between 80-81\u00b0F on May 16?"
+    },
+    "106047356618429546383855063924697856230983000741291729437170345602918350204035": {
+      "fills": 10,
+      "realized_pnl": 0.12778341224131395,
+      "cash_pnl": 0.1277834122413053,
+      "question": "Will the highest temperature in New York City be between 76-77\u00b0F on May 16?"
+    },
+    "27527761611679769987173890891465408706588553256538748974016371981829463973274": {
+      "fills": 18,
+      "realized_pnl": 2.1992131203693077,
+      "cash_pnl": 3.1760466263693288,
+      "question": "Will the highest temperature in Chongqing be 21\u00b0C on May 16?"
+    },
+    "28098254160018835925937682792196791173932042670834296133433456823407532407624": {
+      "fills": 17,
+      "realized_pnl": 4.170712429751774,
+      "cash_pnl": 4.170712429751732,
+      "question": "Will the highest temperature in Los Angeles be between 68-69\u00b0F on May 16?"
+    },
+    "71963985554760891037532459388514081857669514058427025840450482462375100637936": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 12.76240365692269,
+      "question": "Will the highest temperature in Chongqing be 22\u00b0C on May 16?"
+    },
+    "89055832651439010987496740957901619978125204136577692864679148534854334935627": {
+      "fills": 7,
+      "realized_pnl": -0.451904296875,
+      "cash_pnl": -2.8948730468750004,
+      "question": "Will Mike Collins be the Republican nominee for Senate in Georgia?"
+    },
+    "83844310936513251469483878789417364177164684661624752296022400628208932451236": {
+      "fills": 8,
+      "realized_pnl": 0.0436472140594617,
+      "cash_pnl": 0.04364721405942734,
+      "question": "Will the highest temperature in London be 16\u00b0C on May 16?"
+    },
+    "105082454678029722012242742364635504496844188084462853036160446007326359255540": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": 1.9378799711494243,
+      "question": "Will the highest temperature in Warsaw be 12\u00b0C or below on May 16?"
+    },
+    "108662419190821963518545196928392162441714224239099846904905859602397184682850": {
+      "fills": 26,
+      "realized_pnl": 2.2303390308757685,
+      "cash_pnl": 1.5538375859858875,
+      "question": "Will the highest temperature in Madrid be 21\u00b0C on May 16?"
+    },
+    "7492335708980934937883194223764730887065770239816173460076807916353833368082": {
+      "fills": 12,
+      "realized_pnl": 0.04292945033520823,
+      "cash_pnl": -3.6314261020612877,
+      "question": "Will the highest temperature in Paris be 14\u00b0C on May 16?"
+    },
+    "33045574408653872462599311397515829348066993139624611335405996008340588661442": {
+      "fills": 5,
+      "realized_pnl": 0.2924842023945473,
+      "cash_pnl": 0.29248420239452866,
+      "question": "Will the highest temperature in Madrid be 20\u00b0C on May 16?"
+    },
+    "49100155288255713531280332748049097097613379788560462245718736090008547142642": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.4587918750000002,
+      "question": "Callum Turner announced as next James Bond?"
+    },
+    "96742241585630920217385948237314319901302716909516473120656624856385797180160": {
+      "fills": 12,
+      "realized_pnl": 0.4185617257849117,
+      "cash_pnl": 1.8406337583777597,
+      "question": "Will the highest temperature in Madrid be 19\u00b0C on May 16?"
+    },
+    "71584286445369808328121440824856359887078098234772277148240077289144206673072": {
+      "fills": 9,
+      "realized_pnl": 0.5870280348973438,
+      "cash_pnl": 3.693874405954544,
+      "question": "Will the highest temperature in Milan be 21\u00b0C on May 16?"
+    },
+    "67741230743095398641550929263897245281165089474947260647615935315674054298416": {
+      "fills": 4,
+      "realized_pnl": 0.39087280423777315,
+      "cash_pnl": 0.6177094604351219,
+      "question": "Will the highest temperature in Toronto be 20\u00b0C on May 16?"
+    },
+    "42080377961061576840543020602621606096231904100861723683712929702187180404371": {
+      "fills": 2,
+      "realized_pnl": 0.0,
+      "cash_pnl": -1.05,
+      "question": "Will Maryville University win NACL 2026 Spring?"
+    },
+    "18825135069636161058914407242861861920172168979926929994694881429361386682096": {
+      "fills": 32,
+      "realized_pnl": -1.8960493463361843,
+      "cash_pnl": 4.608947359149134,
+      "question": "Will the highest temperature in London be 17\u00b0C on May 17?"
+    },
+    "60090156029612797070598203797577739800956158908819265579353836096714530517508": {
+      "fills": 9,
+      "realized_pnl": 0.5055925824061944,
+      "cash_pnl": 0.5055925824062137,
+      "question": "Will the highest temperature in London be 15\u00b0C on May 17?"
+    },
+    "74030490321201363521660313691704925430807630776290155031459677611651924035338": {
+      "fills": 39,
+      "realized_pnl": 0.30538342098518,
+      "cash_pnl": 10.16431748407527,
+      "question": "Will the highest temperature in Paris be 16\u00b0C on May 17?"
+    },
+    "69977565828261233085682915666046478471574707418029570218451428590361307634155": {
+      "fills": 15,
+      "realized_pnl": 0.7458341712961385,
+      "cash_pnl": 0.745834171296089,
+      "question": "Will the highest temperature in Paris be 17\u00b0C on May 17?"
+    },
+    "49148209368608639059515887047990472248262966031219706184145991961201852102210": {
+      "fills": 5,
+      "realized_pnl": 0.05114646304568282,
+      "cash_pnl": 0.05114646304568615,
+      "question": "Will the highest temperature in London be 16\u00b0C on May 17?"
+    },
+    "22173911465124018590873386823292061066475311623968397993956668868018569358099": {
+      "fills": 36,
+      "realized_pnl": 2.795608471724819,
+      "cash_pnl": -1.1197760341868452,
+      "question": "Will the highest temperature in Paris be 15\u00b0C on May 17?"
+    },
+    "88229193097369939192011182663205869534396252939479806738196023267164919964356": {
+      "fills": 30,
+      "realized_pnl": 1.3605719003055015,
+      "cash_pnl": -2.406041307188845,
+      "question": "Will the highest temperature in Seoul be 26\u00b0C or higher on May 17?"
+    },
+    "44667268527724834197275342136849176970392914334953006572997599636416125033474": {
+      "fills": 23,
+      "realized_pnl": -0.1529240343082563,
+      "cash_pnl": -3.9316578261513873,
+      "question": "Will the highest temperature in Seoul be 24\u00b0C on May 17?"
+    },
+    "1703941515026060144823250250809613713958975120263834907155472430230815463291": {
+      "fills": 19,
+      "realized_pnl": -2.956270049180489,
+      "cash_pnl": 0.600575971812626,
+      "question": "Will the highest temperature in Seoul be 25\u00b0C on May 17?"
+    },
+    "68562739389095330808554441310598482327338666554078725533230842103001386914891": {
+      "fills": 9,
+      "realized_pnl": 0.22336779999997702,
+      "cash_pnl": 4.168127937090876,
+      "question": "Will the highest temperature in Seoul be 23\u00b0C on May 17?"
+    },
+    "4426110374157989772875893999317667125743598532648786733246178016355809790921": {
+      "fills": 12,
+      "realized_pnl": 1.2315281607438635,
+      "cash_pnl": 1.0432205591508776,
+      "question": "Will the highest temperature in Toronto be 27\u00b0C or higher on May 17?"
+    },
+    "35315074897287939296267825008824632582371511369974390766350333710539120262909": {
+      "fills": 4,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.8133064208329954,
+      "question": "Will the highest temperature in Toronto be 26\u00b0C on May 17?"
+    },
+    "106089897150301684153259082427110507581961629439215631375870564583948727406150": {
+      "fills": 31,
+      "realized_pnl": -6.8914738769952635,
+      "cash_pnl": -6.891473876995185,
+      "question": "Will the highest temperature in Hong Kong be 25\u00b0C on May 17?"
+    },
+    "17681810195423421963527805637615815364492908524715875295217615875799313427266": {
+      "fills": 35,
+      "realized_pnl": 1.8907805776725866,
+      "cash_pnl": -3.308172088991274,
+      "question": "Will the highest temperature in Hong Kong be 24\u00b0C on May 17?"
+    },
+    "17026127282442056184187326542071790905303504512859254410478054273827153707487": {
+      "fills": 9,
+      "realized_pnl": 0.6518791651611764,
+      "cash_pnl": 0.6518791651611752,
+      "question": "Will the highest temperature in Tel Aviv be 35\u00b0C or higher on May 17?"
+    },
+    "108062949736349777847650744116946699107625133124472276125638867872603700159774": {
+      "fills": 15,
+      "realized_pnl": 0.846613751581117,
+      "cash_pnl": 8.715570647543974,
+      "question": "Will the highest temperature in Singapore be 32\u00b0C on May 17?"
+    },
+    "103620159863985387684307650342689228841610079347788779640106054814598423451942": {
+      "fills": 15,
+      "realized_pnl": -0.15048843563153014,
+      "cash_pnl": -3.7539390338677348,
+      "question": "Will the highest temperature in Singapore be 31\u00b0C on May 17?"
+    },
+    "96491031660271930259973014218523034531012402846719332761078179038804272191239": {
+      "fills": 13,
+      "realized_pnl": -3.558679795820183,
+      "cash_pnl": -15.928387164442192,
+      "question": "Will the highest temperature in Chongqing be 23\u00b0C on May 17?"
+    },
+    "445057842530772310715113433541919918569647022955903370902327929313339426138": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": -0.8577387874794878,
+      "question": "Will the highest temperature in Tel Aviv be 32\u00b0C on May 17?"
+    },
+    "52615691876699434654192030395288927808513361616821466607159366073866380496068": {
+      "fills": 1,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.75,
+      "question": "Will Bilibili Gaming win LPL 2026 Split 2?"
+    },
+    "83120105043899121383625599594592092100517845632291911421441306932565608099677": {
+      "fills": 17,
+      "realized_pnl": 2.20013318336882,
+      "cash_pnl": 4.13350114064346,
+      "question": "Will the highest temperature in Miami be between 82-83\u00b0F on May 17?"
+    },
+    "112686593128857316439899419923570964123456235277590339195874048860519929185190": {
+      "fills": 5,
+      "realized_pnl": 0.05000000000001137,
+      "cash_pnl": 3.9833520507812503,
+      "question": "Will a team from LPL (China) win MSI 2026?"
+    },
+    "4380625186585217801547449366028560900149813611631698689199281184042561053657": {
+      "fills": 14,
+      "realized_pnl": -0.9141294210276101,
+      "cash_pnl": 3.033332943021663,
+      "question": "Will Barry Moore be the Republican nominee for Senate in Alabama?"
+    },
+    "1103567821195781235181933160193119827835481907603520364381679513363453558168": {
+      "fills": 8,
+      "realized_pnl": 0.1224250000000211,
+      "cash_pnl": 1.910973090118543,
+      "question": "Will Team Spirit win IEM Cologne Major 2026?"
+    },
+    "14020954698649130092763312274867011816097556365271173638361581853110497199476": {
+      "fills": 8,
+      "realized_pnl": -0.019811340000018163,
+      "cash_pnl": 6.988279610000001,
+      "question": "Will Jannik Sinner be the 2026 Men\u2019s Wimbledon winner?"
+    },
+    "75028752776148090296091099469912621384650554615761384992997579209329182670110": {
+      "fills": 7,
+      "realized_pnl": 0.040625000000005684,
+      "cash_pnl": 6.911178934574127,
+      "question": "Fed rate hike in 2026?"
+    },
+    "72304052873611261335260464672644781804557218671425470569977240802446584805659": {
+      "fills": 21,
+      "realized_pnl": -0.6948146915115103,
+      "cash_pnl": 5.628560000312047,
+      "question": "Will inflation reach more than 5% in 2026?"
+    },
+    "88603054819378546305547499774257067568154168540584244303424965367310627732749": {
+      "fills": 3,
+      "realized_pnl": 0.19609374999998863,
+      "cash_pnl": -0.9429687500000001,
+      "question": "Will Iga \u015awi\u0105tek win the 2026 Women\u2019s French Open?"
+    },
+    "89068273105800429752711368523415000722880695716954595430956645631003485786430": {
+      "fills": 4,
+      "realized_pnl": 0.09218749999999432,
+      "cash_pnl": -1.70572509765625,
+      "question": "Will Carlos Alcaraz be the 2026 Men\u2019s Wimbledon winner?"
+    },
+    "31651972441019808961685346078403610685710956924575973014923461950982284624160": {
+      "fills": 24,
+      "realized_pnl": 0.17341602823134394,
+      "cash_pnl": 10.416272374792328,
+      "question": "No one announced as next James Bond?"
+    },
+    "27738764414383846280696651239220630612119939662537889541509613485497991663717": {
+      "fills": 14,
+      "realized_pnl": 0.45775156152160434,
+      "cash_pnl": 9.96881656351388,
+      "question": "Will the price of Bitcoin be above $74,000 on May 23?"
+    },
+    "67741097871585024841390896945348731077497756553288766501056220940365894824978": {
+      "fills": 16,
+      "realized_pnl": 1.8121356701850573,
+      "cash_pnl": 11.250868182468695,
+      "question": "Will the price of Bitcoin be above $76,000 on May 23?"
+    },
+    "38275854098013999527928166905902357575939456071365010651895033189612302559593": {
+      "fills": 3,
+      "realized_pnl": 0.171875,
+      "cash_pnl": 2.8978125,
+      "question": "Will Jared Hudson be the Republican nominee for Senate in Alabama?"
+    },
+    "85093656514962873149075288593857062648267116941051987154013875929154691978000": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 5.04765625,
+      "question": "Will the price of Bitcoin be above $78,000 on May 23?"
+    },
+    "112657143162853663488996306468015790118831972988003353626122993321489654160431": {
+      "fills": 11,
+      "realized_pnl": -0.2522625000000005,
+      "cash_pnl": 11.217179492090569,
+      "question": "Will the price of Ethereum be above $2,000 on May 23?"
+    },
+    "2994355092890753835421952142336847942524552167232147341214694471416589146406": {
+      "fills": 10,
+      "realized_pnl": 0.07004415190218083,
+      "cash_pnl": 1.7646719900369654,
+      "question": "Will inflation reach more than 6% in 2026?"
+    }
+  }
+}

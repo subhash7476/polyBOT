@@ -1,0 +1,439 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Overview" [ref=e146] [cursor=pointer]:
+              - /url: "#overview"
+          - listitem [ref=e147]:
+            - link "Supported Platforms" [ref=e148] [cursor=pointer]:
+              - /url: "#supported-platforms"
+          - listitem [ref=e149]:
+            - link "Available Data" [ref=e150] [cursor=pointer]:
+              - /url: "#available-data"
+          - listitem [ref=e151]:
+            - link "Authentication" [ref=e152] [cursor=pointer]:
+              - /url: "#authentication"
+          - listitem [ref=e153]:
+            - link "Data Characteristics" [ref=e154] [cursor=pointer]:
+              - /url: "#data-characteristics"
+      - main [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - button "Copy page" [ref=e158] [cursor=pointer]:
+              - img "copy" [ref=e159]
+              - generic [ref=e161]: Copy
+            - button "More" [ref=e162] [cursor=pointer]:
+              - img "chevron-down" [ref=e163]
+          - navigation "Breadcrumb" [ref=e165]:
+            - list [ref=e166]:
+              - listitem [ref=e167]:
+                - link "🚀 Getting Started" [ref=e168] [cursor=pointer]:
+                  - /url: /falcon-api/getting-started
+                  - generic [ref=e169]: 🚀
+                  - text: Getting Started
+          - heading "🦅 Falcon API Overview" [level=1] [ref=e170]:
+            - generic [ref=e171]: 🦅
+            - text: Falcon API Overview
+          - paragraph [ref=e172]: Unified API for prediction market data across platforms, providing real-time market data, trade history, and analytics for Polymarket and Kalshi.
+        - generic [ref=e173]:
+          - heading "Direct link to heading Overview" [level=2] [ref=e174]:
+            - link "Direct link to heading" [ref=e176] [cursor=pointer]:
+              - /url: "#overview"
+              - img "hashtag" [ref=e177]
+            - generic [ref=e179]: Overview
+          - paragraph [ref=e184]: Falcon API is an intelligence layer for prediction markets, providing structured access to market data, trade activity, and trader analytics across multiple platforms.
+          - paragraph [ref=e185]: All datasets are exposed through a unified request format, allowing developers to query different market platforms using a consistent schema.
+          - paragraph [ref=e186]: "Falcon is designed for applications such as:"
+          - list [ref=e187]:
+            - listitem [ref=e188]:
+              - generic [ref=e190]: •
+              - paragraph [ref=e192]: trading bots
+            - listitem [ref=e193]:
+              - generic [ref=e195]: •
+              - paragraph [ref=e197]: analytics dashboards
+            - listitem [ref=e198]:
+              - generic [ref=e200]: •
+              - paragraph [ref=e202]: market research tools
+            - listitem [ref=e203]:
+              - generic [ref=e205]: •
+              - paragraph [ref=e207]: automated trading systems
+            - listitem [ref=e208]:
+              - generic [ref=e210]: •
+              - paragraph [ref=e212]: data pipelines and monitoring tools
+          - separator [ref=e213]
+          - heading "Direct link to heading Supported Platforms" [level=2] [ref=e214]:
+            - link "Direct link to heading" [ref=e216] [cursor=pointer]:
+              - /url: "#supported-platforms"
+              - img "hashtag" [ref=e217]
+            - generic [ref=e219]: Supported Platforms
+          - paragraph [ref=e220]: "Falcon currently aggregates prediction market data from:"
+          - paragraph [ref=e221]:
+            - strong [ref=e222]: Polymarket
+            - text: Market listings, trade activity, orderbook data, and wallet analytics.
+          - paragraph [ref=e223]:
+            - strong [ref=e224]: Kalshi
+            - text: Market listings and trade activity.
+          - paragraph [ref=e225]: Base API URL
+          - generic [ref=e227]:
+            - button "Copy" [ref=e228] [cursor=pointer]:
+              - generic [ref=e229]: Copy
+            - code [ref=e231]:
+              - generic [ref=e233]: https://narrative.agent.heisenberg.so/api/v2/semantic/retrieve/parameterized
+          - separator [ref=e234]
+          - heading "Direct link to heading Available Data" [level=2] [ref=e235]:
+            - link "Direct link to heading" [ref=e237] [cursor=pointer]:
+              - /url: "#available-data"
+              - img "hashtag" [ref=e238]
+            - generic [ref=e240]: Available Data
+          - paragraph [ref=e241]: Falcon provides structured datasets organized into the following categories.
+          - heading "Direct link to heading Market Data" [level=4] [ref=e242]:
+            - link "Direct link to heading" [ref=e244] [cursor=pointer]:
+              - /url: "#market-data"
+              - img "hashtag" [ref=e245]
+            - generic [ref=e247]: Market Data
+          - paragraph [ref=e248]: Access prediction market listings and liquidity data.
+          - paragraph [ref=e249]: "Includes:"
+          - list [ref=e250]:
+            - listitem [ref=e251]:
+              - generic [ref=e253]: •
+              - paragraph [ref=e255]:
+                - link "Markets" [ref=e256] [cursor=pointer]:
+                  - /url: /falcon-api/market-data/markets
+                - text: "-"
+                - link "Polymarket Markets" [ref=e257] [cursor=pointer]:
+                  - /url: /falcon-api/market-data/markets/polymarket-markets
+                - text: "-"
+                - link "Kalshi Markets" [ref=e258] [cursor=pointer]:
+                  - /url: /falcon-api/market-data/markets/kalshi-markets
+            - listitem [ref=e259]:
+              - generic [ref=e261]: •
+              - paragraph [ref=e263]:
+                - link "Candlesticks" [ref=e264] [cursor=pointer]:
+                  - /url: /falcon-api/market-data/candlesticks
+            - listitem [ref=e265]:
+              - generic [ref=e267]: •
+              - paragraph [ref=e269]:
+                - link "Orderbooks" [ref=e270] [cursor=pointer]:
+                  - /url: /falcon-api/market-data/orderbook
+          - heading "Direct link to heading Trade Data" [level=4] [ref=e271]:
+            - link "Direct link to heading" [ref=e273] [cursor=pointer]:
+              - /url: "#trade-data"
+              - img "hashtag" [ref=e274]
+            - generic [ref=e276]: Trade Data
+          - paragraph [ref=e277]: Retrieve historical trade executions across supported platforms.
+          - paragraph [ref=e278]: "Includes:"
+          - list [ref=e279]:
+            - listitem [ref=e280]:
+              - generic [ref=e282]: •
+              - paragraph [ref=e284]:
+                - link "Polymarket Trades" [ref=e285] [cursor=pointer]:
+                  - /url: /falcon-api/trade-data/trades/polymarket-trades
+            - listitem [ref=e286]:
+              - generic [ref=e288]: •
+              - paragraph [ref=e290]:
+                - link "Kalshi Trades" [ref=e291] [cursor=pointer]:
+                  - /url: /falcon-api/trade-data/trades/kalshi-trades
+          - heading "Direct link to heading Traders" [level=4] [ref=e292]:
+            - link "Direct link to heading" [ref=e294] [cursor=pointer]:
+              - /url: "#traders"
+              - img "hashtag" [ref=e295]
+            - generic [ref=e297]: Traders
+          - paragraph [ref=e298]: Analyze wallet performance and trading behavior.
+          - paragraph [ref=e299]: "Includes:"
+          - list [ref=e300]:
+            - listitem [ref=e301]:
+              - generic [ref=e303]: •
+              - paragraph [ref=e305]:
+                - link "Lifetime Performance" [ref=e306] [cursor=pointer]:
+                  - /url: /falcon-api/traders/lifetime-performance
+            - listitem [ref=e307]:
+              - generic [ref=e309]: •
+              - paragraph [ref=e311]:
+                - link "Profit and Loss" [ref=e312] [cursor=pointer]:
+                  - /url: /falcon-api/traders/profit-and-loss
+            - listitem [ref=e313]:
+              - generic [ref=e315]: •
+              - paragraph [ref=e317]:
+                - link "Top Traders" [ref=e318] [cursor=pointer]:
+                  - /url: /falcon-api/traders/top-traders
+          - heading "Direct link to heading Market Intelligence" [level=4] [ref=e319]:
+            - link "Direct link to heading" [ref=e321] [cursor=pointer]:
+              - /url: "#market-intelligence"
+              - img "hashtag" [ref=e322]
+            - generic [ref=e324]: Market Intelligence
+          - paragraph [ref=e325]: Derived insights and analytics built on top of market activity.
+          - paragraph [ref=e326]: "Includes:"
+          - list [ref=e327]:
+            - listitem [ref=e328]:
+              - generic [ref=e330]: •
+              - paragraph [ref=e332]:
+                - link "Market Insights" [ref=e333] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence/market-insights
+            - listitem [ref=e334]:
+              - generic [ref=e336]: •
+              - paragraph [ref=e338]:
+                - link "Social Pulse" [ref=e339] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence/social-pulse
+            - listitem [ref=e340]:
+              - generic [ref=e342]: •
+              - paragraph [ref=e344]:
+                - link "Falcon Leaderboard API" [ref=e345] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+            - listitem [ref=e346]:
+              - generic [ref=e348]: •
+              - paragraph [ref=e350]:
+                - link "Falcon Wallet Analytics" [ref=e351] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence/falcon-wallet-360
+          - heading "Direct link to heading Reference" [level=4] [ref=e352]:
+            - link "Direct link to heading" [ref=e354] [cursor=pointer]:
+              - /url: "#reference"
+              - img "hashtag" [ref=e355]
+            - generic [ref=e357]: Reference
+          - paragraph [ref=e358]: Technical documentation for integrating with the Falcon API.
+          - paragraph [ref=e359]: "Includes:"
+          - list [ref=e360]:
+            - listitem [ref=e361]:
+              - generic [ref=e363]: •
+              - paragraph [ref=e365]:
+                - link "API request and response structure" [ref=e366] [cursor=pointer]:
+                  - /url: /falcon-api/reference/api-structure
+            - listitem [ref=e367]:
+              - generic [ref=e369]: •
+              - paragraph [ref=e371]:
+                - link "Pagination and filtering concepts" [ref=e372] [cursor=pointer]:
+                  - /url: /falcon-api/reference/core-concepts
+            - listitem [ref=e373]:
+              - generic [ref=e375]: •
+              - paragraph [ref=e377]:
+                - link "Performance and best practices" [ref=e378] [cursor=pointer]:
+                  - /url: /falcon-api/reference/best-practices
+          - separator [ref=e379]
+          - heading "Direct link to heading Authentication" [level=2] [ref=e380]:
+            - link "Direct link to heading" [ref=e382] [cursor=pointer]:
+              - /url: "#authentication"
+              - img "hashtag" [ref=e383]
+            - generic [ref=e385]: Authentication
+          - paragraph [ref=e386]:
+            - text: All Falcon API requests require a
+            - strong [ref=e387]: Bearer token
+            - text: .
+          - paragraph [ref=e388]: "Example:"
+          - generic [ref=e390]:
+            - button "Copy" [ref=e391] [cursor=pointer]:
+              - generic [ref=e392]: Copy
+            - code [ref=e394]:
+              - generic [ref=e396]: "Authorization: Bearer YOUR_API_TOKEN"
+          - paragraph [ref=e397]:
+            - text: See the
+            - link "Authentication page" [ref=e398] [cursor=pointer]:
+              - /url: /falcon-api/getting-started/authentication
+              - strong [ref=e399]: Authentication
+              - text: page
+            - text: for full details.
+          - separator [ref=e400]
+          - heading "Direct link to heading Data Characteristics" [level=2] [ref=e401]:
+            - link "Direct link to heading" [ref=e403] [cursor=pointer]:
+              - /url: "#data-characteristics"
+              - img "hashtag" [ref=e404]
+            - generic [ref=e406]: Data Characteristics
+          - paragraph [ref=e407]: Falcon is designed for high-frequency and production use cases.
+          - list [ref=e408]:
+            - listitem [ref=e409]:
+              - generic [ref=e411]: •
+              - paragraph [ref=e413]:
+                - strong [ref=e414]: Low latency
+                - text: – near real-time market updates
+            - listitem [ref=e415]:
+              - generic [ref=e417]: •
+              - paragraph [ref=e419]:
+                - strong [ref=e420]: Full coverage
+                - text: – historical and live datasets
+            - listitem [ref=e421]:
+              - generic [ref=e423]: •
+              - paragraph [ref=e425]:
+                - strong [ref=e426]: Unified schema
+                - text: – consistent structure across platforms
+        - link "Next Quickstart chevron-right" [ref=e428] [cursor=pointer]:
+          - /url: /falcon-api/getting-started/quickstart
+          - generic [ref=e429]:
+            - generic [ref=e430]: Next
+            - generic [ref=e431]: Quickstart
+          - img "chevron-right" [ref=e432]
+        - paragraph [ref=e435]:
+          - text: Last updated
+          - time [ref=e436]: 4 days ago
+  - alert [ref=e437]

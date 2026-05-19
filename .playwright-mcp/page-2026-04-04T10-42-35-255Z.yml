@@ -1,0 +1,671 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e5]:
+      - link "Falcon Docs" [ref=e7] [cursor=pointer]:
+        - /url: /falcon-api
+        - generic [ref=e8]: Falcon Docs
+      - generic [ref=e12]:
+        - img "search" [ref=e14]
+        - textbox "Search" [ref=e16]:
+          - /placeholder: Search…
+        - generic [ref=e18]:
+          - generic [ref=e20]: Ctrl
+          - generic [ref=e21]: k
+  - generic [ref=e23]:
+    - complementary [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - list [ref=e28]:
+            - listitem [ref=e29]:
+              - generic [ref=e30]:
+                - generic [ref=e31]: 🚀
+                - text: Getting Started
+              - list [ref=e32]:
+                - listitem [ref=e33]:
+                  - link "🦅 Falcon API Overview" [ref=e34] [cursor=pointer]:
+                    - /url: /falcon-api
+                    - generic [ref=e35]: 🦅
+                    - text: Falcon API Overview
+                - listitem [ref=e36]:
+                  - link "⚡ Quickstart" [ref=e37] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/quickstart
+                    - generic [ref=e38]: ⚡
+                    - text: Quickstart
+                - listitem [ref=e39]:
+                  - link "🔑 Authentication" [ref=e40] [cursor=pointer]:
+                    - /url: /falcon-api/getting-started/authentication
+                    - generic [ref=e41]: 🔑
+                    - text: Authentication
+            - listitem [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: 📊
+                - text: Market Data
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "📊 Markets chevron-right" [ref=e47] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/markets
+                    - generic [ref=e48]: 📊
+                    - text: Markets
+                    - button "chevron-right" [ref=e49]:
+                      - img "chevron-right" [ref=e50]
+                - listitem [ref=e52]:
+                  - link "🕯️ Candlesticks" [ref=e53] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/candlesticks
+                    - generic [ref=e54]: 🕯️
+                    - text: Candlesticks
+                - listitem [ref=e55]:
+                  - link "📚 Orderbook" [ref=e56] [cursor=pointer]:
+                    - /url: /falcon-api/market-data/orderbook
+                    - generic [ref=e57]: 📚
+                    - text: Orderbook
+            - listitem [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: 🔃
+                - text: Trade Data
+              - list [ref=e61]:
+                - listitem [ref=e62]:
+                  - link "💱 Trades chevron-right" [ref=e63] [cursor=pointer]:
+                    - /url: /falcon-api/trade-data/trades
+                    - generic [ref=e64]: 💱
+                    - text: Trades
+                    - button "chevron-right" [ref=e65]:
+                      - img "chevron-right" [ref=e66]
+            - listitem [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: 🧠
+                - text: Traders
+              - list [ref=e71]:
+                - listitem [ref=e72]:
+                  - link "🏆 Lifetime Performance" [ref=e73] [cursor=pointer]:
+                    - /url: /falcon-api/traders/lifetime-performance
+                    - generic [ref=e74]: 🏆
+                    - text: Lifetime Performance
+                - listitem [ref=e75]:
+                  - link "💰 Profit & Loss" [ref=e76] [cursor=pointer]:
+                    - /url: /falcon-api/traders/profit-and-loss
+                    - generic [ref=e77]: 💰
+                    - text: Profit & Loss
+                - listitem [ref=e78]:
+                  - link "🥇 Top Traders" [ref=e79] [cursor=pointer]:
+                    - /url: /falcon-api/traders/top-traders
+                    - generic [ref=e80]: 🥇
+                    - text: Top Traders
+            - listitem [ref=e81]:
+              - generic [ref=e82]:
+                - generic [ref=e83]: 📈
+                - text: Market Intelligence
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - link "🔎 Market Insights" [ref=e86] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/market-insights
+                    - generic [ref=e87]: 🔎
+                    - text: Market Insights
+                - listitem [ref=e88]:
+                  - link "📣 Social Pulse" [ref=e89] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/social-pulse
+                    - generic [ref=e90]: 📣
+                    - text: Social Pulse
+                - listitem [ref=e91]:
+                  - link "🎖️ Falcon Leaderboard API" [ref=e92] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-leaderboard-api
+                    - generic [ref=e93]: 🎖️
+                    - text: Falcon Leaderboard API
+                - listitem [ref=e94]:
+                  - link "👛 Falcon Wallet 360" [ref=e95] [cursor=pointer]:
+                    - /url: /falcon-api/market-intelligence/falcon-wallet-360
+                    - generic [ref=e96]: 👛
+                    - text: Falcon Wallet 360
+            - listitem [ref=e97]:
+              - generic [ref=e98]:
+                - generic [ref=e99]: 📦
+                - text: Reference
+              - list [ref=e100]:
+                - listitem [ref=e101]:
+                  - link "🧩 API Structure" [ref=e102] [cursor=pointer]:
+                    - /url: /falcon-api/reference/api-structure
+                    - generic [ref=e103]: 🧩
+                    - text: API Structure
+                - listitem [ref=e104]:
+                  - link "🧠 Core Concepts" [ref=e105] [cursor=pointer]:
+                    - /url: /falcon-api/reference/core-concepts
+                    - generic [ref=e106]: 🧠
+                    - text: Core Concepts
+                - listitem [ref=e107]:
+                  - link "✅ Best Practices" [ref=e108] [cursor=pointer]:
+                    - /url: /falcon-api/reference/best-practices
+                    - generic [ref=e109]: ✅
+                    - text: Best Practices
+            - listitem [ref=e110]:
+              - generic [ref=e111]:
+                - generic [ref=e112]: 🫂
+                - text: Community
+              - list [ref=e113]:
+                - listitem [ref=e114]:
+                  - link "🌐 API Dashboard arrow-up-right" [ref=e115] [cursor=pointer]:
+                    - /url: https://api.polymarketanalytics.com/
+                    - generic [ref=e116]: 🌐
+                    - text: API Dashboard
+                    - img "arrow-up-right" [ref=e117]
+                - listitem [ref=e119]:
+                  - link "💬 Discord arrow-up-right" [ref=e120] [cursor=pointer]:
+                    - /url: https://discord.com/invite/Y9n9nKzAFD
+                    - generic [ref=e121]: 💬
+                    - text: Discord
+                    - img "arrow-up-right" [ref=e122]
+                - listitem [ref=e124]:
+                  - link "📢 Telegram arrow-up-right" [ref=e125] [cursor=pointer]:
+                    - /url: https://t.me/+ZyfPcMpKVGcxOTA5
+                    - generic [ref=e126]: 📢
+                    - text: Telegram
+                    - img "arrow-up-right" [ref=e127]
+                - listitem [ref=e129]:
+                  - link "📰 X arrow-up-right" [ref=e130] [cursor=pointer]:
+                    - /url: https://x.com/FalconAPI
+                    - generic [ref=e131]: 📰
+                    - text: X
+                    - img "arrow-up-right" [ref=e132]
+          - button "Scroll back":
+            - img "chevron-up"
+          - button "Scroll further":
+            - img "chevron-down"
+        - link "Powered by GitBook" [ref=e134] [cursor=pointer]:
+          - /url: https://www.gitbook.com/?utm_source=content&utm_medium=trademark&utm_campaign=zqEy1TjKVjPy2foGlSpx&utm_content=site_qTpkO
+          - img "gitbook" [ref=e135]
+          - generic [ref=e137]: Powered by GitBook
+    - generic [ref=e139]:
+      - complementary [ref=e140]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - link "Request Body (JSON)" [ref=e146] [cursor=pointer]:
+              - /url: "#request-body-json"
+          - listitem [ref=e147]:
+            - link "Available Filters" [ref=e148] [cursor=pointer]:
+              - /url: "#available-filters"
+          - listitem [ref=e149]:
+            - link "Response Fields" [ref=e150] [cursor=pointer]:
+              - /url: "#response-fields"
+          - listitem [ref=e151]:
+            - link "Example Use Cases" [ref=e152] [cursor=pointer]:
+              - /url: "#example-use-cases"
+          - listitem [ref=e153]:
+            - link "Notes" [ref=e154] [cursor=pointer]:
+              - /url: "#notes"
+      - main [ref=e155]:
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - button "Copy page" [ref=e158] [cursor=pointer]:
+              - img "copy" [ref=e159]
+              - generic [ref=e161]: Copy
+            - button "More" [ref=e162] [cursor=pointer]:
+              - img "chevron-down" [ref=e163]
+          - navigation "Breadcrumb" [ref=e165]:
+            - list [ref=e166]:
+              - listitem [ref=e167]:
+                - link "📈 Market Intelligence" [ref=e168] [cursor=pointer]:
+                  - /url: /falcon-api/market-intelligence
+                  - generic [ref=e169]: 📈
+                  - text: Market Intelligence
+          - heading "🔎 Market Insights" [level=1] [ref=e170]:
+            - generic [ref=e171]: 🔎
+            - text: Market Insights
+          - paragraph [ref=e172]: Analyze Polymarket market quality using liquidity, volume, and participation metrics.
+        - generic [ref=e173]:
+          - heading "Direct link to heading Request Body (JSON)" [level=3] [ref=e174]:
+            - link "Direct link to heading" [ref=e176] [cursor=pointer]:
+              - /url: "#request-body-json"
+              - img "hashtag" [ref=e177]
+            - generic [ref=e179]: Request Body (JSON)
+          - generic [ref=e181]:
+            - button "Copy" [ref=e182] [cursor=pointer]:
+              - generic [ref=e183]: Copy
+            - code [ref=e185]:
+              - generic [ref=e187]: "{"
+              - generic [ref=e189]: "\"agent_id\": 575,"
+              - generic [ref=e191]: "\"params\": {"
+              - generic [ref=e193]: "\"condition_id\": \"ALL\","
+              - generic [ref=e195]: "\"min_volume_24h\" : \"0\","
+              - generic [ref=e197]: "\"min_liquidity_percentile\" : \"0\","
+              - generic [ref=e199]: "\"volume_trend\" : \"ALL\","
+              - generic [ref=e201]: "\"min_top1_wallet_pct\" : \"0\","
+              - generic [ref=e203]: "\"max_unique_traders_7d\" : \"0\""
+              - generic [ref=e205]: "},"
+              - generic [ref=e207]: "\"formatter_config\": {"
+              - generic [ref=e209]: "\"format_type\": \"raw\""
+              - generic [ref=e211]: "}"
+              - generic [ref=e213]: "}"
+          - separator [ref=e214]
+          - heading "Direct link to heading Available Filters" [level=3] [ref=e215]:
+            - link "Direct link to heading" [ref=e217] [cursor=pointer]:
+              - /url: "#available-filters"
+              - img "hashtag" [ref=e218]
+            - generic [ref=e220]: Available Filters
+          - generic [ref=e223]:
+            - rowgroup [ref=e224]:
+              - row "Parameter Type Description Example" [ref=e225]:
+                - columnheader "Parameter" [ref=e226]
+                - columnheader "Type" [ref=e227]
+                - columnheader "Description" [ref=e228]
+                - columnheader "Example" [ref=e229]
+            - table [ref=e230]:
+              - rowgroup [ref=e231]:
+                - row "condition_id String Polymarket condition ID for a specific market. If omitted, insights are returned for all markets. \"0xb0fb3465776819e046065164c6fc558e9d3d7da36cd7a2ef7c7688791784e97d\"" [ref=e232]:
+                  - cell "condition_id" [ref=e233]:
+                    - paragraph [ref=e235]:
+                      - code [ref=e236]: condition_id
+                  - cell "String" [ref=e237]:
+                    - paragraph [ref=e239]: String
+                  - cell "Polymarket condition ID for a specific market. If omitted, insights are returned for all markets." [ref=e240]:
+                    - paragraph [ref=e242]: Polymarket condition ID for a specific market. If omitted, insights are returned for all markets.
+                  - cell "\"0xb0fb3465776819e046065164c6fc558e9d3d7da36cd7a2ef7c7688791784e97d\"" [ref=e243]:
+                    - paragraph [ref=e245]:
+                      - code [ref=e246]: "\"0xb0fb3465776819e046065164c6fc558e9d3d7da36cd7a2ef7c7688791784e97d\""
+                - row "min_volume_24h String Minimum trading volume in the last 24 hours. \"50000\"" [ref=e247]:
+                  - cell "min_volume_24h" [ref=e248]:
+                    - paragraph [ref=e250]:
+                      - code [ref=e251]: min_volume_24h
+                  - cell "String" [ref=e252]:
+                    - paragraph [ref=e254]: String
+                  - cell "Minimum trading volume in the last 24 hours." [ref=e255]:
+                    - paragraph [ref=e257]: Minimum trading volume in the last 24 hours.
+                  - cell "\"50000\"" [ref=e258]:
+                    - paragraph [ref=e260]:
+                      - code [ref=e261]: "\"50000\""
+                - row "min_liquidity_percentile String Minimum liquidity percentile relative to all active markets (0–100). \"70\"" [ref=e262]:
+                  - cell "min_liquidity_percentile" [ref=e263]:
+                    - paragraph [ref=e265]:
+                      - code [ref=e266]: min_liquidity_percentile
+                  - cell "String" [ref=e267]:
+                    - paragraph [ref=e269]: String
+                  - cell "Minimum liquidity percentile relative to all active markets (0–100)." [ref=e270]:
+                    - paragraph [ref=e272]: Minimum liquidity percentile relative to all active markets (0–100).
+                  - cell "\"70\"" [ref=e273]:
+                    - paragraph [ref=e275]:
+                      - code [ref=e276]: "\"70\""
+                - 'row "volume_trend String Filter by activity trend. Options: Spiking, Normal, Declining, Dying Interest, No Trades, ALL. \"Spiking\"" [ref=e277]':
+                  - cell "volume_trend" [ref=e278]:
+                    - paragraph [ref=e280]:
+                      - code [ref=e281]: volume_trend
+                  - cell "String" [ref=e282]:
+                    - paragraph [ref=e284]: String
+                  - 'cell "Filter by activity trend. Options: Spiking, Normal, Declining, Dying Interest, No Trades, ALL." [ref=e285]':
+                    - paragraph [ref=e287]:
+                      - text: "Filter by activity trend. Options:"
+                      - code [ref=e288]: Spiking
+                      - text: ","
+                      - code [ref=e289]: Normal
+                      - text: ","
+                      - code [ref=e290]: Declining
+                      - text: ","
+                      - code [ref=e291]: Dying Interest
+                      - text: ","
+                      - code [ref=e292]: No Trades
+                      - text: ","
+                      - code [ref=e293]: ALL
+                      - text: .
+                  - cell "\"Spiking\"" [ref=e294]:
+                    - paragraph [ref=e296]:
+                      - code [ref=e297]: "\"Spiking\""
+                - row "min_top1_wallet_pct String Minimum percentage of exposure controlled by the largest wallet. \"60\"" [ref=e298]:
+                  - cell "min_top1_wallet_pct" [ref=e299]:
+                    - paragraph [ref=e301]:
+                      - code [ref=e302]: min_top1_wallet_pct
+                  - cell "String" [ref=e303]:
+                    - paragraph [ref=e305]: String
+                  - cell "Minimum percentage of exposure controlled by the largest wallet." [ref=e306]:
+                    - paragraph [ref=e308]: Minimum percentage of exposure controlled by the largest wallet.
+                  - cell "\"60\"" [ref=e309]:
+                    - paragraph [ref=e311]:
+                      - code [ref=e312]: "\"60\""
+                - row "max_unique_traders_7d String Maximum number of unique traders over the last 7 days. \"10\"" [ref=e313]:
+                  - cell "max_unique_traders_7d" [ref=e314]:
+                    - paragraph [ref=e316]:
+                      - code [ref=e317]: max_unique_traders_7d
+                  - cell "String" [ref=e318]:
+                    - paragraph [ref=e320]: String
+                  - cell "Maximum number of unique traders over the last 7 days." [ref=e321]:
+                    - paragraph [ref=e323]: Maximum number of unique traders over the last 7 days.
+                  - cell "\"10\"" [ref=e324]:
+                    - paragraph [ref=e326]:
+                      - code [ref=e327]: "\"10\""
+          - group [ref=e328]:
+            - generic "chevron-right Example Request (cURL) Direct link to heading" [ref=e329] [cursor=pointer]:
+              - img "chevron-right" [ref=e330]
+              - text: Example Request
+              - strong [ref=e332]: (cURL)
+              - link "Direct link to heading" [ref=e333]:
+                - /url: "#example-request-curl"
+                - img "hashtag" [ref=e334]
+          - separator [ref=e336]
+          - heading "Direct link to heading Response Fields" [level=3] [ref=e337]:
+            - link "Direct link to heading" [ref=e339] [cursor=pointer]:
+              - /url: "#response-fields"
+              - img "hashtag" [ref=e340]
+            - generic [ref=e342]: Response Fields
+          - generic [ref=e345]:
+            - rowgroup [ref=e346]:
+              - row "Field Type Description" [ref=e347]:
+                - columnheader "Field" [ref=e348]
+                - columnheader "Type" [ref=e349]
+                - columnheader "Description" [ref=e350]
+            - table [ref=e351]:
+              - rowgroup [ref=e352]:
+                - row "snapshot_time String (ISO 8601) Timestamp when the market snapshot was generated" [ref=e353]:
+                  - cell "snapshot_time" [ref=e354]:
+                    - paragraph [ref=e356]:
+                      - code [ref=e357]: snapshot_time
+                  - cell "String (ISO 8601)" [ref=e358]:
+                    - paragraph [ref=e360]: String (ISO 8601)
+                  - cell "Timestamp when the market snapshot was generated" [ref=e361]:
+                    - paragraph [ref=e363]: Timestamp when the market snapshot was generated
+                - row "condition_id String Unique Polymarket market identifier" [ref=e364]:
+                  - cell "condition_id" [ref=e365]:
+                    - paragraph [ref=e367]:
+                      - code [ref=e368]: condition_id
+                  - cell "String" [ref=e369]:
+                    - paragraph [ref=e371]: String
+                  - cell "Unique Polymarket market identifier" [ref=e372]:
+                    - paragraph [ref=e374]: Unique Polymarket market identifier
+                - row "slug String Market slug" [ref=e375]:
+                  - cell "slug" [ref=e376]:
+                    - paragraph [ref=e378]:
+                      - code [ref=e379]: slug
+                  - cell "String" [ref=e380]:
+                    - paragraph [ref=e382]: String
+                  - cell "Market slug" [ref=e383]:
+                    - paragraph [ref=e385]: Market slug
+                - row "question String Market question" [ref=e386]:
+                  - cell "question" [ref=e387]:
+                    - paragraph [ref=e389]:
+                      - code [ref=e390]: question
+                  - cell "String" [ref=e391]:
+                    - paragraph [ref=e393]: String
+                  - cell "Market question" [ref=e394]:
+                    - paragraph [ref=e396]: Market question
+                - row "end_date String (ISO 8601) Market resolution date" [ref=e397]:
+                  - cell "end_date" [ref=e398]:
+                    - paragraph [ref=e400]:
+                      - code [ref=e401]: end_date
+                  - cell "String (ISO 8601)" [ref=e402]:
+                    - paragraph [ref=e404]: String (ISO 8601)
+                  - cell "Market resolution date" [ref=e405]:
+                    - paragraph [ref=e407]: Market resolution date
+                - row "market_active Boolean Indicates whether the market is currently active" [ref=e408]:
+                  - cell "market_active" [ref=e409]:
+                    - paragraph [ref=e411]:
+                      - code [ref=e412]: market_active
+                  - cell "Boolean" [ref=e413]:
+                    - paragraph [ref=e415]: Boolean
+                  - cell "Indicates whether the market is currently active" [ref=e416]:
+                    - paragraph [ref=e418]: Indicates whether the market is currently active
+                - row "market_closed Boolean Indicates whether the market has closed" [ref=e419]:
+                  - cell "market_closed" [ref=e420]:
+                    - paragraph [ref=e422]:
+                      - code [ref=e423]: market_closed
+                  - cell "Boolean" [ref=e424]:
+                    - paragraph [ref=e426]: Boolean
+                  - cell "Indicates whether the market has closed" [ref=e427]:
+                    - paragraph [ref=e429]: Indicates whether the market has closed
+                - row "current_volume_24h Decimal Volume traded in the last 24 hours" [ref=e430]:
+                  - cell "current_volume_24h" [ref=e431]:
+                    - paragraph [ref=e433]:
+                      - code [ref=e434]: current_volume_24h
+                  - cell "Decimal" [ref=e435]:
+                    - paragraph [ref=e437]: Decimal
+                  - cell "Volume traded in the last 24 hours" [ref=e438]:
+                    - paragraph [ref=e440]: Volume traded in the last 24 hours
+                - row "current_volume_7d Decimal Volume traded in the last 7 days" [ref=e441]:
+                  - cell "current_volume_7d" [ref=e442]:
+                    - paragraph [ref=e444]:
+                      - code [ref=e445]: current_volume_7d
+                  - cell "Decimal" [ref=e446]:
+                    - paragraph [ref=e448]: Decimal
+                  - cell "Volume traded in the last 7 days" [ref=e449]:
+                    - paragraph [ref=e451]: Volume traded in the last 7 days
+                - row "liquidity_percentile Decimal Relative liquidity ranking across markets" [ref=e452]:
+                  - cell "liquidity_percentile" [ref=e453]:
+                    - paragraph [ref=e455]:
+                      - code [ref=e456]: liquidity_percentile
+                  - cell "Decimal" [ref=e457]:
+                    - paragraph [ref=e459]: Decimal
+                  - cell "Relative liquidity ranking across markets" [ref=e460]:
+                    - paragraph [ref=e462]: Relative liquidity ranking across markets
+                - row "liquidity_tier String Liquidity classification (Low, Medium, High)" [ref=e463]:
+                  - cell "liquidity_tier" [ref=e464]:
+                    - paragraph [ref=e466]:
+                      - code [ref=e467]: liquidity_tier
+                  - cell "String" [ref=e468]:
+                    - paragraph [ref=e470]: String
+                  - cell "Liquidity classification (Low, Medium, High)" [ref=e471]:
+                    - paragraph [ref=e473]:
+                      - text: Liquidity classification (
+                      - code [ref=e474]: Low
+                      - text: ","
+                      - code [ref=e475]: Medium
+                      - text: ","
+                      - code [ref=e476]: High
+                      - text: )
+                - row "volume_trend String Activity trend classification" [ref=e477]:
+                  - cell "volume_trend" [ref=e478]:
+                    - paragraph [ref=e480]:
+                      - code [ref=e481]: volume_trend
+                  - cell "String" [ref=e482]:
+                    - paragraph [ref=e484]: String
+                  - cell "Activity trend classification" [ref=e485]:
+                    - paragraph [ref=e487]: Activity trend classification
+                - row "top1_wallet_pct Decimal Percentage of exposure controlled by the largest wallet" [ref=e488]:
+                  - cell "top1_wallet_pct" [ref=e489]:
+                    - paragraph [ref=e491]:
+                      - code [ref=e492]: top1_wallet_pct
+                  - cell "Decimal" [ref=e493]:
+                    - paragraph [ref=e495]: Decimal
+                  - cell "Percentage of exposure controlled by the largest wallet" [ref=e496]:
+                    - paragraph [ref=e498]: Percentage of exposure controlled by the largest wallet
+                - row "top3_wallet_pct Decimal % exposure controlled by top wallet" [ref=e499]:
+                  - cell "top3_wallet_pct" [ref=e500]:
+                    - paragraph [ref=e502]:
+                      - code [ref=e503]: top3_wallet_pct
+                  - cell "Decimal" [ref=e504]:
+                    - paragraph [ref=e506]: Decimal
+                  - cell "% exposure controlled by top wallet" [ref=e507]:
+                    - paragraph [ref=e509]: "% exposure controlled by top wallet"
+                - row "what_control_flag Boolean TRUE if whale dominance detected" [ref=e510]:
+                  - cell "what_control_flag" [ref=e511]:
+                    - paragraph [ref=e513]:
+                      - code [ref=e514]: what_control_flag
+                  - cell "Boolean" [ref=e515]:
+                    - paragraph [ref=e517]: Boolean
+                  - cell "TRUE if whale dominance detected" [ref=e518]:
+                    - paragraph [ref=e520]: TRUE if whale dominance detected
+                - row "unique_traders_7d Integer Distinct traders over last 7 days" [ref=e521]:
+                  - cell "unique_traders_7d" [ref=e522]:
+                    - paragraph [ref=e524]:
+                      - code [ref=e525]: unique_traders_7d
+                  - cell "Integer" [ref=e526]:
+                    - paragraph [ref=e528]: Integer
+                  - cell "Distinct traders over last 7 days" [ref=e529]:
+                    - paragraph [ref=e531]: Distinct traders over last 7 days
+                - row "trades_per_hour_avg Decimal Average hourly trade count" [ref=e532]:
+                  - cell "trades_per_hour_avg" [ref=e533]:
+                    - paragraph [ref=e535]:
+                      - code [ref=e536]: trades_per_hour_avg
+                  - cell "Decimal" [ref=e537]:
+                    - paragraph [ref=e539]: Decimal
+                  - cell "Average hourly trade count" [ref=e540]:
+                    - paragraph [ref=e542]: Average hourly trade count
+                - row "peak_hour_trades Integer Maximum trades in a single hour" [ref=e543]:
+                  - cell "peak_hour_trades" [ref=e544]:
+                    - paragraph [ref=e546]:
+                      - code [ref=e547]: peak_hour_trades
+                  - cell "Integer" [ref=e548]:
+                    - paragraph [ref=e550]: Integer
+                  - cell "Maximum trades in a single hour" [ref=e551]:
+                    - paragraph [ref=e553]: Maximum trades in a single hour
+                - row "trade_concentration_flag Bolean TRUE if trading is highly concentrated" [ref=e554]:
+                  - cell "trade_concentration_flag" [ref=e555]:
+                    - paragraph [ref=e557]:
+                      - code [ref=e558]: trade_concentration_flag
+                  - cell "Bolean" [ref=e559]:
+                    - paragraph [ref=e561]: Bolean
+                  - cell "TRUE if trading is highly concentrated" [ref=e562]:
+                    - paragraph [ref=e564]: TRUE if trading is highly concentrated
+                - row "create_at String (ISO 8601) Record creation timestamp" [ref=e565]:
+                  - cell "create_at" [ref=e566]:
+                    - paragraph [ref=e568]:
+                      - code [ref=e569]: create_at
+                  - cell "String (ISO 8601)" [ref=e570]:
+                    - paragraph [ref=e572]: String (ISO 8601)
+                  - cell "Record creation timestamp" [ref=e573]:
+                    - paragraph [ref=e575]: Record creation timestamp
+                - row "updated_at String (ISO 8601) Last update timestamp" [ref=e576]:
+                  - cell "updated_at" [ref=e577]:
+                    - paragraph [ref=e579]:
+                      - code [ref=e580]: updated_at
+                  - cell "String (ISO 8601)" [ref=e581]:
+                    - paragraph [ref=e583]: String (ISO 8601)
+                  - cell "Last update timestamp" [ref=e584]:
+                    - paragraph [ref=e586]: Last update timestamp
+          - group [ref=e587]:
+            - generic "chevron-right Example Response Direct link to heading" [ref=e588] [cursor=pointer]:
+              - img "chevron-right" [ref=e589]
+              - text: Example Response
+              - link "Direct link to heading" [ref=e591]:
+                - /url: "#example-response"
+                - img "hashtag" [ref=e592]
+          - separator [ref=e594]
+          - heading "Direct link to heading Example Use Cases" [level=3] [ref=e595]:
+            - link "Direct link to heading" [ref=e597] [cursor=pointer]:
+              - /url: "#example-use-cases"
+              - img "hashtag" [ref=e598]
+            - generic [ref=e600]: Example Use Cases
+          - heading "Direct link to heading 1. Whale-Dominated Markets" [level=4] [ref=e601]:
+            - link "Direct link to heading" [ref=e603] [cursor=pointer]:
+              - /url: "#id-1.-whale-dominated-markets"
+              - img "hashtag" [ref=e604]
+            - generic [ref=e606]: 1. Whale-Dominated Markets
+          - paragraph [ref=e607]: Identify markets where a large wallet controls significant exposure and trading activity is increasing.
+          - generic [ref=e609]:
+            - button "Copy" [ref=e610] [cursor=pointer]:
+              - generic [ref=e611]: Copy
+            - code [ref=e613]:
+              - generic [ref=e615]: min_volume_24h=50000
+              - generic [ref=e617]: min_liquidity_percentile=70
+              - generic [ref=e619]: volume_trend=Spiking
+              - generic [ref=e621]: min_top1_wallet_pct=60
+              - generic [ref=e623]: max_unique_traders_7d=20
+          - heading "Direct link to heading 2. Healthy Crowd-Driven Markets" [level=4] [ref=e624]:
+            - link "Direct link to heading" [ref=e626] [cursor=pointer]:
+              - /url: "#id-2.-healthy-crowd-driven-markets"
+              - img "hashtag" [ref=e627]
+            - generic [ref=e629]: 2. Healthy Crowd-Driven Markets
+          - paragraph [ref=e630]: Find markets with strong participation and deep liquidity.
+          - generic [ref=e632]:
+            - button "Copy" [ref=e633] [cursor=pointer]:
+              - generic [ref=e634]: Copy
+            - code [ref=e636]:
+              - generic [ref=e638]: min_volume_24h=100000
+              - generic [ref=e640]: min_liquidity_percentile=80
+              - generic [ref=e642]: volume_trend=Normal
+              - generic [ref=e644]: min_top1_wallet_pct=0
+              - generic [ref=e646]: max_unique_traders_7d=0
+          - heading "Direct link to heading 3. Fragile Market Structures" [level=4] [ref=e647]:
+            - link "Direct link to heading" [ref=e649] [cursor=pointer]:
+              - /url: "#id-3.-fragile-market-structures"
+              - img "hashtag" [ref=e650]
+            - generic [ref=e652]: 3. Fragile Market Structures
+          - paragraph [ref=e653]: Detect markets where whale dominance and low participation may lead to fragile price discovery.
+          - generic [ref=e655]:
+            - button "Copy" [ref=e656] [cursor=pointer]:
+              - generic [ref=e657]: Copy
+            - code [ref=e659]:
+              - generic [ref=e661]: volume_trend=Spiking
+              - generic [ref=e663]: min_top1_wallet_pct=70
+              - generic [ref=e665]: max_unique_traders_7d=10
+          - separator [ref=e666]
+          - heading "Direct link to heading Notes" [level=3] [ref=e667]:
+            - link "Direct link to heading" [ref=e669] [cursor=pointer]:
+              - /url: "#notes"
+              - img "hashtag" [ref=e670]
+            - generic [ref=e672]: Notes
+          - list [ref=e673]:
+            - listitem [ref=e674]:
+              - generic [ref=e676]: •
+              - paragraph [ref=e678]:
+                - text: Use
+                - code [ref=e679]: min_volume_24h
+                - text: together with
+                - code [ref=e680]: min_liquidity_percentile
+                - text: to filter for
+                - strong [ref=e681]: active markets with sufficient liquidity
+                - text: ", which improves execution quality and reduces slippage."
+            - listitem [ref=e682]:
+              - generic [ref=e684]: •
+              - paragraph [ref=e686]:
+                - text: Monitor
+                - code [ref=e687]: volume_trend
+                - text: to identify
+                - strong [ref=e688]: markets experiencing accelerating activity
+                - text: ", such as those with"
+                - code [ref=e689]: "\"Spiking\""
+                - text: volume patterns.
+            - listitem [ref=e690]:
+              - generic [ref=e692]: •
+              - paragraph [ref=e694]:
+                - text: Use
+                - code [ref=e695]: top1_wallet_pct
+                - text: and
+                - code [ref=e696]: top3_wallet_pct
+                - text: to detect
+                - strong [ref=e697]: whale-dominated markets
+                - text: ", where a small number of traders control a large portion of exposure."
+            - listitem [ref=e698]:
+              - generic [ref=e700]: •
+              - paragraph [ref=e702]:
+                - text: Check
+                - code [ref=e703]: unique_traders_7d
+                - text: to evaluate
+                - strong [ref=e704]: participation diversity
+                - text: ", which helps distinguish crowd-driven markets from low-participation ones."
+            - listitem [ref=e705]:
+              - generic [ref=e707]: •
+              - paragraph [ref=e709]:
+                - text: Use
+                - code [ref=e710]: trade_concentration_flag
+                - text: and
+                - code [ref=e711]: whale_control_flag
+                - text: to quickly identify markets with
+                - strong [ref=e712]: potential structural risks or concentrated trading behavior
+                - text: .
+            - listitem [ref=e713]:
+              - generic [ref=e715]: •
+              - paragraph [ref=e717]:
+                - text: Compare
+                - code [ref=e718]: current_volume_24h
+                - text: ","
+                - code [ref=e719]: current_volume_7d
+                - text: ", and"
+                - code [ref=e720]: trades_per_hour_avg
+                - text: to understand
+                - strong [ref=e721]: how trading activity evolves over time
+                - text: .
+            - listitem [ref=e722]:
+              - generic [ref=e724]: •
+              - paragraph [ref=e726]:
+                - text: Combine liquidity metrics with trader participation metrics to identify
+                - strong [ref=e727]: healthy markets where price discovery is likely to be reliable
+                - text: .
+        - generic [ref=e728]:
+          - link "Previous Top Traders chevron-left" [ref=e729] [cursor=pointer]:
+            - /url: /falcon-api/traders/top-traders
+            - generic [ref=e730]:
+              - generic [ref=e731]: Previous
+              - generic [ref=e732]: Top Traders
+            - img "chevron-left" [ref=e733]
+          - link "Next Social Pulse chevron-right" [ref=e735] [cursor=pointer]:
+            - /url: /falcon-api/market-intelligence/social-pulse
+            - generic [ref=e736]:
+              - generic [ref=e737]: Next
+              - generic [ref=e738]: Social Pulse
+            - img "chevron-right" [ref=e739]
+        - paragraph [ref=e742]:
+          - text: Last updated
+          - time [ref=e743]: 9 days ago

@@ -1,0 +1,139 @@
+- generic [ref=e2]:
+  - generic:
+    - generic:
+      - heading "To view keyboard shortcuts, press question mark View keyboard shortcuts" [level=2] [ref=e3]:
+        - generic [ref=e4]: To view keyboard shortcuts, press question mark
+        - link "View keyboard shortcuts" [ref=e5] [cursor=pointer]:
+          - /url: /i/keyboard_shortcuts
+      - generic [ref=e6]:
+        - button "Skip to home timeline" [ref=e7] [cursor=pointer]
+        - button "Skip to trending" [ref=e9] [cursor=pointer]
+        - banner [ref=e11]:
+          - generic [ref=e13]:
+            - generic [ref=e14]:
+              - heading "X" [level=1] [ref=e16] [cursor=pointer]:
+                - link "X" [ref=e17]:
+                  - /url: /home
+                  - img [ref=e19]
+              - navigation "Primary" [ref=e23]:
+                - link "Home" [ref=e24] [cursor=pointer]:
+                  - /url: /home
+                  - generic [ref=e25]:
+                    - img [ref=e27]
+                    - generic [ref=e30]: Home
+                - link "Search and explore" [ref=e31] [cursor=pointer]:
+                  - /url: /explore
+                  - generic [ref=e32]:
+                    - img [ref=e34]
+                    - generic [ref=e37]: Explore
+                - link "Notifications (4 unread notifications)" [ref=e38] [cursor=pointer]:
+                  - /url: /notifications
+                  - generic [ref=e39]:
+                    - generic [ref=e40]:
+                      - img [ref=e41]
+                      - generic "4 unread items" [ref=e44]:
+                        - generic [ref=e45]: "4"
+                    - generic [ref=e46]: Notifications
+                - link "Follow" [ref=e47] [cursor=pointer]:
+                  - /url: /i/connect_people
+                  - generic [ref=e48]:
+                    - img [ref=e50]
+                    - generic [ref=e53]: Follow
+                - link "Direct Messages" [ref=e54] [cursor=pointer]:
+                  - /url: /i/chat
+                  - generic [ref=e55]:
+                    - img [ref=e57]
+                    - generic [ref=e60]: Chat
+                - link "Grok" [ref=e61] [cursor=pointer]:
+                  - /url: /i/grok
+                  - generic [ref=e62]:
+                    - img [ref=e64]
+                    - generic [ref=e67]: Grok
+                - link "Bookmarks" [ref=e68] [cursor=pointer]:
+                  - /url: /i/bookmarks
+                  - generic [ref=e69]:
+                    - img [ref=e71]
+                    - generic [ref=e74]: Bookmarks
+                - link "Creator Studio" [ref=e75] [cursor=pointer]:
+                  - /url: /i/jf/creators/studio
+                  - generic [ref=e76]:
+                    - img [ref=e78]
+                    - generic [ref=e81]: Creator Studio
+                - link "Premium" [ref=e82] [cursor=pointer]:
+                  - /url: /i/premium_sign_up
+                  - generic [ref=e83]:
+                    - img [ref=e85]
+                    - generic [ref=e88]: Premium
+                - link "Profile" [ref=e89] [cursor=pointer]:
+                  - /url: /sanjuvscode
+                  - generic [ref=e90]:
+                    - img [ref=e92]
+                    - generic [ref=e95]: Profile
+                - button "More menu items" [ref=e96] [cursor=pointer]:
+                  - generic [ref=e97]:
+                    - img [ref=e99]
+                    - generic [ref=e102]: More
+              - link "Post" [ref=e104] [cursor=pointer]:
+                - /url: /compose/post
+                - generic [ref=e110]: Post
+            - button "Account menu" [ref=e113] [cursor=pointer]:
+              - generic [ref=e121]:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic "Subhash Nair":
+                        - img "Subhash Nair"
+              - generic [ref=e125]:
+                - generic [ref=e129]: Subhash Nair
+                - generic [ref=e133]: "@sanjuvscode"
+              - img [ref=e135]
+        - main [ref=e138]:
+          - generic [ref=e141]:
+            - generic "Home timeline" [ref=e143]:
+              - generic [ref=e144]:
+                - generic [ref=e150] [cursor=pointer]:
+                  - button "Back" [ref=e152]:
+                    - img [ref=e154]
+                  - heading "Article" [level=2] [ref=e159]
+                  - link "Focus mode" [ref=e162]:
+                    - /url: /0xbobaaa/article/2048024341929939275
+                    - img [ref=e164]
+                - generic:
+                  - generic:
+                    - status:
+                      - button:
+                        - generic:
+                          - img
+                          - generic: See new posts
+              - progressbar "Loading" [ref=e168]:
+                - img [ref=e170]
+            - generic "Trending" [ref=e177]:
+              - generic [ref=e178]:
+                - progressbar [ref=e181]:
+                  - img [ref=e183]
+                - navigation "Footer" [ref=e190]:
+                  - generic [ref=e191]:
+                    - link "Terms of Service" [ref=e192] [cursor=pointer]:
+                      - /url: https://x.com/tos
+                    - generic [ref=e193]: "|"
+                  - generic [ref=e194]:
+                    - link "Privacy Policy" [ref=e195] [cursor=pointer]:
+                      - /url: https://x.com/privacy
+                    - generic [ref=e196]: "|"
+                  - generic [ref=e197]:
+                    - link "Cookie Policy" [ref=e198] [cursor=pointer]:
+                      - /url: https://support.x.com/articles/20170514
+                    - generic [ref=e199]: "|"
+                  - generic [ref=e200]:
+                    - link "Accessibility" [ref=e201] [cursor=pointer]:
+                      - /url: https://help.x.com/resources/accessibility
+                    - generic [ref=e202]: "|"
+                  - generic [ref=e203]:
+                    - link "Ads info" [ref=e204] [cursor=pointer]:
+                      - /url: https://business.x.com/en/help/troubleshooting/how-twitter-ads-work.html?ref=web-twc-ao-gbl-adsinfo&utm_source=twc&utm_medium=web&utm_campaign=ao&utm_content=adsinfo
+                    - generic [ref=e205]: "|"
+                  - button "More" [ref=e206] [cursor=pointer]:
+                    - generic [ref=e207]:
+                      - text: More
+                      - img [ref=e208]
+                  - generic [ref=e211]: © 2026 X Corp.

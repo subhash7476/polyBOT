@@ -1,0 +1,9 @@
+[    1943ms] Error: Minified React error #418; visit https://react.dev/errors/418?args[]=HTML&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at rK (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:45841)
+    at io (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:96571)
+    at sc (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:137042)
+    at https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:131932
+    at u9 (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:132033)
+    at sV (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:158415)
+    at MessagePort.O (https://www.jbecker.dev/_next/static/chunks/46f888a7c7eea605.js?dpl=dpl_5Nz3QDnvjp6pxYnACLXruhXJxp2S:1:7345)
+[  294553ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://www.jbecker.dev/pdf/Jonathan%20Becker.pdf?_rsc=l3k4a:0

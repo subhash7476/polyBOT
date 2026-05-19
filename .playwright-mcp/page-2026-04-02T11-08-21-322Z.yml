@@ -1,0 +1,710 @@
+- generic [ref=e2]:
+  - region
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner "Global Navigation Menu" [ref=e8]:
+      - generic [ref=e9]:
+        - generic [ref=e10]:
+          - button "Open menu" [ref=e12] [cursor=pointer]:
+            - img [ref=e13]
+          - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+            - /url: /
+            - img [ref=e16]
+        - generic [ref=e18]:
+          - navigation "Breadcrumbs" [ref=e19]:
+            - list [ref=e20]:
+              - listitem [ref=e21]:
+                - link "subhash7476" [ref=e22] [cursor=pointer]:
+                  - /url: /subhash7476
+                  - generic [ref=e23]: subhash7476
+              - listitem [ref=e24]:
+                - link "prediction-market-analysis" [ref=e25] [cursor=pointer]:
+                  - /url: /subhash7476/prediction-market-analysis
+                  - generic [ref=e26]: prediction-market-analysis
+                  - img [ref=e27]
+          - button "Search or jump to…" [ref=e31] [cursor=pointer]:
+            - generic [ref=e32]:
+              - generic:
+                - img
+              - generic [ref=e33]:
+                - generic:
+                  - text: Type
+                  - generic: /
+                  - text: to search
+        - generic [ref=e34]:
+          - generic [ref=e35]:
+            - generic [ref=e37]:
+              - link "Chat with Copilot" [ref=e39] [cursor=pointer]:
+                - /url: /copilot
+                - img [ref=e40]
+              - button "Open Copilot…" [ref=e44] [cursor=pointer]:
+                - generic:
+                  - img
+            - button "Create new..." [ref=e46] [cursor=pointer]:
+              - generic [ref=e47]:
+                - generic:
+                  - img
+              - generic:
+                - img
+            - link "Issues (g then i)" [ref=e48] [cursor=pointer]:
+              - /url: /issues
+              - img [ref=e49]
+            - link "Pull requests" [ref=e52] [cursor=pointer]:
+              - /url: /pulls
+              - img [ref=e53]
+            - link "Repositories" [ref=e55] [cursor=pointer]:
+              - /url: /repos
+              - img [ref=e56]
+          - link "You have no unread notifications (g then n)" [ref=e58] [cursor=pointer]:
+            - /url: /notifications
+            - img [ref=e59]
+          - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+            - img "User avatar" [ref=e63]
+      - heading "Repository navigation" [level=2] [ref=e64]
+      - navigation "Repository" [ref=e65]:
+        - list [ref=e66]:
+          - listitem [ref=e67]:
+            - link "Code" [ref=e68] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis
+              - img [ref=e70]
+              - generic [ref=e72]: Code
+          - listitem [ref=e73]:
+            - link "Pull requests" [ref=e74] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/pulls
+              - img [ref=e76]
+              - generic [ref=e78]: Pull requests
+          - listitem [ref=e79]:
+            - link "Actions" [ref=e80] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/actions
+              - img [ref=e82]
+              - generic [ref=e84]: Actions
+          - listitem [ref=e85]:
+            - link "Projects" [ref=e86] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/projects
+              - img [ref=e88]
+              - generic [ref=e90]: Projects
+          - listitem [ref=e91]:
+            - link "Wiki" [ref=e92] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/wiki
+              - img [ref=e94]
+              - generic [ref=e96]: Wiki
+          - listitem [ref=e97]:
+            - link "Security and quality" [ref=e98] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/security
+              - img [ref=e100]
+              - generic [ref=e102]: Security and quality
+          - listitem [ref=e103]:
+            - link "Insights" [ref=e104] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/pulse
+              - img [ref=e106]
+              - generic [ref=e108]: Insights
+          - listitem [ref=e109]:
+            - link "Settings" [ref=e110] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/settings
+              - img [ref=e112]
+              - generic [ref=e114]: Settings
+  - main [ref=e118]:
+    - generic [ref=e131]:
+      - generic [ref=e134]:
+        - generic [ref=e136]:
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - img "Owner avatar" [ref=e139]
+              - strong [ref=e140]:
+                - link "prediction-market-analysis" [ref=e141] [cursor=pointer]:
+                  - /url: /subhash7476/prediction-market-analysis
+              - generic [ref=e142]: Public
+            - generic [ref=e144]:
+              - text: forked from
+              - link "Jon-Becker/prediction-market-analysis" [ref=e145] [cursor=pointer]:
+                - /url: /Jon-Becker/prediction-market-analysis
+          - generic [ref=e146]:
+            - list:
+              - listitem [ref=e147]:
+                - button "Pin" [ref=e150] [cursor=pointer]:
+                  - img [ref=e151]
+                  - text: Pin
+              - listitem [ref=e153]:
+                - button "Watching a repository" [disabled] [ref=e156]:
+                  - generic [ref=e157]:
+                    - generic:
+                      - img
+                    - generic [ref=e158]: Watch
+              - listitem [ref=e159]:
+                - generic [ref=e160]:
+                  - button "Fork 0" [disabled] [ref=e161]:
+                    - img [ref=e162]
+                    - text: Fork
+                    - generic "0" [ref=e164]
+                  - group [ref=e165]:
+                    - button "See your forks of this repository" [ref=e166] [cursor=pointer]:
+                      - img [ref=e167]
+              - listitem [ref=e169]:
+                - generic [ref=e171]:
+                  - button "Star this repository (0)" [ref=e173] [cursor=pointer]:
+                    - img [ref=e174]
+                    - text: Star
+                    - generic "0 users starred this repository" [ref=e176]: "0"
+                  - group [ref=e177]:
+                    - button "Add this repository to a list" [ref=e178] [cursor=pointer]:
+                      - img [ref=e179]
+        - heading "subhash7476/prediction-market-analysis" [level=1] [ref=e183]
+      - generic [ref=e184]:
+        - generic [ref=e187]:
+          - generic [ref=e188]:
+            - generic [ref=e189]:
+              - button "main branch" [ref=e191] [cursor=pointer]:
+                - generic [ref=e192]:
+                  - generic [ref=e194]:
+                    - img [ref=e196]
+                    - generic [ref=e199]: main
+                  - generic:
+                    - img
+              - generic [ref=e200]:
+                - link "Branches" [ref=e201] [cursor=pointer]:
+                  - /url: /subhash7476/prediction-market-analysis/branches
+                  - generic [ref=e202]:
+                    - generic:
+                      - img
+                    - generic [ref=e203]: Branches
+                - link "Tags" [ref=e204] [cursor=pointer]:
+                  - /url: /subhash7476/prediction-market-analysis/tags
+                  - generic [ref=e205]:
+                    - generic:
+                      - img
+                    - generic [ref=e206]: Tags
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e211]:
+                  - img [ref=e213]
+                  - combobox "Go to file" [ref=e215]
+                  - generic [ref=e217]: t
+                - generic [ref=e218]:
+                  - heading "Add file" [level=2] [ref=e219]
+                  - button "Add file" [ref=e220] [cursor=pointer]:
+                    - generic [ref=e223]:
+                      - text: Add file
+                      - img [ref=e224]
+              - button "Code" [ref=e226] [cursor=pointer]:
+                - generic [ref=e227]:
+                  - generic:
+                    - img
+                  - generic [ref=e228]: Code
+                  - generic:
+                    - img
+          - generic [ref=e232]:
+            - generic [ref=e233]:
+              - heading "Folders and files" [level=2] [ref=e234]
+              - table "Folders and files" [ref=e235]:
+                - rowgroup:
+                  - row "Name Last commit message Last commit date":
+                    - columnheader "Name"
+                    - columnheader "Last commit message":
+                      - generic "Last commit message"
+                    - columnheader "Last commit date":
+                      - generic "Last commit date"
+                - rowgroup [ref=e236]:
+                  - row "Latest commit History 17 Commits" [ref=e237]:
+                    - cell "Latest commit History 17 Commits" [ref=e238]:
+                      - generic [ref=e239]:
+                        - heading "Latest commit" [level=2] [ref=e240]
+                        - generic [ref=e243]:
+                          - heading "History" [level=2] [ref=e244]
+                          - link "17 Commits" [ref=e245] [cursor=pointer]:
+                            - /url: /subhash7476/prediction-market-analysis/commits/main/
+                            - generic [ref=e246]:
+                              - generic:
+                                - img
+                              - generic [ref=e247]: 17 Commits
+                  - row ".github, (Directory)" [ref=e248]:
+                    - cell ".github, (Directory)" [ref=e249]:
+                      - generic [ref=e250]:
+                        - img [ref=e251]
+                        - link ".github, (Directory)" [ref=e256] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/tree/main/.github
+                          - text: .github
+                    - cell [ref=e257]
+                    - cell [ref=e259]
+                  - row "docs, (Directory)" [ref=e262]:
+                    - cell "docs, (Directory)" [ref=e263]:
+                      - generic [ref=e264]:
+                        - img [ref=e265]
+                        - link "docs, (Directory)" [ref=e270] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/tree/main/docs
+                          - text: docs
+                    - cell [ref=e271]
+                    - cell [ref=e273]
+                  - row "scripts, (Directory)" [ref=e276]:
+                    - cell "scripts, (Directory)" [ref=e277]:
+                      - generic [ref=e278]:
+                        - img [ref=e279]
+                        - link "scripts, (Directory)" [ref=e284] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/tree/main/scripts
+                          - text: scripts
+                    - cell [ref=e285]
+                    - cell [ref=e287]
+                  - row "src, (Directory)" [ref=e290]:
+                    - cell "src, (Directory)" [ref=e291]:
+                      - generic [ref=e292]:
+                        - img [ref=e293]
+                        - link "src, (Directory)" [ref=e298] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/tree/main/src
+                          - text: src
+                    - cell [ref=e299]
+                    - cell [ref=e301]
+                  - row "tests, (Directory)" [ref=e304]:
+                    - cell "tests, (Directory)" [ref=e305]:
+                      - generic [ref=e306]:
+                        - img [ref=e307]
+                        - link "tests, (Directory)" [ref=e312] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/tree/main/tests
+                          - text: tests
+                    - cell [ref=e313]
+                    - cell [ref=e315]
+                  - row ".env.example, (File)" [ref=e318]:
+                    - cell ".env.example, (File)" [ref=e319]:
+                      - generic [ref=e320]:
+                        - img [ref=e321]
+                        - link ".env.example, (File)" [ref=e326] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/.env.example
+                          - text: .env.example
+                    - cell [ref=e327]
+                    - cell [ref=e329]
+                  - row ".gitignore, (File)" [ref=e332]:
+                    - cell ".gitignore, (File)" [ref=e333]:
+                      - generic [ref=e334]:
+                        - img [ref=e335]
+                        - link ".gitignore, (File)" [ref=e340] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/.gitignore
+                          - text: .gitignore
+                    - cell [ref=e341]
+                    - cell [ref=e343]
+                  - row ".python-version, (File)" [ref=e346]:
+                    - cell ".python-version, (File)" [ref=e347]:
+                      - generic [ref=e348]:
+                        - img [ref=e349]
+                        - link ".python-version, (File)" [ref=e354] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/.python-version
+                          - text: .python-version
+                    - cell [ref=e355]
+                    - cell [ref=e357]
+                  - row "CONTRIBUTING.md, (File)" [ref=e360]:
+                    - cell "CONTRIBUTING.md, (File)" [ref=e361]:
+                      - generic [ref=e362]:
+                        - img [ref=e363]
+                        - link "CONTRIBUTING.md, (File)" [ref=e368] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/CONTRIBUTING.md
+                          - text: CONTRIBUTING.md
+                    - cell [ref=e369]
+                    - cell [ref=e371]
+                  - row "LICENSE, (File)" [ref=e374]:
+                    - cell "LICENSE, (File)" [ref=e375]:
+                      - generic [ref=e376]:
+                        - img [ref=e377]
+                        - link "LICENSE, (File)" [ref=e382] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/LICENSE
+                          - text: LICENSE
+                    - cell [ref=e383]
+                    - cell [ref=e385]
+                  - row "Makefile, (File)" [ref=e388]:
+                    - cell "Makefile, (File)" [ref=e389]:
+                      - generic [ref=e390]:
+                        - img [ref=e391]
+                        - link "Makefile, (File)" [ref=e396] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/Makefile
+                          - text: Makefile
+                    - cell [ref=e397]
+                    - cell [ref=e399]
+                  - row "README.md, (File)" [ref=e402]:
+                    - cell "README.md, (File)" [ref=e403]:
+                      - generic [ref=e404]:
+                        - img [ref=e405]
+                        - link "README.md, (File)" [ref=e410] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/README.md
+                          - text: README.md
+                    - cell [ref=e411]
+                    - cell [ref=e413]
+                  - row "main.py, (File)" [ref=e416]:
+                    - cell "main.py, (File)" [ref=e417]:
+                      - generic [ref=e418]:
+                        - img [ref=e419]
+                        - link "main.py, (File)" [ref=e424] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/main.py
+                          - text: main.py
+                    - cell [ref=e425]
+                    - cell [ref=e427]
+                  - row "pyproject.toml, (File)" [ref=e430]:
+                    - cell "pyproject.toml, (File)" [ref=e431]:
+                      - generic [ref=e432]:
+                        - img [ref=e433]
+                        - link "pyproject.toml, (File)" [ref=e438] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/pyproject.toml
+                          - text: pyproject.toml
+                    - cell [ref=e439]
+                    - cell [ref=e441]
+                  - row "uv.lock, (File)" [ref=e444]:
+                    - cell "uv.lock, (File)" [ref=e445]:
+                      - generic [ref=e446]:
+                        - img [ref=e447]
+                        - link "uv.lock, (File)" [ref=e452] [cursor=pointer]:
+                          - /url: /subhash7476/prediction-market-analysis/blob/main/uv.lock
+                          - text: uv.lock
+                    - cell [ref=e453]
+                    - cell [ref=e455]
+            - generic [ref=e459]:
+              - generic [ref=e460]:
+                - heading "Repository files navigation" [level=2] [ref=e461]
+                - navigation "Repository files" [ref=e462]:
+                  - list [ref=e463]:
+                    - listitem [ref=e464]:
+                      - link "README" [ref=e465] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e467]
+                        - generic [ref=e469]: README
+                    - listitem [ref=e470]:
+                      - link "Contributing" [ref=e471] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e473]
+                        - generic [ref=e475]: Contributing
+                    - listitem [ref=e476]:
+                      - link "License" [ref=e477] [cursor=pointer]:
+                        - /url: "#"
+                        - img [ref=e479]
+                        - generic [ref=e481]: License
+                - button "Edit file" [ref=e482] [cursor=pointer]:
+                  - img [ref=e483]
+                - button "Outline" [ref=e485] [cursor=pointer]:
+                  - img [ref=e486]
+              - article [ref=e489]:
+                - generic [ref=e490]:
+                  - heading "Prediction Market Analysis" [level=1] [ref=e491]
+                  - 'link "Permalink: Prediction Market Analysis" [ref=e492] [cursor=pointer]':
+                    - /url: "#prediction-market-analysis"
+                    - img [ref=e493]
+                - paragraph [ref=e495]: A framework for analyzing prediction market data, including the largest publicly available dataset of Polymarket and Kalshi market and trade data. Provides tools for data collection, storage, and running analysis scripts that generate figures and statistics.
+                - generic [ref=e496]:
+                  - heading "Overview" [level=2] [ref=e497]
+                  - 'link "Permalink: Overview" [ref=e498] [cursor=pointer]':
+                    - /url: "#overview"
+                    - img [ref=e499]
+                - paragraph [ref=e501]: "This project enables research and analysis of prediction markets by providing:"
+                - list [ref=e502]:
+                  - listitem [ref=e503]: Pre-collected datasets from Polymarket and Kalshi
+                  - listitem [ref=e504]: Data collection indexers for gathering new data
+                  - listitem [ref=e505]: Analysis framework for generating figures and statistics
+                - paragraph [ref=e506]: "Currently supported features:"
+                - list [ref=e507]:
+                  - listitem [ref=e508]: Market metadata collection (Kalshi & Polymarket)
+                  - listitem [ref=e509]: Trade history collection via API and blockchain
+                  - listitem [ref=e510]: Parquet-based storage with automatic progress saving
+                  - listitem [ref=e511]: Extensible analysis script framework
+                - generic [ref=e512]:
+                  - heading "Installation & Usage" [level=2] [ref=e513]
+                  - 'link "Permalink: Installation & Usage" [ref=e514] [cursor=pointer]':
+                    - /url: "#installation--usage"
+                    - img [ref=e515]
+                - paragraph [ref=e517]:
+                  - text: Requires Python 3.9+. Install dependencies with
+                  - link "uv" [ref=e518] [cursor=pointer]:
+                    - /url: https://github.com/astral-sh/uv
+                  - text: ":"
+                - generic [ref=e519]:
+                  - generic [ref=e520]: uv sync
+                  - button "Copy" [ref=e522] [cursor=pointer]:
+                    - img [ref=e523]
+                - paragraph [ref=e526]: "Download and extract the pre-collected dataset (36GiB compressed):"
+                - generic [ref=e527]:
+                  - generic [ref=e528]: make setup
+                  - button "Copy" [ref=e530] [cursor=pointer]:
+                    - img [ref=e531]
+                - paragraph [ref=e534]:
+                  - text: This downloads
+                  - code [ref=e535]: data.tar.zst
+                  - text: from
+                  - link "Cloudflare R2 Storage" [ref=e536] [cursor=pointer]:
+                    - /url: https://s3.jbecker.dev/data.tar.zst
+                  - text: and extracts it to
+                  - code [ref=e537]: data/
+                  - text: .
+                - generic [ref=e538]:
+                  - heading "Data Collection" [level=3] [ref=e539]
+                  - 'link "Permalink: Data Collection" [ref=e540] [cursor=pointer]':
+                    - /url: "#data-collection"
+                    - img [ref=e541]
+                - paragraph [ref=e543]: "Collect market and trade data from prediction market APIs:"
+                - generic [ref=e544]:
+                  - generic [ref=e545]: make index
+                  - button "Copy" [ref=e547] [cursor=pointer]:
+                    - img [ref=e548]
+                - paragraph [ref=e551]:
+                  - text: This opens an interactive menu to select which indexer to run. Data is saved to
+                  - code [ref=e552]: data/kalshi/
+                  - text: and
+                  - code [ref=e553]: data/polymarket/
+                  - text: directories. Progress is saved automatically, so you can interrupt and resume collection.
+                - generic [ref=e554]:
+                  - heading "Running Analyses" [level=3] [ref=e555]
+                  - 'link "Permalink: Running Analyses" [ref=e556] [cursor=pointer]':
+                    - /url: "#running-analyses"
+                    - img [ref=e557]
+                - generic [ref=e559]:
+                  - generic [ref=e560]: make analyze
+                  - button "Copy" [ref=e562] [cursor=pointer]:
+                    - img [ref=e563]
+                - paragraph [ref=e566]:
+                  - text: This opens an interactive menu to select which analysis to run. You can run all analyses or select a specific one. Output files (PNG, PDF, CSV, JSON) are saved to
+                  - code [ref=e567]: output/
+                  - text: .
+                - generic [ref=e568]:
+                  - heading "Packaging Data" [level=3] [ref=e569]
+                  - 'link "Permalink: Packaging Data" [ref=e570] [cursor=pointer]':
+                    - /url: "#packaging-data"
+                    - img [ref=e571]
+                - paragraph [ref=e573]: "To compress the data directory for storage/distribution:"
+                - generic [ref=e574]:
+                  - generic [ref=e575]: make package
+                  - button "Copy" [ref=e577] [cursor=pointer]:
+                    - img [ref=e578]
+                - paragraph [ref=e581]:
+                  - text: This creates a zstd-compressed tar archive (
+                  - code [ref=e582]: data.tar.zst
+                  - text: ) and removes the
+                  - code [ref=e583]: data/
+                  - text: directory.
+                - generic [ref=e584]:
+                  - heading "Project Structure" [level=2] [ref=e585]
+                  - 'link "Permalink: Project Structure" [ref=e586] [cursor=pointer]':
+                    - /url: "#project-structure"
+                    - img [ref=e587]
+                - generic [ref=e589]:
+                  - code [ref=e591]: "├── src/ │ ├── analysis/ # Analysis scripts │ │ ├── kalshi/ # Kalshi-specific analyses │ │ └── polymarket/ # Polymarket-specific analyses │ ├── indexers/ # Data collection indexers │ │ ├── kalshi/ # Kalshi API client and indexers │ │ └── polymarket/ # Polymarket API/blockchain indexers │ └── common/ # Shared utilities and interfaces ├── data/ # Data directory (extracted from data.tar.zst) │ ├── kalshi/ │ │ ├── markets/ │ │ └── trades/ │ └── polymarket/ │ ├── blocks/ │ ├── markets/ │ └── trades/ ├── docs/ # Documentation └── output/ # Analysis outputs (figures, CSVs)"
+                  - button "Copy" [ref=e593] [cursor=pointer]:
+                    - img [ref=e594]
+                - generic [ref=e597]:
+                  - heading "Documentation" [level=2] [ref=e598]
+                  - 'link "Permalink: Documentation" [ref=e599] [cursor=pointer]':
+                    - /url: "#documentation"
+                    - img [ref=e600]
+                - list [ref=e602]:
+                  - listitem [ref=e603]:
+                    - link "Data Schemas" [ref=e604] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/blob/main/docs/SCHEMAS.md
+                    - text: "- Parquet file schemas for markets and trades"
+                  - listitem [ref=e605]:
+                    - link "Writing Analyses" [ref=e606] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/blob/main/docs/ANALYSIS.md
+                    - text: "- Guide for writing custom analysis scripts"
+                - generic [ref=e607]:
+                  - heading "Contributing" [level=2] [ref=e608]
+                  - 'link "Permalink: Contributing" [ref=e609] [cursor=pointer]':
+                    - /url: "#contributing"
+                    - img [ref=e610]
+                - paragraph [ref=e612]: If you'd like to contribute to this project, please open a pull-request with your changes, as well as detailed information on what is changed, added, or improved.
+                - paragraph [ref=e613]:
+                  - text: For more information, see the
+                  - link "contributing guide" [ref=e614] [cursor=pointer]:
+                    - /url: /subhash7476/prediction-market-analysis/blob/main/CONTRIBUTING.md
+                  - text: .
+                - generic [ref=e615]:
+                  - heading "Issues" [level=2] [ref=e616]
+                  - 'link "Permalink: Issues" [ref=e617] [cursor=pointer]':
+                    - /url: "#issues"
+                    - img [ref=e618]
+                - paragraph [ref=e620]:
+                  - text: If you've found an issue or have a question, please open an issue
+                  - link "here" [ref=e621] [cursor=pointer]:
+                    - /url: https://github.com/jon-becker/prediction-market-analysis/issues
+                  - text: .
+                - generic [ref=e622]:
+                  - heading "Research & Citations" [level=2] [ref=e623]
+                  - 'link "Permalink: Research & Citations" [ref=e624] [cursor=pointer]':
+                    - /url: "#research--citations"
+                    - img [ref=e625]
+                - list [ref=e627]:
+                  - listitem [ref=e628]:
+                    - text: Becker, J. (2026).
+                    - emphasis [ref=e629]: The Microstructure of Wealth Transfer in Prediction Markets
+                    - text: . Jbecker.
+                    - link "https://jbecker.dev/research/prediction-market-microstructure" [ref=e630] [cursor=pointer]:
+                      - /url: https://jbecker.dev/research/prediction-market-microstructure
+                  - listitem [ref=e631]:
+                    - text: Le, N. A. (2026).
+                    - emphasis [ref=e632]: "Decomposing Crowd Wisdom: Domain-Specific Calibration Dynamics in Prediction Markets"
+                    - text: . arXiv.
+                    - link "https://arxiv.org/abs/2602.19520" [ref=e633] [cursor=pointer]:
+                      - /url: https://arxiv.org/abs/2602.19520
+                - paragraph [ref=e634]:
+                  - text: If you have used or plan to use this dataset in your research, please reach out via
+                  - link "email" [ref=e635] [cursor=pointer]:
+                    - /url: mailto:jonathan@jbecker.dev
+                  - text: or
+                  - link "Twitter" [ref=e636] [cursor=pointer]:
+                    - /url: https://x.com/BeckerrJon
+                  - text: "-- i'd love to hear about what you're using the data for! Additionally, feel free to open a PR and update this section with a link to your paper."
+        - generic [ref=e640]:
+          - generic [ref=e642]:
+            - group:
+              - button "Edit repository metadata" [ref=e643] [cursor=pointer]:
+                - img "Edit repository metadata" [ref=e645]
+            - generic [ref=e647]:
+              - heading "About" [level=2] [ref=e648]
+              - paragraph [ref=e649]: A framework for collecting and analyzing prediction market data, including the largest publicly available dataset of Polymarket and Kalshi market and trade data.
+              - generic [ref=e650]:
+                - img [ref=e651]
+                - link "jbecker.dev/research/prediction-market-microstructure" [ref=e654] [cursor=pointer]:
+                  - /url: https://jbecker.dev/research/prediction-market-microstructure
+              - heading "Resources" [level=3] [ref=e655]
+              - link "Readme" [ref=e657] [cursor=pointer]:
+                - /url: "#readme-ov-file"
+                - img [ref=e658]
+                - text: Readme
+              - heading "License" [level=3] [ref=e660]
+              - link "MIT license" [ref=e662] [cursor=pointer]:
+                - /url: "#MIT-1-ov-file"
+                - img [ref=e663]
+                - text: MIT license
+              - heading "Contributing" [level=3] [ref=e665]
+              - link "Contributing" [ref=e667] [cursor=pointer]:
+                - /url: "#contributing-ov-file"
+                - img [ref=e668]
+                - text: Contributing
+              - link "Activity" [ref=e671] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/activity
+                - img [ref=e672]
+                - text: Activity
+              - heading "Stars" [level=3] [ref=e674]
+              - link "0 stars" [ref=e676] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/stargazers
+                - img [ref=e677]
+                - strong [ref=e679]: "0"
+                - text: stars
+              - heading "Watchers" [level=3] [ref=e680]
+              - link "0 watching" [ref=e682] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/watchers
+                - img [ref=e683]
+                - strong [ref=e685]: "0"
+                - text: watching
+              - heading "Forks" [level=3] [ref=e686]
+              - link "0 forks" [ref=e688] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/forks
+                - img [ref=e689]
+                - strong [ref=e691]: "0"
+                - text: forks
+          - generic [ref=e693]:
+            - heading "Releases" [level=2] [ref=e694]:
+              - link "Releases" [ref=e695] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/releases
+            - generic [ref=e696]: No releases published
+            - link "Create a new release" [ref=e698] [cursor=pointer]:
+              - /url: /subhash7476/prediction-market-analysis/releases/new
+          - generic "Loading latest packages" [ref=e701]:
+            - heading "Packages" [level=2] [ref=e702]:
+              - link "Packages" [ref=e703] [cursor=pointer]:
+                - /url: /users/subhash7476/packages?repo_name=prediction-market-analysis
+          - generic "Loading contributors" [ref=e715]:
+            - generic:
+              - heading "Contributors" [level=2] [ref=e716]:
+                - link "Contributors" [ref=e717] [cursor=pointer]:
+                  - /url: /subhash7476/prediction-market-analysis/graphs/contributors
+              - list [ref=e718]:
+                - listitem [ref=e719]
+                - listitem [ref=e721]
+                - listitem [ref=e723]
+          - generic [ref=e726]:
+            - heading "Languages" [level=2] [ref=e727]
+            - list [ref=e733]:
+              - listitem [ref=e734]:
+                - generic [ref=e735]:
+                  - img [ref=e736]
+                  - generic [ref=e738]: Python
+                  - generic [ref=e739]: 98.8%
+              - listitem [ref=e740]:
+                - generic [ref=e741]:
+                  - img [ref=e742]
+                  - generic [ref=e744]: Shell
+                  - generic [ref=e745]: 1.1%
+              - listitem [ref=e746]:
+                - generic [ref=e747]:
+                  - img [ref=e748]
+                  - generic [ref=e750]: Makefile
+                  - generic [ref=e751]: 0.1%
+          - generic [ref=e753]:
+            - generic [ref=e754]:
+              - heading "Suggested workflows" [level=2] [ref=e755]
+              - generic [ref=e756]: Based on your tech stack
+            - list [ref=e757]:
+              - listitem [ref=e758]:
+                - generic [ref=e759]:
+                  - generic [ref=e760]:
+                    - img [ref=e762]
+                    - generic [ref=e764]: Django
+                    - link "Configure Django" [ref=e765] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/new/main?filename=.github%2Fworkflows%2Fdjango.yml&workflow_template=ci%2Fdjango
+                      - generic [ref=e767]:
+                        - text: Configure
+                        - generic [ref=e768]: Django
+                  - generic [ref=e769]: Build and Test a Django Project
+              - listitem [ref=e770]:
+                - generic [ref=e771]:
+                  - generic [ref=e772]:
+                    - img [ref=e774]
+                    - generic [ref=e776]: SLSA Generic generator
+                    - link "Configure SLSA Generic generator" [ref=e777] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/new/main?filename=.github%2Fworkflows%2Fgenerator-generic-ossf-slsa3-publish.yml&workflow_template=ci%2Fgenerator-generic-ossf-slsa3-publish
+                      - generic [ref=e779]:
+                        - text: Configure
+                        - generic [ref=e780]: SLSA Generic generator
+                  - generic [ref=e781]: Generate SLSA3 provenance for your existing release workflows
+              - listitem [ref=e782]:
+                - generic [ref=e783]:
+                  - generic [ref=e784]:
+                    - img [ref=e786]
+                    - generic [ref=e788]: Python package
+                    - link "Configure Python package" [ref=e789] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/new/main?filename=.github%2Fworkflows%2Fpython-package.yml&workflow_template=ci%2Fpython-package
+                      - generic [ref=e791]:
+                        - text: Configure
+                        - generic [ref=e792]: Python package
+                  - generic [ref=e793]: Create and test a Python package on multiple Python versions.
+            - generic [ref=e794]:
+              - link "More workflows" [ref=e795] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/actions/new
+              - button "Dismiss suggestions" [ref=e797] [cursor=pointer]:
+                - generic [ref=e799]: Dismiss suggestions
+  - contentinfo [ref=e801]:
+    - heading "Footer" [level=2] [ref=e802]
+    - generic [ref=e803]:
+      - generic [ref=e804]:
+        - link "GitHub Homepage" [ref=e805] [cursor=pointer]:
+          - /url: https://github.com
+          - img [ref=e806]
+        - generic [ref=e808]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e809]:
+        - heading "Footer navigation" [level=3] [ref=e810]
+        - list "Footer navigation" [ref=e811]:
+          - listitem [ref=e812]:
+            - link "Terms" [ref=e813] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e814]:
+            - link "Privacy" [ref=e815] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e816]:
+            - link "Security" [ref=e817] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e818]:
+            - link "Status" [ref=e819] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e820]:
+            - link "Community" [ref=e821] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e822]:
+            - link "Docs" [ref=e823] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e824]:
+            - link "Contact" [ref=e825] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e826]:
+            - button "Manage cookies" [ref=e828] [cursor=pointer]
+          - listitem [ref=e829]:
+            - button "Do not share my personal information" [ref=e831] [cursor=pointer]

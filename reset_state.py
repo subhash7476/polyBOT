@@ -53,6 +53,7 @@ EMPTY_CHECKPOINT = {
     "selected_token_ids": [],
     "reduce_only_markets": [],
     "cooldowns": {},
+    "inventory_cap_hits": {},
     "global_cooldown_until": 0.0,
     "last_fill_times": {},
     "recent_fill_sides": {},

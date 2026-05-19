@@ -1,0 +1,4 @@
+[     505ms] [LOG] %c%s color: red; background: yellow; font-size: 24px; WARNING! @ https://www.gstatic.com/_/mss/boq-chrome-webstore/_/js/k=boq-chrome-webstore.ChromeWebStoreConsumerFeUi.en.Z04rRqVcsUs.2018.O/am=wMAAAADALA/d=1/excm=_b,_tp,categoryview/ed=1/dg=0/wt=2/ujg=1/rs=AEP720JIfkNT2n3FzfA2RW93lojZ--JinQ/dti=1/m=_b,_tp:338
+[     508ms] [LOG] %c%s font-size: 18px; Using this console may allow attackers to impersonate you and steal your information using an attack called Self-XSS.
+Do not enter or paste code that you do not understand. @ https://www.gstatic.com/_/mss/boq-chrome-webstore/_/js/k=boq-chrome-webstore.ChromeWebStoreConsumerFeUi.en.Z04rRqVcsUs.2018.O/am=wMAAAADALA/d=1/excm=_b,_tp,categoryview/ed=1/dg=0/wt=2/ujg=1/rs=AEP720JIfkNT2n3FzfA2RW93lojZ--JinQ/dti=1/m=_b,_tp:338
+[   12008ms] [ERROR] Failed to load resource: the server responded with a status of 503 () @ https://play.google.com/log?format=json&hasfast=true&authuser=0:0

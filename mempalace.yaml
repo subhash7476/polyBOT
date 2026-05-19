@@ -1,0 +1,32 @@
+wing: polymarket_bot
+rooms:
+- name: feeds
+  description: Files from feeds/
+- name: engine
+  description: Files from engine/
+- name: market
+  description: Files from market/
+- name: trading
+  description: Files from trading/
+- name: calibration
+  description: Files from calibration/
+- name: tracking
+  description: Files from tracking/
+- name: scripts
+  description: Files from utils/
+- name: testing
+  description: Files from tests/
+- name: documentation
+  description: Files from docs/
+- name: dashboard
+  description: Files from dashboard/
+- name: logs
+  description: Files from logs/
+- name: setup
+  description: Files from setup/
+- name: monitoring
+  description: Files from monitoring/
+- name: maker
+  description: Files from maker/
+- name: general
+  description: Files that don't fit other rooms

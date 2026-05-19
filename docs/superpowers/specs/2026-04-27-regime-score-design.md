@@ -273,7 +273,16 @@ ask = fair_value + spread / 2
 # 5. Size with floor
 size = max(BASE_QUOTE_SIZE * regime.size_multiplier, MIN_QUOTE_SIZE)
 
-# 6. Flag logging
+# 6. Per-market regime debug log (every cycle — critical for tuning)
+inv_signed_val = inv_manager.get_inv_signed_pct(token_id)
+markout_val    = markout_tracker.get_markout_30s(token_id, cs.category)
+log.debug(
+    f"regime[{token_id[:8]}] score={regime.score:.3f} "
+    f"vpin={cs.vpin:.3f} markout={markout_val:.4f} "
+    f"inv={inv_signed_val:.2f} hours={cs.hours_to_resolution:.1f} "
+    f"spread_x={regime.spread_multiplier:.2f} size_x={regime.size_multiplier:.2f} "
+    f"skew={regime.skew_adjustment:+.4f} flags={','.join(sorted(regime.flags)) or 'none'}"
+)
 if "extreme" in regime.flags:
     log.warning(f"extreme regime [{token_id[:8]}] score={regime.score:.2f}")
 if "toxic_flow" in regime.flags:

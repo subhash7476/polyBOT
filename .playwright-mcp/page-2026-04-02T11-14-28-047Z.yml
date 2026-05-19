@@ -1,0 +1,224 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - region
+    - generic [ref=e3]:
+      - link "Skip to content" [ref=e4] [cursor=pointer]:
+        - /url: "#start-of-content"
+      - banner "Global Navigation Menu" [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - button "Open menu" [ref=e12] [cursor=pointer]:
+              - img [ref=e13]
+            - link "Homepage (g then d)" [ref=e15] [cursor=pointer]:
+              - /url: /
+              - img [ref=e16]
+          - generic [ref=e18]:
+            - navigation "Breadcrumbs" [ref=e19]:
+              - list [ref=e20]:
+                - listitem [ref=e21]:
+                  - link "subhash7476" [ref=e22] [cursor=pointer]:
+                    - /url: /subhash7476
+                    - generic [ref=e23]: subhash7476
+                - listitem [ref=e24]:
+                  - link "prediction-market-analysis" [ref=e25] [cursor=pointer]:
+                    - /url: /subhash7476/prediction-market-analysis
+                    - generic [ref=e26]: prediction-market-analysis
+                    - img [ref=e27]
+            - button "Search or jump to…" [ref=e31] [cursor=pointer]:
+              - generic [ref=e32]:
+                - generic:
+                  - img
+                - generic [ref=e33]:
+                  - generic:
+                    - text: Type
+                    - generic: /
+                    - text: to search
+          - generic [ref=e34]:
+            - generic [ref=e35]:
+              - generic [ref=e37]:
+                - link "Chat with Copilot" [ref=e39] [cursor=pointer]:
+                  - /url: /copilot
+                  - img [ref=e40]
+                - button "Open Copilot…" [ref=e44] [cursor=pointer]:
+                  - generic:
+                    - img
+              - button "Create new..." [ref=e46] [cursor=pointer]:
+                - generic [ref=e47]:
+                  - generic:
+                    - img
+                - generic:
+                  - img
+              - link "Issues (g then i)" [ref=e48] [cursor=pointer]:
+                - /url: /issues
+                - img [ref=e49]
+              - link "Pull requests" [ref=e52] [cursor=pointer]:
+                - /url: /pulls
+                - img [ref=e53]
+              - link "Repositories" [ref=e55] [cursor=pointer]:
+                - /url: /repos
+                - img [ref=e56]
+            - link "You have no unread notifications (g then n)" [ref=e58] [cursor=pointer]:
+              - /url: /notifications
+              - img [ref=e59]
+            - button "Open user navigation menu" [ref=e62] [cursor=pointer]:
+              - img "User avatar" [ref=e63]
+        - heading "Repository navigation" [level=2] [ref=e64]
+        - navigation "Repository" [ref=e65]:
+          - list [ref=e66]:
+            - listitem [ref=e67]:
+              - link "Code" [ref=e68] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis
+                - img [ref=e70]
+                - generic [ref=e72]: Code
+            - listitem [ref=e73]:
+              - link "Pull requests" [ref=e74] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/pulls
+                - img [ref=e76]
+                - generic [ref=e78]: Pull requests
+            - listitem [ref=e79]:
+              - link "Actions" [ref=e80] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/actions
+                - img [ref=e82]
+                - generic [ref=e84]: Actions
+            - listitem [ref=e85]:
+              - link "Projects" [ref=e86] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/projects
+                - img [ref=e88]
+                - generic [ref=e90]: Projects
+            - listitem [ref=e91]:
+              - link "Wiki" [ref=e92] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/wiki
+                - img [ref=e94]
+                - generic [ref=e96]: Wiki
+            - listitem [ref=e97]:
+              - link "Security and quality" [ref=e98] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/security
+                - img [ref=e100]
+                - generic [ref=e102]: Security and quality
+            - listitem [ref=e103]:
+              - link "Insights" [ref=e104] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/pulse
+                - img [ref=e106]
+                - generic [ref=e108]: Insights
+            - listitem [ref=e109]:
+              - link "Settings" [ref=e110] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/settings
+                - img [ref=e112]
+                - generic [ref=e114]: Settings
+    - main [ref=e118]:
+      - generic [ref=e129]:
+        - generic [ref=e133]:
+          - generic [ref=e134]:
+            - heading "Expand file tree" [level=2] [ref=e136]:
+              - button "Expand file tree" [ref=e137] [cursor=pointer]:
+                - img [ref=e138]
+            - button "main branch" [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]:
+                - generic [ref=e145]:
+                  - img [ref=e147]
+                  - generic [ref=e150]: main
+                - generic:
+                  - img
+            - generic [ref=e152]:
+              - navigation "Breadcrumbs" [ref=e153]:
+                - heading "Breadcrumbs" [level=2] [ref=e154]
+                - list [ref=e155]:
+                  - listitem [ref=e156]:
+                    - link "prediction-market-analysis" [ref=e157] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main
+                  - listitem [ref=e158]:
+                    - text: /
+                    - link "src" [ref=e159] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main/src
+                  - listitem [ref=e160]:
+                    - text: /
+                    - link "analysis" [ref=e161] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main/src/analysis
+              - generic [ref=e162]:
+                - text: /
+                - heading "polymarket" [level=1] [ref=e163]
+                - text: /
+              - button "Copy path" [ref=e164] [cursor=pointer]:
+                - img [ref=e165]
+          - generic [ref=e170]:
+            - heading "Directory actions" [level=2] [ref=e171]
+            - generic [ref=e174]:
+              - img [ref=e176]
+              - combobox "Go to file" [ref=e178]
+              - generic [ref=e180]: t
+            - generic [ref=e181]:
+              - heading "Add file" [level=2] [ref=e182]
+              - button "Add file" [ref=e183] [cursor=pointer]:
+                - generic [ref=e186]:
+                  - text: Add file
+                  - img [ref=e187]
+            - heading "More options" [level=2] [ref=e189]
+            - button "More options" [ref=e190] [cursor=pointer]:
+              - img [ref=e191]
+        - generic [ref=e193]:
+          - generic [ref=e195]:
+            - heading "Latest commit" [level=2] [ref=e196]
+            - generic [ref=e199]:
+              - heading "History" [level=2] [ref=e200]
+              - link "History" [ref=e201] [cursor=pointer]:
+                - /url: /subhash7476/prediction-market-analysis/commits/main/src/analysis/polymarket
+                - generic [ref=e202]:
+                  - generic:
+                    - img
+                  - generic [ref=e203]: History
+          - generic [ref=e208]:
+            - heading "Folders and files" [level=2] [ref=e209]
+            - table "Folders and files" [ref=e210]:
+              - rowgroup [ref=e211]:
+                - row "Name Last commit message Last commit date" [ref=e212]:
+                  - columnheader "Name" [ref=e213]
+                  - columnheader "Last commit message" [ref=e214]:
+                    - generic "Last commit message" [ref=e215]
+                  - columnheader "Last commit date" [ref=e216]:
+                    - generic "Last commit date" [ref=e217]
+              - rowgroup [ref=e218]:
+                - row "parent directory Parent directory" [ref=e219]:
+                  - cell "parent directory Parent directory" [ref=e220]:
+                    - heading "parent directory" [level=3] [ref=e221]
+                    - link "Parent directory" [ref=e222] [cursor=pointer]:
+                      - /url: /subhash7476/prediction-market-analysis/tree/main/src/analysis
+                      - generic [ref=e223]:
+                        - img [ref=e224]
+                        - text: ..
+                - row "__init__.py, (File)" [ref=e226]:
+                  - cell "__init__.py, (File)" [ref=e227]:
+                    - generic [ref=e228]:
+                      - img [ref=e229]
+                      - link "__init__.py, (File)" [ref=e234] [cursor=pointer]:
+                        - /url: /subhash7476/prediction-market-analysis/blob/main/src/analysis/polymarket/__init__.py
+                        - text: __init__.py
+                  - cell [ref=e235]
+                  - cell [ref=e237]
+                - row "polymarket_trades_over_time.py, (File)" [ref=e240]:
+                  - cell "polymarket_trades_over_time.py, (File)" [ref=e241]:
+                    - generic [ref=e242]:
+                      - img [ref=e243]
+                      - link "polymarket_trades_over_time.py, (File)" [ref=e248] [cursor=pointer]:
+                        - /url: /subhash7476/prediction-market-analysis/blob/main/src/analysis/polymarket/polymarket_trades_over_time.py
+                        - text: polymarket_trades_over_time.py
+                  - cell [ref=e249]
+                  - cell [ref=e251]
+                - row "polymarket_volume_over_time.py, (File)" [ref=e254]:
+                  - cell "polymarket_volume_over_time.py, (File)" [ref=e255]:
+                    - generic [ref=e256]:
+                      - img [ref=e257]
+                      - link "polymarket_volume_over_time.py, (File)" [ref=e262] [cursor=pointer]:
+                        - /url: /subhash7476/prediction-market-analysis/blob/main/src/analysis/polymarket/polymarket_volume_over_time.py
+                        - text: polymarket_volume_over_time.py
+                  - cell [ref=e263]
+                  - cell [ref=e265]
+                - row "polymarket_win_rate_by_price.py, (File)" [ref=e268]:
+                  - cell "polymarket_win_rate_by_price.py, (File)" [ref=e269]:
+                    - generic [ref=e270]:
+                      - img [ref=e271]
+                      - link "polymarket_win_rate_by_price.py, (File)" [ref=e276] [cursor=pointer]:
+                        - /url: /subhash7476/prediction-market-analysis/blob/main/src/analysis/polymarket/polymarket_win_rate_by_price.py
+                        - text: polymarket_win_rate_by_price.py
+                  - cell [ref=e277]
+                  - cell [ref=e279]
+  - alert [ref=e285]
