@@ -119,10 +119,10 @@ class InventoryManager:
             await self._markout_q.put(fill)
 
         # 4. Check rapid double-fill
-        await self._check_rapid_fill(fill)
+        await self._check_rapid_fill(fill, question)
 
         # 4b. Check adverse-selection (one-directional fills)
-        await self._check_adverse_selection(fill)
+        await self._check_adverse_selection(fill, question)
 
         # 5. Check per-market inventory cap (category-specific if configured).
         abs_pos = abs(self._maker.get_inventory(fill.token_id))
@@ -150,8 +150,9 @@ class InventoryManager:
                 cooldown_seconds = self._inventory_cap_cooldown_seconds(fill.token_id)
                 self._maker.cooldowns[fill.token_id] = time.time() + cooldown_seconds
                 log.warning(
-                    f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
+                    f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:12]}] at {abs_pos:.0f} shares"
                     f" (cap={mkt_cap:.0f}) — quotes pulled for {cooldown_seconds}s"
+                    + (f" | q={question[:60]!r}" if question else "")
                 )
                 self._promote_over_cap_to_reduce_only()
 
@@ -177,12 +178,13 @@ class InventoryManager:
             )
 
         log.info(
-            f"INVENTORY: [{fill.token_id[:8]}] {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
+            f"INVENTORY: [{fill.token_id[:12]}] {fill.side} {fill.size:.2f}sh @ {fill.price:.3f} "
             f"→ net={self._maker.get_inventory(fill.token_id):.2f} "
-            f"total_abs={self._maker.total_abs_inventory:.0f} shares skew={skew:.2f}"
+            f"total_abs={self._maker.total_abs_inventory:.0f} skew={skew:.2f}"
+            + (f" | q={question[:60]!r}" if question else "")
         )
 
-    async def _check_rapid_fill(self, fill: Fill) -> None:
+    async def _check_rapid_fill(self, fill: Fill, question: str = "") -> None:
         """Detect both sides filled within RAPID_FILL_WINDOW."""
         times = self._maker.last_fill_times.setdefault(fill.token_id, {})
         other_side = "SELL" if fill.side == "BUY" else "BUY"
@@ -191,13 +193,14 @@ class InventoryManager:
             await self._cancel_q.put(CancelAll(fill.token_id))
             self._maker.cooldowns[fill.token_id] = time.time() + COOLDOWN_SECONDS
             log.warning(
-                f"RAPID DOUBLE-FILL: [{fill.token_id[:8]}] both sides hit within "
+                f"RAPID DOUBLE-FILL: [{fill.token_id[:12]}] both sides hit within "
                 f"{RAPID_FILL_WINDOW}s — quotes pulled"
+                + (f" | q={question[:60]!r}" if question else "")
             )
 
         times[fill.side] = fill.filled_at
 
-    async def _check_adverse_selection(self, fill: Fill) -> None:
+    async def _check_adverse_selection(self, fill: Fill, question: str = "") -> None:
         """Detect one-directional fill streams indicating adverse selection.
 
         If >= ADVERSE_MIN_FILLS fills have been seen on a market and
@@ -224,8 +227,9 @@ class InventoryManager:
             # Reset so it doesn't keep re-triggering every fill
             self._maker.recent_fill_sides[fill.token_id] = []
             log.warning(
-                f"ADVERSE SELECTION: [{fill.token_id[:8]}] {dominant}/{n} fills are "
+                f"ADVERSE SELECTION: [{fill.token_id[:12]}] {dominant}/{n} fills are "
                 f"{dominant_side} — quotes pulled for {ADVERSE_COOLDOWN_SECONDS}s (30 min)"
+                + (f" | q={question[:60]!r}" if question else "")
             )
 
     def _promote_over_cap_to_reduce_only(self) -> None:

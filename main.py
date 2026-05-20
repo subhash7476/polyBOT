@@ -492,6 +492,25 @@ async def main():
     )
 
 
+def _rotate_maker_logs() -> None:
+    """Archive existing maker log files before a live run so logs start clean.
+
+    Renames logs/maker.*.log → logs/maker.*.paper.<timestamp>.log.
+    Called only when PAPER=false so paper runs keep accumulating into the same file.
+    """
+    import glob, shutil
+    from datetime import datetime, timezone
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    for src in glob.glob("logs/maker.*.log"):
+        if ".paper." in src:
+            continue  # already archived
+        dst = src[:-4] + f".paper.{ts}.log"
+        try:
+            shutil.move(src, dst)
+        except OSError:
+            pass  # best-effort
+
+
 if __name__ == "__main__":
     import argparse
     ap = argparse.ArgumentParser(description="Polymarket trading bot")
@@ -500,6 +519,8 @@ if __name__ == "__main__":
     cli_args = ap.parse_args()
 
     if cli_args.mode == "maker":
+        if not config.PAPER:
+            _rotate_maker_logs()
         from maker.runner import run_maker
         asyncio.run(run_maker())
     else:

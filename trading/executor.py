@@ -150,11 +150,23 @@ class CLOBExecutor:
                 )
             except Exception as exc:
                 last_exc = exc
-                log.warning(f"order attempt {attempt}/{_MAX_RETRIES} failed: {exc}")
+                _body = ""
+                try:
+                    if hasattr(exc, "response") and exc.response is not None:
+                        _body = f" | body={exc.response.text[:300]}"
+                except Exception:
+                    pass
+                log.warning(f"order attempt {attempt}/{_MAX_RETRIES} failed: {exc}{_body}")
                 if attempt < _MAX_RETRIES:
                     await asyncio.sleep(_RETRY_DELAY)
 
-        log.error(f"order failed after {_MAX_RETRIES} attempts: {last_exc}")
+        _body = ""
+        try:
+            if hasattr(last_exc, "response") and last_exc.response is not None:
+                _body = f" | body={last_exc.response.text[:300]}"
+        except Exception:
+            pass
+        log.error(f"order failed after {_MAX_RETRIES} attempts: {last_exc}{_body}")
         return OrderResult(
             order_id=None, status="ERROR",
             filled_price=0.0, filled_size=0.0,

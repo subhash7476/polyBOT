@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import time
 import config
 from market.state import AppState
 from maker.state import MakerState
@@ -42,11 +43,13 @@ async def _heartbeat_loop(clob, interval: float = 30.0) -> None:
     """
     while True:
         await asyncio.sleep(interval)
+        t0 = time.time()
         try:
             result = await asyncio.get_event_loop().run_in_executor(
                 None, clob.post_heartbeat
             )
-            log.debug(f"heartbeat OK: {result}")
+            latency_ms = (time.time() - t0) * 1000
+            log.debug(f"heartbeat OK ({latency_ms:.0f}ms): {result}")
         except Exception as exc:
             log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
 
@@ -110,6 +113,7 @@ def build_maker_actors(
             maker_state, clob=clob,
             paper=True if shadow else paper,  # shadow always paper; live respects config
             quote_intents_q=quote_intents_q, cancel_q=cancel_q,
+            app_state=app_state,
         ),
         "fill_poller": fill_poller,
         "inventory": InventoryManager(
