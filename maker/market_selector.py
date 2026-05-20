@@ -837,6 +837,7 @@ class MarketSelector:
                     payload = resp.json() or {}
                     for row in payload.get("data", []) or []:
                         cid = str(row.get("condition_id") or "").strip().lower()
+                        cid = cid[2:] if cid.startswith("0x") else cid
                         if not cid:
                             continue
                         raw_min = row.get("rewards_min_size")
@@ -852,7 +853,9 @@ class MarketSelector:
                     try:
                         min_size = 0.0
                         max_spread = 0.0
-                        reward_row = reward_map.get(cs.condition_id.strip().lower())
+                        cid_norm = cs.condition_id.strip().lower()
+                        cid_norm = cid_norm[2:] if cid_norm.startswith("0x") else cid_norm
+                        reward_row = reward_map.get(cid_norm)
                         if reward_row is not None:
                             min_size, max_spread = reward_row
 
@@ -862,24 +865,28 @@ class MarketSelector:
                                 params={"condition_id": cs.condition_id},
                             )
                             if resp.status_code != 200:
-                                continue
-                            data = resp.json()
-                            raw_min = (
-                                data.get("min_incentive_size")
-                                or data.get("minIncentiveSize")
-                                or data.get("rewards_min_size")
-                                or data.get("rewardsMinSize")
-                            )
-                            raw_spread = (
-                                data.get("max_incentive_spread")
-                                or data.get("maxIncentiveSpread")
-                                or data.get("rewards_max_spread")
-                                or data.get("rewardsMaxSpread")
-                            )
-                            if raw_min is not None:
-                                min_size = float(raw_min)
-                            if raw_spread is not None:
-                                max_spread = float(raw_spread) / 100.0
+                                log.debug(
+                                    f"incentive_params CLOB fallback [{token_id[:8]}]: "
+                                    f"status={resp.status_code} — applying defaults"
+                                )
+                            else:
+                                data = resp.json()
+                                raw_min = (
+                                    data.get("min_incentive_size")
+                                    or data.get("minIncentiveSize")
+                                    or data.get("rewards_min_size")
+                                    or data.get("rewardsMinSize")
+                                )
+                                raw_spread = (
+                                    data.get("max_incentive_spread")
+                                    or data.get("maxIncentiveSpread")
+                                    or data.get("rewards_max_spread")
+                                    or data.get("rewardsMaxSpread")
+                                )
+                                if raw_min is not None:
+                                    min_size = float(raw_min)
+                                if raw_spread is not None:
+                                    max_spread = float(raw_spread) / 100.0
 
                         if min_size <= 0.0:
                             min_size = MAKER_REBATE_DEFAULT_MIN_SIZE
