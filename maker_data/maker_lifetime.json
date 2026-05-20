@@ -1,8 +1,8 @@
 {
-  "last_date": "2026-05-18",
-  "total_fills": 8465,
-  "total_realized_pnl": 194.80406904975766,
-  "total_cash_pnl": 765.1796253531209,
+  "last_date": "2026-05-19",
+  "total_fills": 8831,
+  "total_realized_pnl": 194.07785469442214,
+  "total_cash_pnl": 789.6141371463241,
   "by_date": {
     "2026-05-10": {
       "fills": 722,
@@ -48,6 +48,11 @@
       "fills": 356,
       "realized_pnl": 3.871330991531835,
       "cash_pnl": 106.23880106408797
+    },
+    "2026-05-19": {
+      "fills": 366,
+      "realized_pnl": -0.7262143553355145,
+      "cash_pnl": 24.434511793203654
     }
   },
   "by_market": {
@@ -94,9 +99,9 @@
       "question": "Will the highest temperature in New York City be between 70-71\u00b0F on May 10?"
     },
     "16684003019585301187556121691683382680088297222373235105315599633539481594481": {
-      "fills": 46,
-      "realized_pnl": 0.641608520883671,
-      "cash_pnl": 9.768025633146749,
+      "fills": 52,
+      "realized_pnl": 0.7223050627618539,
+      "cash_pnl": 11.080278749654136,
       "question": "Will Jannik Sinner win the 2026 Men's French Open?"
     },
     "78140458432174397862436707256368409182467606418188760097873260862383336868084": {
@@ -118,9 +123,9 @@
       "question": "Will Arsenal win the 2025\u201326 Champions League?"
     },
     "114266735877811876021362945683127542532778925409590599016489267644246881997088": {
-      "fills": 248,
-      "realized_pnl": 5.269059040273781,
-      "cash_pnl": 15.848555272081736,
+      "fills": 299,
+      "realized_pnl": 6.095163556790133,
+      "cash_pnl": 14.292634527925262,
       "question": "Will NVIDIA be the largest company in the world by market cap on June 30?"
     },
     "98802805985482342600894113675950779135763458884653283573395953208519724485713": {
@@ -130,9 +135,9 @@
       "question": "Will the highest temperature in Paris be 18\u00b0C on May 10?"
     },
     "111128191581505463501777127559667396812474366956707382672202929745167742497287": {
-      "fills": 120,
-      "realized_pnl": 3.322113024956442,
-      "cash_pnl": 15.89042261944564,
+      "fills": 138,
+      "realized_pnl": 3.5987696253605375,
+      "cash_pnl": -9.082899478043167,
       "question": "MicroStrategy sells any Bitcoin by December 31, 2026?"
     },
     "79329149166694233887750825702310528207626556437756991187247906682062602501449": {
@@ -154,9 +159,9 @@
       "question": "Will the highest temperature in Shenzhen be 26\u00b0C on May 10?"
     },
     "50159594562995946489082572084618497878080171076279182071094706874430061245610": {
-      "fills": 27,
-      "realized_pnl": -1.5237216351667726,
-      "cash_pnl": 0.3813645609581542,
+      "fills": 31,
+      "realized_pnl": -1.4931469559729535,
+      "cash_pnl": 7.994181746872,
       "question": "Will the Colorado Avalanche win the Western Conference?"
     },
     "61728875846650437692347164048880035780153394581661387362695301046334269449685": {
@@ -196,9 +201,9 @@
       "question": "Will the highest temperature in London be 12\u00b0C on May 10?"
     },
     "110251828161543119357013227499774714771527179764174739487025581227481937033858": {
-      "fills": 115,
-      "realized_pnl": -0.2737005828945147,
-      "cash_pnl": -10.623859251222942,
+      "fills": 120,
+      "realized_pnl": -0.8428563165847667,
+      "cash_pnl": -13.371578244681876,
       "question": "MicroStrategy sells any Bitcoin by June 30, 2026?"
     },
     "73771268047051200824760386198689216056597262949413420589663890618717788933148": {
@@ -232,15 +237,15 @@
       "question": "Will the highest temperature in Milan be 16\u00b0C on May 10?"
     },
     "8123535475846292133414185622904211631309235799847901782546736316721310047372": {
-      "fills": 30,
-      "realized_pnl": -0.022121454505880322,
-      "cash_pnl": 1.8519193261337665,
+      "fills": 36,
+      "realized_pnl": -0.08261216293999674,
+      "cash_pnl": 0.9046873569969481,
       "question": "Will Sunrisers Hyderabad win the 2026 Indian Premier League?"
     },
     "78489029628428171560629478176830507283782902711569001590212217854909060316276": {
-      "fills": 34,
-      "realized_pnl": 0.7183325347368594,
-      "cash_pnl": 6.050043731636318,
+      "fills": 40,
+      "realized_pnl": 0.8191474267121777,
+      "cash_pnl": 6.143368396846335,
       "question": "Will Royal Challengers Bengaluru win the 2026 Indian Premier League?"
     },
     "93640842770483461016456889320283445702434898889889600681435732186059788568994": {
@@ -310,9 +315,9 @@
       "question": "Will the highest temperature in Seoul be 21\u00b0C on May 11?"
     },
     "49500299856831034491021962156746701298730459370557900271970866855042624695770": {
-      "fills": 174,
-      "realized_pnl": 3.416057334262776,
-      "cash_pnl": 12.558412939847097,
+      "fills": 252,
+      "realized_pnl": 3.799747191064144,
+      "cash_pnl": 10.286076446089542,
       "question": "Will the Oklahoma City Thunder win the 2026 NBA Finals?"
     },
     "5566553693074043041334186288721761522535416169288846999699067845171119949500": {
@@ -544,9 +549,9 @@
       "question": "Will the highest temperature in Madrid be 19\u00b0C on May 11?"
     },
     "20778198929859293228205178051767348056152880383764093118045434446806734631259": {
-      "fills": 26,
-      "realized_pnl": 0.5120640127027976,
-      "cash_pnl": 5.0803746831056955,
+      "fills": 32,
+      "realized_pnl": 0.7685250163318251,
+      "cash_pnl": 45.76852501633186,
       "question": "Will Vitality win IEM Cologne Major 2026?"
     },
     "82294265279517788069388087838037305194656998172027244775425123449776048199682": {
@@ -874,9 +879,9 @@
       "question": "Will Bitcoin reach $84,000 May 11-17?"
     },
     "113379839734351069617987084078322474966003108854908079701423911002443710490196": {
-      "fills": 21,
-      "realized_pnl": 0.37192682030254787,
-      "cash_pnl": 3.3600590087764415,
+      "fills": 22,
+      "realized_pnl": 0.41255182030255355,
+      "cash_pnl": 2.7100590087764416,
       "question": "Will 1 Fed rate cut happen in 2026?"
     },
     "92200158326810490684223151181467244436531832263564319668018409548263583262256": {
@@ -2056,21 +2061,21 @@
       "question": "Will Barry Moore be the Republican nominee for Senate in Alabama?"
     },
     "1103567821195781235181933160193119827835481907603520364381679513363453558168": {
-      "fills": 8,
+      "fills": 9,
       "realized_pnl": 0.1224250000000211,
-      "cash_pnl": 1.910973090118543,
+      "cash_pnl": 2.6190956351613655,
       "question": "Will Team Spirit win IEM Cologne Major 2026?"
     },
     "14020954698649130092763312274867011816097556365271173638361581853110497199476": {
-      "fills": 8,
-      "realized_pnl": -0.019811340000018163,
-      "cash_pnl": 6.988279610000001,
+      "fills": 12,
+      "realized_pnl": -1.0603447695312695,
+      "cash_pnl": 2.260166090468751,
       "question": "Will Jannik Sinner be the 2026 Men\u2019s Wimbledon winner?"
     },
     "75028752776148090296091099469912621384650554615761384992997579209329182670110": {
-      "fills": 7,
-      "realized_pnl": 0.040625000000005684,
-      "cash_pnl": 6.911178934574127,
+      "fills": 14,
+      "realized_pnl": -0.16249999999999432,
+      "cash_pnl": 3.4286836988694755,
       "question": "Fed rate hike in 2026?"
     },
     "72304052873611261335260464672644781804557218671425470569977240802446584805659": {
@@ -2092,9 +2097,9 @@
       "question": "Will Carlos Alcaraz be the 2026 Men\u2019s Wimbledon winner?"
     },
     "31651972441019808961685346078403610685710956924575973014923461950982284624160": {
-      "fills": 24,
-      "realized_pnl": 0.17341602823134394,
-      "cash_pnl": 10.416272374792328,
+      "fills": 39,
+      "realized_pnl": 0.02636820536082496,
+      "cash_pnl": 5.767932804479317,
       "question": "No one announced as next James Bond?"
     },
     "27738764414383846280696651239220630612119939662537889541509613485497991663717": {
@@ -2132,6 +2137,48 @@
       "realized_pnl": 0.07004415190218083,
       "cash_pnl": 1.7646719900369654,
       "question": "Will inflation reach more than 6% in 2026?"
+    },
+    "6842047670820419171425914468337077680927367717837404858652329372722501774629": {
+      "fills": 52,
+      "realized_pnl": -0.816996014412581,
+      "cash_pnl": 4.936427428466006,
+      "question": "Will the San Antonio Spurs win the NBA Western Conference Finals?"
+    },
+    "102227184035967850089766981958743064457339118173548431660886438726896222843254": {
+      "fills": 75,
+      "realized_pnl": -0.7480044543837323,
+      "cash_pnl": -2.6826108606336914,
+      "question": "Will the San Antonio Spurs win the 2026 NBA Finals?"
+    },
+    "98159610150840632796739020015080159429060980857078181657479773707974801384634": {
+      "fills": 12,
+      "realized_pnl": -0.6020829588175047,
+      "cash_pnl": 7.784352059662345,
+      "question": "Will the price of Bitcoin be above $74,000 on May 24?"
+    },
+    "100849003909665512702601901008742914680541396487975905426589894865849612746338": {
+      "fills": 3,
+      "realized_pnl": 0.02610000000001378,
+      "cash_pnl": 2.5771222732000005,
+      "question": "Will global temperature increase by between 1.10\u00baC and 1.14\u00baC in May 2026?"
+    },
+    "103903623902234534734643595352937207636800780581806597323199894204427802374039": {
+      "fills": 3,
+      "realized_pnl": 0.0,
+      "cash_pnl": 3.03203125,
+      "question": "Will global temperature increase by less than 1.10\u00baC in May 2026?"
+    },
+    "114423403729258777359504929942890771536329559486526860556796374176881874914899": {
+      "fills": 7,
+      "realized_pnl": 1.2703710937500148,
+      "cash_pnl": 3.2582421874999996,
+      "question": "Aaron Taylor-Johnson announced as next James Bond?"
+    },
+    "96146466658076803851582611490682593267244246165270197700564598308386189174223": {
+      "fills": 6,
+      "realized_pnl": 0.1691275826562446,
+      "cash_pnl": 1.1197582326562512,
+      "question": "Will the price of Ethereum be above $2,000 on May 24?"
     }
   }
 }

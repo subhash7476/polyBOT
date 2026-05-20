@@ -219,6 +219,31 @@ def _build_category_caps() -> dict[str, float]:
 
 MAKER_CATEGORY_CAPS: dict[str, float] = _build_category_caps()
 
+# ── Maker bot: Overnight viability threshold ─────────────────────────────────
+# Reporting-only hard thresholds. They do not stop the bot; they write a
+# persistent verdict so overnight runs can be judged after restart.
+OVERNIGHT_VIABILITY_ENABLED = os.getenv(
+    "OVERNIGHT_VIABILITY_ENABLED", "true"
+).lower() == "true"
+OVERNIGHT_VIABILITY_MIN_HOURS = float(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_HOURS", "8")
+)
+OVERNIGHT_VIABILITY_MIN_SESSION_FILLS = int(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_SESSION_FILLS", "50")
+)
+OVERNIGHT_VIABILITY_MIN_SESSION_REALIZED_PNL = float(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_SESSION_REALIZED_PNL", "5")
+)
+OVERNIGHT_VIABILITY_MIN_SESSION_MARKOUT_30S = float(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_SESSION_MARKOUT_30S", "-0.0015")
+)
+OVERNIGHT_VIABILITY_MIN_REBATE_ELIGIBLE_ACTIVE = int(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_REBATE_ELIGIBLE_ACTIVE", "3")
+)
+OVERNIGHT_VIABILITY_MIN_REBATE_ELIGIBLE_RATIO = float(
+    os.getenv("OVERNIGHT_VIABILITY_MIN_REBATE_ELIGIBLE_RATIO", "0.05")
+)
+
 # ── Maker bot: Quote sizing ────────────────────────────────────────────────
 MAKER_QUOTE_SIZE = float(os.getenv("MAKER_QUOTE_SIZE",    "5"))
 MAKER_LADDER_LEVELS = int(os.getenv("MAKER_LADDER_LEVELS",   "3"))

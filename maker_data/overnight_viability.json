@@ -1,0 +1,47 @@
+{
+  "status": "pending",
+  "pass": false,
+  "fail": false,
+  "pending": true,
+  "generated_at": 1779266481.788868,
+  "started_at": 1779257477.96498,
+  "uptime_hours": 2.501,
+  "snapshot": {
+    "paper": true,
+    "session_fills": 91,
+    "session_realized_pnl": 8.7872,
+    "session_mtm_pnl": -80.9312,
+    "today_fills": 91,
+    "today_realized_pnl": 8.7872,
+    "quote_uptime": 0.989,
+    "avg_markout_30s": -0.00276,
+    "active_markets": 20,
+    "selected_markets": 100,
+    "live_positions": 20,
+    "rebate_eligible_active": 0,
+    "rebate_eligible_active_ratio": 0.0,
+    "rebate_eligible_selected": 0,
+    "rebate_eligible_selected_ratio": 0.0,
+    "rebate_eligible_live": 0,
+    "rebate_eligible_live_ratio": 0.0
+  },
+  "thresholds": {
+    "min_hours": 8.0,
+    "min_session_fills": 50,
+    "min_session_realized_pnl": 5.0,
+    "min_session_markout_30s": -0.0015,
+    "min_rebate_eligible_active": 3,
+    "min_rebate_eligible_ratio": 0.05
+  },
+  "checks": {
+    "min_hours": false,
+    "min_session_fills": true,
+    "min_session_realized_pnl": true,
+    "min_session_markout_30s": false,
+    "min_rebate_eligible_active": false,
+    "min_rebate_eligible_ratio": false
+  },
+  "reasons": [
+    "uptime_hours=2.50 < 8.00"
+  ]
+}

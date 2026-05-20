@@ -13,6 +13,7 @@ from maker.fill_poller import FillPoller
 from maker.shadow_fill_poller import ShadowFillPoller
 from maker.inventory import InventoryManager
 from maker.markout_tracker import MarkoutTracker
+from maker.overnight_viability import OvernightViabilityMonitor
 from maker.fill_ledger import FillLedger
 from maker.vpin_poller import VPINPoller
 from maker.state_persistence import MakerCheckpointer, MakerStateLoader, LifetimeStatsCache
@@ -222,6 +223,17 @@ async def run_maker():
         FalconFeed(app_state).start(),
         checkpointer.checkpoint_loop(),
     ]
+
+    if config.OVERNIGHT_VIABILITY_ENABLED:
+        coros.append(OvernightViabilityMonitor(maker_dash).run())
+        log.info(
+            "Overnight viability monitor enabled: "
+            f"hours>={config.OVERNIGHT_VIABILITY_MIN_HOURS}, "
+            f"fills>={config.OVERNIGHT_VIABILITY_MIN_SESSION_FILLS}, "
+            f"realized_pnl>={config.OVERNIGHT_VIABILITY_MIN_SESSION_REALIZED_PNL}, "
+            f"markout30>={config.OVERNIGHT_VIABILITY_MIN_SESSION_MARKOUT_30S}, "
+            f"rebate_eligible_active>={config.OVERNIGHT_VIABILITY_MIN_REBATE_ELIGIBLE_ACTIVE}"
+        )
 
     if wallet_address:
         coros.append(BalancePoller(app_state, wallet_address).start())
