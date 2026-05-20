@@ -124,18 +124,36 @@ class InventoryManager:
         # 4b. Check adverse-selection (one-directional fills)
         await self._check_adverse_selection(fill)
 
-        # 5. Check per-market inventory cap (category-specific if configured)
+        # 5. Check per-market inventory cap (category-specific if configured).
         abs_pos = abs(self._maker.get_inventory(fill.token_id))
         mkt_cap = self._maker.max_inventory_for_category(category)
+
+        # Reconstruct pre-fill inventory to detect whether this is a new overshoot
+        # event (position had drained below cap) vs. continuing the same one.
+        pre_abs = abs(abs_pos - fill.size) if fill.side == "BUY" else abs(abs_pos + fill.size)
+        if fill.token_id in self._maker.cap_draining and pre_abs < mkt_cap:
+            # Position dropped below cap between events — treat next breach as new.
+            self._maker.cap_draining.discard(fill.token_id)
+
         if abs_pos >= mkt_cap:
             await self._cancel_q.put(CancelAll(fill.token_id))
-            cooldown_seconds = self._inventory_cap_cooldown_seconds(fill.token_id)
-            self._maker.cooldowns[fill.token_id] = time.time() + cooldown_seconds
-            log.warning(
-                f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
-                f" (cap={mkt_cap:.0f}) — quotes pulled for {cooldown_seconds}s"
-            )
-            self._promote_over_cap_to_reduce_only()
+            if fill.token_id in self._maker.cap_draining:
+                # Continuing the same overshoot — resend cancel silently, skip escalation.
+                log.debug(
+                    f"INVENTORY CAP (draining) [{fill.token_id[:8]}]: {abs_pos:.0f}sh — cancel resent"
+                )
+            else:
+                # First fire for this event: escalate cooldown, wipe live_orders so
+                # FillPoller stops generating paper fills before the cancel propagates.
+                self._maker.cap_draining.add(fill.token_id)
+                self._maker.live_orders.pop(fill.token_id, None)
+                cooldown_seconds = self._inventory_cap_cooldown_seconds(fill.token_id)
+                self._maker.cooldowns[fill.token_id] = time.time() + cooldown_seconds
+                log.warning(
+                    f"INVENTORY CAP [{category or 'unknown'}]: [{fill.token_id[:8]}] at {abs_pos:.0f} shares"
+                    f" (cap={mkt_cap:.0f}) — quotes pulled for {cooldown_seconds}s"
+                )
+                self._promote_over_cap_to_reduce_only()
 
         # 6. Check total inventory cap
         total = self._maker.total_abs_inventory

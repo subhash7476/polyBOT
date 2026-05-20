@@ -50,6 +50,11 @@ class MakerState:
     # token_id -> {"count": int, "last_hit": unix timestamp}
     inventory_cap_hits: dict[str, dict] = field(default_factory=dict)
 
+    # Markets whose cap has fired and whose live_orders were cleared this cycle.
+    # Subsequent in-flight fills re-fire CancelAll silently without escalating the
+    # cooldown counter a second time. Cleared lazily once the cooldown expires.
+    cap_draining: set = field(default_factory=set)
+
     # Global cooldown: set when total inventory cap fires; blocks ALL quoting
     global_cooldown_until: float = 0.0
 

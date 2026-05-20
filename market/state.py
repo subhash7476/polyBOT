@@ -181,6 +181,7 @@ class ContractState:
     # Liquidity reward eligibility — fetched from CLOB API by MarketSelector; 0.0 = not yet fetched
     min_incentive_size: float = 0.0    # minimum order size in shares to qualify for rewards
     max_incentive_spread: float = 0.0  # max distance from mid in [0,1] space; orders beyond score 0
+    incentive_params_fetched_at: float = 0.0  # unix ts of last successful fetch; 0.0 = never fetched
 
     @property
     def mid(self) -> float:

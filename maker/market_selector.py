@@ -145,7 +145,7 @@ def _allocate_category_quotas(
     total_quota = sum(quotas.values())
     if total_quota > max_markets:
         # Trim the weakest categories first until the total fits the budget.
-        for cat, _ in sorted(cat_weights.items(), key=lambda kv: (kv[1], len(by_cat[kv[0]]))):
+        for cat, _ in sorted(cat_weights.items(), key=lambda kv: (kv[1], len(by_cat[kv[0]]), kv[0])):
             while total_quota > max_markets and quotas.get(cat, 0) > 0:
                 quotas[cat] -= 1
                 total_quota -= 1
@@ -810,10 +810,15 @@ class MarketSelector:
         if os.getenv("PYTEST_CURRENT_TEST"):
             return
 
+        _now = time.time()
+        _ttl = 4 * 3600  # re-fetch reward params every 4 h in case Polymarket adjusts thresholds
         to_fetch = [
             (token_id, cs)
             for token_id, cs in selected.items()
-            if cs.condition_id and cs.min_incentive_size == 0.0
+            if cs.condition_id and (
+                cs.min_incentive_size == 0.0
+                or _now - cs.incentive_params_fetched_at > _ttl
+            )
         ]
         if not to_fetch:
             return
@@ -898,6 +903,7 @@ class MarketSelector:
                             if live_cs is not None:
                                 live_cs.min_incentive_size = max(0.0, min(min_size, 200.0))
                                 live_cs.max_incentive_spread = max(0.0, min(max_spread, 0.50))
+                                live_cs.incentive_params_fetched_at = time.time()
                         fetched += 1
                         log.info(
                             f"incentive_params [{token_id[:8]}] {cs.question[:35]}: "
