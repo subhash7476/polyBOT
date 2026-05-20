@@ -106,7 +106,7 @@ class OrderManager:
         t0 = time.time()
         try:
             signed = self._clob.create_order(order_args)
-            result = self._clob.post_order(signed, orderType=OrderType.GTC, post_only=True)
+            result = self._clob.post_order(signed, order_type=OrderType.GTC, post_only=True)
             order_id = result.get("orderID", "")
             status = result.get("status", "UNKNOWN")
             latency_ms = (time.time() - t0) * 1000
