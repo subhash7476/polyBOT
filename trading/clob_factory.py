@@ -57,13 +57,21 @@ def build_clob_client(
     """
     from config import POLYMARKET_CLOB_URL
     sdk = _import_sdk()
-    return sdk.ClobClient(
+    client = sdk.ClobClient(
         POLYMARKET_CLOB_URL,
         chain_id,
         key=private_key,
         signature_type=sig_type,
         funder=funder or None,
     )
+    # Derive and set L2 API credentials so cancel_all / get_open_orders work.
+    # derive_api_key() signs a GET with the L1 key — no server-side state created.
+    try:
+        creds = client.derive_api_key()
+        client.set_api_creds(creds)
+    except Exception:
+        pass  # non-fatal: L1-only ops still work; L2 ops will fail at call time
+    return client
 
 
 # ---------------------------------------------------------------------------

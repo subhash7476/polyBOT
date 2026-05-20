@@ -171,7 +171,7 @@ class FillPoller:
 
         while True:
             try:
-                orders = self._clob.get_orders(OpenOrderParams())
+                orders = self._clob.get_open_orders(OpenOrderParams())
                 for order in orders:
                     oid = order.get("orderID", "")
                     status = order.get("status", "")
