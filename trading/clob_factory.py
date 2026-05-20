@@ -67,7 +67,7 @@ def build_clob_client(
     # Derive and set L2 API credentials so cancel_all / get_open_orders work.
     # derive_api_key() signs a GET with the L1 key — no server-side state created.
     try:
-        creds = client.derive_api_key()
+        creds = client.create_or_derive_api_key()
         client.set_api_creds(creds)
     except Exception:
         pass  # non-fatal: L1-only ops still work; L2 ops will fail at call time

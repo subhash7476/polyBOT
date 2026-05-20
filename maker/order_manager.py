@@ -70,7 +70,16 @@ class OrderManager:
     def handle_cancel_sync(self, cancel: CancelAll) -> None:
         if cancel.is_global:
             if not self._paper and self._clob:
-                self._clob.cancel_all()
+                try:
+                    self._clob.cancel_all()
+                except Exception as exc:
+                    body = ""
+                    try:
+                        if hasattr(exc, "response") and exc.response is not None:
+                            body = f" | response={exc.response.text[:200]}"
+                    except Exception:
+                        pass
+                    log.warning(f"cancel_all failed (continuing): {exc}{body}")
             n = sum(len(v) for v in self._maker.live_orders.values())
             self._maker.live_orders.clear()
             self._maker.total_cancels += n
