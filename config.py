@@ -271,6 +271,9 @@ MAKER_ADVERSE_MIN_FILLS = int(os.getenv("MAKER_ADVERSE_MIN_FILLS",        "5"))
 MAKER_ADVERSE_DIRECTION_PCT = float(
     os.getenv("MAKER_ADVERSE_DIRECTION_PCT",  "0.80"))
 MAKER_PRE_RES_HOURS = float(os.getenv("MAKER_PRE_RES_HOURS",          "2.0"))
+# Stop quoting when on-chain USDC balance falls below this floor.
+# Prevents flooding the CLOB with orders the account cannot fund.
+MAKER_MIN_BALANCE_USDC = float(os.getenv("MAKER_MIN_BALANCE_USDC",    "2.0"))
 
 # ── Maker bot: Category spread multipliers (regime.py baseline) ───────────
 MAKER_SPREAD_MULT_FINANCE = float(

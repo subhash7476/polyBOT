@@ -4,7 +4,7 @@ import asyncio
 import time
 import uuid
 from dataclasses import dataclass, field
-from maker.types import QuoteIntent
+from maker.types import QuoteIntent, LadderUpdate
 from config import MAKER_MAX_INVENTORY_PER_MARKET, MAKER_MAX_TOTAL_INVENTORY, MAKER_CATEGORY_CAPS
 
 
@@ -37,8 +37,8 @@ class MakerState:
     # Currently selected token_ids (written by MarketSelector after each selection cycle)
     selected_token_ids: set = field(default_factory=set)
 
-    # Per-market last emitted quote (for stale detection)
-    last_quotes: dict[str, QuoteIntent] = field(default_factory=dict)
+    # Per-market last emitted ladder (for stale detection — full LadderUpdate for all-level comparison)
+    last_quotes: dict[str, LadderUpdate] = field(default_factory=dict)
 
     # Per-market rolling markouts: token_id -> {interval: avg_markout}
     rolling_markouts: dict[str, dict[int, float]] = field(default_factory=dict)
@@ -162,9 +162,12 @@ class MakerState:
         return time.time() < self.global_cooldown_until
 
     def record_fill(self, token_id: str, side: str, price: float, size: float, filled_at: float,
-                    question: str = "", end_date_iso: str = "", *, _track_session: bool = True) -> None:
+                    question: str = "", end_date_iso: str = "", *,
+                    cash_flow: float | None = None,
+                    _track_session: bool = True) -> None:
         """Record fill in history, update cash P&L, and compute realized P&L via FIFO lot matching.
 
+        cash_flow: pass the actual USDC flow when it differs from side/price/size (e.g. NO fills).
         _track_session=False during startup replay — suppresses session_by_market updates since
         those fills are already counted in today_stats (read from the ledger at startup).
         """
@@ -172,7 +175,8 @@ class MakerState:
 
         # cash_pnl tracks raw cash flows only — do NOT use this for decision-making.
         # Use mtm_pnl(markets) for a number that accounts for open positions.
-        cash_flow = (price * size) if side == "SELL" else -(price * size)
+        if cash_flow is None:
+            cash_flow = (price * size) if side == "SELL" else -(price * size)
         self.cash_pnl += cash_flow
         self.total_fills += 1
 

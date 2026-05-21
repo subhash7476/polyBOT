@@ -91,11 +91,11 @@ class InventoryManager:
         _realized_before = self._maker.realized_pnl
         self._maker.update_inventory(fill.token_id, fill.side, fill.size)
         self._maker.record_fill(fill.token_id, fill.side, fill.price, fill.size, fill.filled_at,
-                                question=question, end_date_iso=end_date_iso)
+                                question=question, end_date_iso=end_date_iso,
+                                cash_flow=fill.cash_flow)
 
         # 1b. Persist to fill ledger; track fill_id so replay skips it on restart
         if self._fill_ledger is not None:
-            cash_flow = (fill.price * fill.size) if fill.side == "SELL" else -(fill.price * fill.size)
             fill_id = self._fill_ledger.append(
                 session_id=self._maker.session_id,
                 token_id=fill.token_id,
@@ -103,7 +103,7 @@ class InventoryManager:
                 side=fill.side,
                 price=fill.price,
                 size=fill.size,
-                cash_flow=cash_flow,
+                cash_flow=fill.cash_flow,
                 realized_pnl=self._maker.realized_pnl - _realized_before,
                 inventory_after=self._maker.get_inventory(fill.token_id),
                 filled_at=fill.filled_at,

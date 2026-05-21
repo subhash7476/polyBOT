@@ -302,11 +302,25 @@ class MakerStateLoader:
                 k: [tuple(lot) for lot in v]
                 for k, v in data.get("open_lots", {}).items()
             }
-            log.info(
-                f"Checkpoint restored: fills={s.total_fills} "
-                f"inventory={len(s.inventory)} markets "
-                f"fills_seen={len(s.daily_fills_seen)}"
-            )
+
+            # Any position carried over from the previous session goes into
+            # reduce_only immediately — no waiting for MarketSelector's 15-min
+            # orphan-detection pass.  The inventory skew and inside-book quoting
+            # will naturally close at a profit if the market moves our way;
+            # if it doesn't, we exit at a small loss rather than hold indefinitely.
+            carried = {tid for tid, qty in s.inventory.items() if qty != 0.0}
+            s.reduce_only_markets.update(carried)
+            if carried:
+                log.info(
+                    f"Checkpoint restored: {len(carried)} carried position(s) set to reduce_only — "
+                    + ", ".join(f"{t[:8]}({s.inventory[t]:+.1f}sh)" for t in sorted(carried))
+                )
+            else:
+                log.info(
+                    f"Checkpoint restored: fills={s.total_fills} "
+                    f"inventory={len(s.inventory)} markets "
+                    f"fills_seen={len(s.daily_fills_seen)}"
+                )
         except Exception as exc:
             log.warning(f"Could not restore checkpoint (starting fresh): {exc}")
 
@@ -328,6 +342,7 @@ class MakerStateLoader:
                 size=rec["size"],
                 filled_at=rec["ts"],
                 question=rec.get("question", ""),
+                cash_flow=rec.get("cash_flow"),
                 _track_session=False,
             )
             self._state.daily_fills_seen.add(fill_id)

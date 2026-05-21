@@ -130,7 +130,7 @@ def compute_quote_size(
 class QuoteEngine:
     """Computes quotes for active markets, event-driven on price ticks."""
 
-    FORCE_REPRICE_INTERVAL = 30.0  # fallback: reprice all markets if no tick arrives
+    FORCE_REPRICE_INTERVAL = 10.0  # fallback: reprice all markets if no tick arrives (safe because handle_ladder_sync is diff-based)
     CLOB_STALE_SECONDS = 30.0      # pull all quotes if CLOB feed silent this long
 
     def __init__(
@@ -168,19 +168,50 @@ class QuoteEngine:
         spread: float,
         size: float,
         reason: str,
+        inventory: float = 0.0,
+        min_incentive_size: float = 0.0,
     ) -> LadderUpdate:
         """Build a LADDER_LEVELS-deep ladder centred on fair_value.
 
         Level layout (LADDER_LEVELS=3, center index=1):
-          index 0: bid = fv - half - LEVEL_STEP,  ask = fv + half + LEVEL_STEP
-          index 1: bid = fv - half,               ask = fv + half          ← center
-          index 2: bid = fv - half + LEVEL_STEP,  ask = fv + half - LEVEL_STEP
+          index 0: bid = fv - half - LEVEL_STEP,  ask = fv + half + LEVEL_STEP  (outermost)
+          index 1: bid = fv - half,               ask = fv + half               (center)
+          index 2: bid = fv - half + LEVEL_STEP,  ask = fv + half - LEVEL_STEP  (tightest)
 
-        Tightest level (index 2) is closest to mid. Widest (index 0) is outermost.
-        All levels carry equal size.
+        Tightest level (index 2) is closest to mid and carries the most size.
+
+        Size allocation (tiered, only applies when LADDER_LEVELS > 1):
+          inner (tightest):  1.5 × base_size
+          center:            1.0 × base_size
+          outer (widest):    0.5 × base_size
+          single level:      1.0 × base_size (no tier — consistent with MAKER_QUOTE_SIZE cap)
+
+        Asymmetric sizing (inventory-aware, ±20% lean):
+          Long inventory  → bid_size shrunk, ask_size grown (lean toward selling)
+          Short inventory → ask_size shrunk, bid_size grown (lean toward buying)
+          Each side independently floored at min_incentive_size so reward eligibility is preserved.
+          Asymmetry is capped at ±20% so a single order never exceeds 1.2 × base_size.
         """
         half = spread / 2.0
         center_idx = LADDER_LEVELS // 2
+
+        # Tier multipliers: only differentiate when there are multiple levels.
+        # With a single level there is nothing to compare against — use 1.0.
+        def _tier_mult(i: int) -> float:
+            if LADDER_LEVELS <= 1:
+                return 1.0
+            distance_from_inner = (LADDER_LEVELS - 1) - i  # 0 at innermost
+            if distance_from_inner == 0:
+                return 1.5
+            if distance_from_inner == 1:
+                return 1.0
+            return 0.5
+
+        # Inventory asymmetry: capped at ±0.2 so a single order never exceeds 1.2× base.
+        # The fair-value skew (compute_fair_value) already creates the directional lean;
+        # size asymmetry is a secondary nudge, not the primary mechanism.
+        inv_skew = _clamp(inventory / max(abs(inventory), 10.0) * 0.2, -0.2, 0.2) if inventory != 0.0 else 0.0
+
         levels = []
         for i in range(LADDER_LEVELS):
             offset = (center_idx - i) * LEVEL_STEP
@@ -188,23 +219,49 @@ class QuoteEngine:
             ask = round(_clamp(fair_value + half + offset, 0.01, 0.99), 4)
             if bid >= ask:
                 continue  # skip degenerate level (very near 0 or 1)
+
+            tier = _tier_mult(i)
+            base = size * tier
+            min_sz = min_incentive_size if min_incentive_size > 0 else 1.0
+            bid_sz = min(max(base * (1.0 - inv_skew), min_sz), size)
+            ask_sz = min(max(base * (1.0 + inv_skew), min_sz), size)
+            bid_sz = round(bid_sz, 1)
+            ask_sz = round(ask_sz, 1)
+
             levels.append(QuoteIntent(
                 token_id=token_id,
                 bid_price=bid,
                 ask_price=ask,
-                bid_size=size,
-                ask_size=size,
+                bid_size=bid_sz,
+                ask_size=ask_sz,
                 reason=reason,
             ))
         return LadderUpdate(token_id=token_id, levels=levels, reason=reason)
 
     @staticmethod
-    def is_stale(old: QuoteIntent, new: QuoteIntent, tick: float = 0.01) -> bool:
-        """True if the new quote differs enough from the old to warrant a reprice."""
-        return (
-            abs(old.bid_price - new.bid_price) >= tick
-            or abs(old.ask_price - new.ask_price) >= tick
-        )
+    def is_stale(old: "LadderUpdate | QuoteIntent", new: "LadderUpdate | QuoteIntent", tick: float = 0.01) -> bool:
+        """True if the new quote differs enough from the old to warrant a reprice.
+
+        Compares all levels so outer levels cannot drift without triggering a reprice.
+        Falls back to center-level comparison when given bare QuoteIntents.
+        """
+        if isinstance(old, LadderUpdate) and isinstance(new, LadderUpdate):
+            if len(old.levels) != len(new.levels):
+                return True
+            return any(
+                abs(o.bid_price - n.bid_price) >= tick
+                or abs(o.ask_price - n.ask_price) >= tick
+                or abs(o.bid_size - n.bid_size) >= 0.5
+                or abs(o.ask_size - n.ask_size) >= 0.5
+                for o, n in zip(old.levels, new.levels)
+            )
+        # Legacy: bare QuoteIntent (single-level center comparison)
+        if isinstance(old, QuoteIntent) and isinstance(new, QuoteIntent):
+            return (
+                abs(old.bid_price - new.bid_price) >= tick
+                or abs(old.ask_price - new.ask_price) >= tick
+            )
+        return True  # type mismatch → always reprice
 
     async def _reprice(self, tokens_to_check: set[str], force: bool, new_ids: set[str]) -> None:
         """Compute and emit ladder updates for the given token set."""
@@ -378,14 +435,15 @@ class QuoteEngine:
                 MIN_SPREAD, MAX_SPREAD,
             )
 
-            # Book-relative quoting: compress toward book spread but never below
-            # MIN_SPREAD — we need at least that much to capture edge after fees.
-            # If the book is tighter than MIN_SPREAD, we quote at MIN_SPREAD
-            # (outside the book is fine — we wait for the book to come to us).
+            # Book-relative quoting: if our spread is wider than the book, compress
+            # to 1 tick INSIDE the book (best queue position) rather than joining it.
+            # Minimum floor is MIN_SPREAD so we always capture edge after fees.
+            # "1 tick inside" = tighten by 2×LEVEL_STEP (one tick on each side).
             book_spread = cs.best_ask - cs.best_bid
             floor = MIN_SPREAD
             if book_spread > 0 and spread > book_spread:
-                eff_spread = max(book_spread, floor)
+                inside_spread = max(book_spread - 2.0 * LEVEL_STEP, floor)
+                eff_spread = inside_spread
                 eff_half = eff_spread / 2.0
                 eff_fv = _clamp(anchor_fv, cs.best_bid + eff_half, cs.best_ask - eff_half)
             else:
@@ -440,6 +498,8 @@ class QuoteEngine:
                 spread=eff_spread,
                 size=base_size,
                 reason="reprice",
+                inventory=inv,
+                min_incentive_size=cs.min_incentive_size,
             )
 
             # Pre-resolution flatten guard: promotes to reduce_only within MAKER_PRE_RES_HOURS
@@ -514,10 +574,12 @@ class QuoteEngine:
                     new_levels = tuple(capped_levels)
                     ladder = LadderUpdate(token_id, new_levels, reason)
 
-            old_center = self._maker.last_quotes.get(token_id)
-            is_new = token_id in new_ids or old_center is None
-            if is_new or force or self.is_stale(old_center, ladder.center):
-                self._maker.last_quotes[token_id] = ladder.center
+            old_ladder = self._maker.last_quotes.get(token_id)
+            is_new = token_id in new_ids or old_ladder is None
+            # Dynamic stale tick: reprice more aggressively on tight spreads.
+            stale_tick = max(0.004, eff_spread / 10.0)
+            if is_new or force or self.is_stale(old_ladder, ladder, tick=stale_tick):
+                self._maker.last_quotes[token_id] = ladder
                 await self._quote_intents_q.put(ladder)
                 log.debug(
                     f"ladder [{token_id[:8]}] levels={len(ladder.levels)} "

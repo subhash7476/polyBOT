@@ -7,6 +7,7 @@ import time
 import config
 from market.state import AppState
 from maker.state import MakerState
+from maker.types import CancelAll
 from maker.market_selector import MarketSelector
 from maker.quote_engine import QuoteEngine
 from maker.order_manager import OrderManager
@@ -32,6 +33,41 @@ async def _run_vpin_poller(poller: VPINPoller) -> None:
         except Exception as exc:
             log.exception(f"VPINPoller crashed (restarting in 30s): {exc}")
             await asyncio.sleep(30.0)
+
+
+async def _balance_guard_loop(
+    app_state: AppState,
+    maker_state: MakerState,
+    cancel_q: asyncio.Queue,
+    min_balance: float,
+    interval: float = 60.0,
+) -> None:
+    """Pull all quotes and pause quoting when on-chain USDC balance is too low.
+
+    Only fires once BalancePoller has completed its first fetch (balance > 0).
+    Rechecks every `interval` seconds — quoting resumes automatically when
+    balance recovers (e.g. after redemption or a manual top-up).
+    """
+    triggered = False
+    while True:
+        await asyncio.sleep(interval)
+        balance = app_state.balance.current
+        if balance <= 0.0:
+            continue  # not yet polled — don't gate on startup noise
+
+        if balance < min_balance:
+            if not triggered:
+                log.warning(
+                    f"LOW BALANCE: ${balance:.2f} < minimum ${min_balance:.2f} — "
+                    f"pulling all quotes and pausing for {interval:.0f}s"
+                )
+                triggered = True
+            await cancel_q.put(CancelAll("*"))
+            maker_state.global_cooldown_until = time.time() + interval
+        else:
+            if triggered:
+                log.info(f"Balance recovered: ${balance:.2f} — resuming quoting")
+                triggered = False
 
 
 async def _heartbeat_loop(clob, interval: float = 30.0) -> None:
@@ -241,6 +277,14 @@ async def run_maker():
 
     if wallet_address:
         coros.append(BalancePoller(app_state, wallet_address).start())
+
+    if not paper:
+        coros.append(_balance_guard_loop(
+            app_state,
+            maker_state_ref,
+            queues["cancel_q"],
+            min_balance=config.MAKER_MIN_BALANCE_USDC,
+        ))
 
     if clob is not None:
         coros.append(_heartbeat_loop(clob))

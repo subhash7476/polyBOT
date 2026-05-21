@@ -159,50 +159,168 @@ class FillPoller:
             await asyncio.sleep(self.POLL_INTERVAL)
 
     async def _run_live(self):
-        from trading.clob_factory import OpenOrderParams
+        """Detect live fills via the public data-api activity endpoint.
 
-        # Seed known order IDs as OPEN so fills on first poll after restart are detected
-        for levels in self._maker.live_orders.values():
-            for level in levels:
-                for key in ("bid_order_id", "ask_order_id"):
-                    oid = level.get(key, "")
-                    if oid and not oid.startswith("paper-"):
-                        self._order_states[oid] = "OPEN"
+        L2 auth (get_open_orders / get_trades) is unavailable when
+        create_or_derive_api_key fails.  The data-api activity endpoint is
+        public (no auth) and returns all trades for a wallet address,
+        sufficient for fill detection and inventory reconciliation.
+        """
+        import os
+        import httpx
 
-        while True:
+        funder_address = os.getenv("FUNDER_ADDRESS", "")
+        if not funder_address:
             try:
-                orders = self._clob.get_open_orders(OpenOrderParams())
-                for order in orders:
-                    oid = order.get("orderID", "")
-                    status = order.get("status", "")
-                    prev = self._order_states.get(oid)
+                from eth_account import Account
+                pk = os.getenv("POLY_PRIVATE_KEY", "")
+                if pk:
+                    funder_address = Account.from_key(pk).address
+            except Exception:
+                pass
+        if not funder_address:
+            log.error("FillPoller: cannot determine wallet address — fill detection disabled")
+            return
 
-                    if prev in ("OPEN", "live") and status in ("MATCHED", "FILLED"):
-                        asset_id = order.get("asset_id", "")
+        DATA_API = (
+            f"https://data-api.polymarket.com/activity"
+            f"?user={funder_address}&limit=50"
+        )
+        log.info(f"FillPoller: live mode — polling data-api for {funder_address[:10]}...")
+
+        # Wait for state_persistence to replay JSONL fills into daily_fills_seen
+        # so the startup dedup pass can skip already-recorded fills.
+        await asyncio.sleep(10.0)
+
+        seen_tx: set[str] = set()
+        POLL_SECS = 5.0
+
+        async with httpx.AsyncClient(timeout=12.0) as client:
+            # ── Startup dedup pass ─────────────────────────────────────────
+            # Any fill whose fill_id is already in daily_fills_seen was loaded
+            # from the JSONL on startup — mark its tx as seen so we don't
+            # double-count it.  Fills NOT in daily_fills_seen are processed now
+            # so inventory is correct even if this poller missed a prior session.
+            try:
+                sr = await client.get(DATA_API)
+                if sr.status_code == 200:
+                    startup_trades = sr.json()
+                    if isinstance(startup_trades, list):
                         async with self._app._lock:
-                            cs = self._app.markets.get(asset_id)
-                            mid = cs.mid if cs else 0.0
+                            snap = dict(self._app.markets)
+                        no_to_yes_snap = {
+                            cs.no_token_id: tid
+                            for tid, cs in snap.items()
+                            if cs.no_token_id
+                        }
+                        for trade in startup_trades:
+                            if trade.get("type") != "TRADE":
+                                continue
+                            tx = trade.get("transactionHash", "")
+                            if not tx:
+                                continue
+                            asset = trade.get("asset", "")
+                            raw_price = float(trade.get("price", 0))
+                            trade_ts = float(trade.get("timestamp", time.time()))
+                            if asset in snap:
+                                yes_tid = asset
+                                f_side = trade.get("side", "BUY")
+                                f_price = raw_price
+                            elif asset in no_to_yes_snap:
+                                yes_tid = no_to_yes_snap[asset]
+                                f_side = "SELL"
+                                f_price = round(1.0 - raw_price, 6)
+                            else:
+                                seen_tx.add(tx)
+                                continue
+                            ts_int = int(trade_ts * 1000)
+                            fill_id = f"{yes_tid[:8]}-{f_side.lower()}-{f_price:.4f}-{ts_int}"
+                            if fill_id in self._maker.daily_fills_seen:
+                                seen_tx.add(tx)  # already in JSONL, skip
+            except Exception as exc:
+                log.warning(f"FillPoller startup dedup error: {exc}")
+
+            # ── Main polling loop ──────────────────────────────────────────
+            while True:
+                try:
+                    resp = await client.get(DATA_API)
+                    if resp.status_code != 200:
+                        log.warning(f"FillPoller: data-api HTTP {resp.status_code}")
+                        await asyncio.sleep(POLL_SECS)
+                        continue
+
+                    trades = resp.json()
+                    if not isinstance(trades, list):
+                        await asyncio.sleep(POLL_SECS)
+                        continue
+
+                    async with self._app._lock:
+                        markets = dict(self._app.markets)
+
+                    no_to_yes: dict[str, str] = {
+                        cs.no_token_id: tid
+                        for tid, cs in markets.items()
+                        if cs.no_token_id
+                    }
+
+                    for trade in trades:
+                        if trade.get("type") != "TRADE":
+                            continue
+                        tx = trade.get("transactionHash", "")
+                        if not tx or tx in seen_tx:
+                            continue
+                        seen_tx.add(tx)
+
+                        asset = trade.get("asset", "")
+                        raw_price = float(trade.get("price", 0))
+                        size = float(trade.get("size", 0))
+                        trade_ts = float(trade.get("timestamp", time.time()))
+
+                        # Map to YES-space: BUY NO @ p ≡ SELL YES @ (1-p)
+                        # For NO fills, actual_cash_flow is -(raw_no_price × size)
+                        # because we spent that USDC buying NO — not +yes_price × size.
+                        actual_cash_flow = None
+                        if asset in markets:
+                            yes_token_id = asset
+                            fill_side = trade.get("side", "BUY")
+                            fill_price = raw_price
+                        elif asset in no_to_yes:
+                            yes_token_id = no_to_yes[asset]
+                            fill_side = "SELL"
+                            fill_price = round(1.0 - raw_price, 6)
+                            actual_cash_flow = -(raw_price * size)
+                        else:
+                            log.debug(f"FillPoller: unknown asset {asset[:16]} — skip")
+                            continue
+
+                        cs = markets.get(yes_token_id)
+                        mid = cs.mid if cs else fill_price
+
                         fill = Fill(
-                            token_id=asset_id,
-                            side=order.get("side", "BUY"),
-                            price=float(order.get("price", 0)),
-                            size=float(order.get("size_matched", order.get("original_size", 0))),
-                            order_id=oid,
-                            filled_at=time.time(),
+                            token_id=yes_token_id,
+                            side=fill_side,
+                            price=fill_price,
+                            size=size,
+                            order_id=tx,
+                            filled_at=trade_ts,
                             mid_at_fill=mid,
+                            actual_cash_flow=actual_cash_flow,
                         )
                         log.info(
-                            f"FILL: {fill.side} {fill.size:.2f} @ {fill.price:.3f} "
-                            f"[{fill.token_id[:8]}]"
+                            f"FILL: {fill.side} {fill.size:.2f}sh @ {fill.price:.4f} "
+                            f"[{yes_token_id[:12]}] tx={tx[:14]}"
                         )
                         await self._fills_q.put(fill)
 
-                    self._order_states[oid] = status
+                    if len(seen_tx) > 10_000:
+                        seen_tx.clear()
 
-            except Exception as exc:
-                log.warning(f"FillPoller error: {exc}")
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    log.warning(f"FillPoller._run_live error: {exc}")
 
-            await asyncio.sleep(self.POLL_INTERVAL)
+                await asyncio.sleep(POLL_SECS)
 
     async def run(self):
         if self._paper:

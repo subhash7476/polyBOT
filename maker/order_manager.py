@@ -35,13 +35,36 @@ class OrderManager:
         return cs.question if cs else ""
 
     def handle_ladder_sync(self, update: LadderUpdate) -> None:
-        """Cancel all existing levels for this market, then place the new ladder."""
-        existing_levels = self._maker.live_orders.get(update.token_id, [])
-        for level in existing_levels:
-            self._cancel_level(level, update.token_id)
+        """Diff-based ladder update: only cancel/replace levels whose price or size changed.
 
+        When a level's bid price, ask price, bid size, or ask size is unchanged
+        (within 0.5 shares and 0.0001 price), the existing order IDs are reused
+        and no API calls are made for that level. This dramatically reduces
+        cancel+place volume at high market counts.
+        """
+        existing = self._maker.live_orders.get(update.token_id, [])
         new_levels = []
-        for intent in update.levels:
+
+        for i, intent in enumerate(update.levels):
+            old = existing[i] if i < len(existing) else None
+
+            price_unchanged = (
+                old is not None
+                and abs(old.get("bid_price", -1) - intent.bid_price) < 0.0001
+                and abs(old.get("ask_price", -1) - intent.ask_price) < 0.0001
+                and abs(old.get("bid_size", -1) - intent.bid_size) < 0.5
+                and abs(old.get("ask_size", -1) - intent.ask_size) < 0.5
+            )
+
+            if price_unchanged:
+                # Reuse existing order IDs — no API calls needed for this level
+                new_levels.append(old)
+                continue
+
+            # Cancel the old level before placing new orders
+            if old is not None:
+                self._cancel_level(old, update.token_id)
+
             bid_oid = self._place_one(intent.token_id, intent.bid_price, intent.bid_size, "BUY")
             ask_oid = self._place_one(intent.token_id, intent.ask_price, intent.ask_size, "SELL")
             new_levels.append({
@@ -52,6 +75,10 @@ class OrderManager:
                 "bid_size": intent.bid_size,
                 "ask_size": intent.ask_size,
             })
+
+        # Cancel any surplus old levels (ladder shrank)
+        for old in existing[len(update.levels):]:
+            self._cancel_level(old, update.token_id)
 
         self._maker.live_orders[update.token_id] = new_levels
 
@@ -101,8 +128,21 @@ class OrderManager:
         if self._paper:
             return f"paper-{token_id[:8]}-{side.lower()}-{price:.4f}"
 
+        # SELL YES requires holding YES tokens (unavailable on a fresh account).
+        # Convert to BUY NO at the complementary price — economically identical,
+        # requires only USDC collateral.
+        actual_token_id = token_id
+        actual_side = side
+        actual_price = price
+        if side == "SELL" and self._app is not None:
+            cs = self._app.markets.get(token_id)
+            if cs and cs.no_token_id:
+                actual_token_id = cs.no_token_id
+                actual_side = "BUY"
+                actual_price = round(1.0 - price, 4)
+
         from trading.clob_factory import OrderArgs, OrderType
-        order_args = OrderArgs(token_id=token_id, price=price, size=size, side=side)
+        order_args = OrderArgs(token_id=actual_token_id, price=actual_price, size=size, side=actual_side)
         t0 = time.time()
         try:
             signed = self._clob.create_order(order_args)

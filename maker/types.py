@@ -23,15 +23,26 @@ class Fill:
     """Emitted by FillPoller → consumed by InventoryManager."""
     token_id: str
     side: str  # "BUY" | "SELL"
-    price: float
+    price: float  # YES-space price (0-1)
     size: float
     order_id: str
     filled_at: float  # unix timestamp
     mid_at_fill: float = 0.0  # market mid when fill detected — used for markout calc
+    # Actual USDC cash flow for NO-token fills.  BUY NO at 0.81 is recorded in YES-space
+    # as SELL YES at 0.19, but actually SPENT $4.05, not received $0.95.
+    # None → compute from side/price/size in the standard way.
+    actual_cash_flow: float | None = None
 
     @property
     def notional(self) -> float:
         return self.price * self.size
+
+    @property
+    def cash_flow(self) -> float:
+        """USDC cash flow: negative = spent, positive = received."""
+        if self.actual_cash_flow is not None:
+            return self.actual_cash_flow
+        return (self.price * self.size) if self.side == "SELL" else -(self.price * self.size)
 
 
 @dataclass(frozen=True)
