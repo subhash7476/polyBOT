@@ -972,6 +972,24 @@ class MarketSelector:
             available_balance=balance,
         )
         await self._fetch_incentive_params(selected)
+
+        # Re-apply the incentive-size gate now that reward params are populated.
+        # filter_and_rank runs before the fetch, so a market can be selected
+        # with min_incentive_size=0 (unfetched) and only afterwards turn out to
+        # exceed its cap. Drop those before they reach QuoteEngine. The deselect
+        # block below promotes any dropped market with open inventory to
+        # reduce_only.
+        if self._maker_state is not None:
+            for tid in list(selected.keys()):
+                cs = selected[tid]
+                cap = self._maker_state.max_inventory_for_category(cs.category)
+                if cap > 0.0 and cs.min_incentive_size > cap:
+                    log.info(
+                        f"INCENTIVE>CAP DROP [{tid[:8]}] {cs.question[:40]!r}: "
+                        f"min_size={cs.min_incentive_size:.0f}sh > cap={cap:.0f}sh"
+                    )
+                    del selected[tid]
+
         by_cat: dict[str, int] = {}
         for cs in selected.values():
             by_cat[cs.category] = by_cat.get(cs.category, 0) + 1

@@ -212,19 +212,14 @@ async def run_maker():
     preloaded_state = MakerState()
     MakerStateLoader(preloaded_state, fill_ledger, paper=paper).load()
 
-    # Equal-weight inventory caps across categories. This keeps weather from
-    # receiving a higher structural allocation than other markets.
-    category_cap = float(os.getenv("MAKER_NON_MODEL_INV_CAP", "12"))
+    # Per-category inventory caps. config.MAKER_CATEGORY_CAPS honours the
+    # per-category env vars (MAKER_WEATHER_INV_CAP, MAKER_SPORTS_INV_CAP, ...);
+    # categories without an explicit override use MAKER_NON_MODEL_INV_CAP.
+    non_model_cap = float(os.getenv("MAKER_NON_MODEL_INV_CAP", "12"))
     preloaded_state.category_inventory_caps = {
-        "weather": category_cap,
-        "sports": category_cap,
-        "event": category_cap,
-        "election": category_cap,
-        "finance": category_cap,
-        "macro": category_cap,
-        "rates": category_cap,
-        "crypto": category_cap,
-        "unknown": category_cap,
+        cat: config.MAKER_CATEGORY_CAPS.get(cat, non_model_cap)
+        for cat in ("weather", "sports", "event", "election",
+                    "finance", "macro", "rates", "crypto", "unknown")
     }
 
     actors, queues = build_maker_actors(
@@ -276,7 +271,7 @@ async def run_maker():
         )
 
     if wallet_address:
-        coros.append(BalancePoller(app_state, wallet_address).start())
+        coros.append(BalancePoller(app_state, wallet_address, clob=clob).start())
 
     if not paper:
         coros.append(_balance_guard_loop(

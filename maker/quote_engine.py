@@ -19,7 +19,7 @@ from config import (
     MAKER_BASE_SPREAD, MAKER_MIN_SPREAD, MAKER_MAX_SPREAD,
     MAKER_QUOTE_SIZE, MAKER_LADDER_LEVELS, MAKER_LEVEL_STEP,
     MAKER_PRE_RES_HOURS, MAKER_NEGRISK_SIBLING_THRESHOLD,
-    MAKER_BALANCE_RESERVE_FRACTION,
+    MAKER_BALANCE_RESERVE_FRACTION, MAKER_ORDER_SIZE_CAP_FRACTION,
 )
 from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
 from utils.logger import get_logger
@@ -476,7 +476,16 @@ class QuoteEngine:
             # gated in OrderManager._place_one.
             if token_id not in self._maker.reduce_only_markets:
                 cap = self._maker.max_inventory_for_category(cs.category)
-                headroom = max(1.0, cap - abs(inv)) if cap > 0.0 else base_size
+                # Size at a fraction of remaining room: resting orders can fill
+                # faster than the post-fill cap check pulls quotes. The fraction
+                # bounds the common 2-order cancel/replace race within the cap;
+                # it is not a guarantee against arbitrary N — if logs show >2
+                # racing fills, reduce churn (fewer reprices) rather than
+                # lowering the fraction further.
+                headroom = (
+                    max(1.0, (cap - abs(inv)) * MAKER_ORDER_SIZE_CAP_FRACTION)
+                    if cap > 0.0 else base_size
+                )
                 # A two-sided resting level commits ≈ $1.00 of USDC per share
                 # (BUY YES @ p + BUY NO @ 1-p ≈ $1), so spendable dollars ≈
                 # affordable shares.
@@ -595,18 +604,39 @@ class QuoteEngine:
                     # Cap total closing-side volume to abs(inv) so a simultaneous
                     # sweep of all ladder levels cannot overshoot to the opposite side.
                     remaining_to_close = abs(inv)
+                    # Bound each closing order by spendable balance so a trapped
+                    # position can partially close — buy what we can afford now,
+                    # the rest next tick — instead of emitting one unaffordable
+                    # order that OrderManager rejects wholesale. Both close
+                    # directions cost USDC: BUY-to-close directly; SELL-to-close
+                    # is routed as BUY NO @ (1 - price).
+                    _bal = getattr(getattr(self._app, "balance", None), "current", 0.0)
+                    spendable = (
+                        _bal * (1.0 - MAKER_BALANCE_RESERVE_FRACTION)
+                        if _bal > 0.0 else None
+                    )
                     capped_levels: list[QuoteIntent] = []
                     for l in ladder.levels:
                         if remaining_to_close <= 0.0:
                             break
                         bp = round(_clamp(l.bid_price + exit_bid_adj, 0.01, 0.99), 4)
                         ap = round(_clamp(l.ask_price + exit_ask_adj, 0.01, 0.99), 4)
-                        if inv > 0:  # long YES — sell to reduce
+                        if inv > 0:  # long YES — sell to reduce (routed BUY NO @ 1-ap)
                             sz = min(l.ask_size, remaining_to_close)
+                            unit_cost = max(1.0 - ap, 0.01)
+                            if spendable is not None:
+                                sz = min(sz, spendable / unit_cost)
+                                spendable -= sz * unit_cost
+                            sz = round(sz, 1)
                             remaining_to_close -= sz
                             capped_levels.append(QuoteIntent(l.token_id, bp, ap, 0.0, sz, reason))
                         else:  # short YES — buy to reduce
                             sz = min(l.bid_size, remaining_to_close)
+                            unit_cost = max(bp, 0.01)
+                            if spendable is not None:
+                                sz = min(sz, spendable / unit_cost)
+                                spendable -= sz * unit_cost
+                            sz = round(sz, 1)
                             remaining_to_close -= sz
                             capped_levels.append(QuoteIntent(l.token_id, bp, ap, sz, 0.0, reason))
                     new_levels = tuple(capped_levels)

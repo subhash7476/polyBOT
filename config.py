@@ -196,6 +196,12 @@ MAKER_MAX_DAILY_LOSS_PCT = float(
 MAKER_BALANCE_RESERVE_FRACTION = float(
     os.getenv("MAKER_BALANCE_RESERVE_FRACTION",  "0.20"))
 
+# Fraction of remaining inventory-cap room a single order may use. Resting
+# maker orders can fill faster than the post-fill cap check pulls quotes;
+# sizing at a fraction keeps a near-simultaneous double-fill within the cap.
+MAKER_ORDER_SIZE_CAP_FRACTION = float(
+    os.getenv("MAKER_ORDER_SIZE_CAP_FRACTION",   "0.50"))
+
 # Per-category inventory caps (0 = fall back to MAKER_MAX_INVENTORY_PER_MARKET)
 MAKER_WEATHER_INV_CAP = float(
     os.getenv("MAKER_WEATHER_INV_CAP",           "5"))
