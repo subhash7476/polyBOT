@@ -20,6 +20,7 @@ from config import (
     MAKER_QUOTE_SIZE, MAKER_LADDER_LEVELS, MAKER_LEVEL_STEP,
     MAKER_PRE_RES_HOURS, MAKER_NEGRISK_SIBLING_THRESHOLD,
     MAKER_BALANCE_RESERVE_FRACTION, MAKER_ORDER_SIZE_CAP_FRACTION,
+    MAKER_MIN_ORDER_SIZE,
 )
 from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
 from utils.logger import get_logger
@@ -122,7 +123,9 @@ def compute_quote_size(
     eligible. The `market_size_hint` is the market-specific minimum / baseline
     size in shares, not the final order size.
     """
-    base_size = max(1.0, market_size_hint * regime_size_multiplier)
+    # Floor at the exchange minimum order size: the regime multiplier can shrink
+    # the baseline below it, and a sub-minimum order is rejected outright.
+    base_size = max(MAKER_MIN_ORDER_SIZE, market_size_hint * regime_size_multiplier)
     if min_incentive_size > 0.0:
         base_size = max(base_size, min(min_incentive_size, 200.0))
     return base_size
@@ -622,22 +625,31 @@ class QuoteEngine:
                         bp = round(_clamp(l.bid_price + exit_bid_adj, 0.01, 0.99), 4)
                         ap = round(_clamp(l.ask_price + exit_ask_adj, 0.01, 0.99), 4)
                         if inv > 0:  # long YES — sell to reduce (routed BUY NO @ 1-ap)
-                            sz = min(l.ask_size, remaining_to_close)
-                            unit_cost = max(1.0 - ap, 0.01)
-                            if spendable is not None:
-                                sz = min(sz, spendable / unit_cost)
-                                spendable -= sz * unit_cost
-                            sz = round(sz, 1)
-                            remaining_to_close -= sz
+                            level_sz, unit_cost = l.ask_size, max(1.0 - ap, 0.01)
+                        else:        # short YES — buy to reduce
+                            level_sz, unit_cost = l.bid_size, max(bp, 0.01)
+                        sz = min(level_sz, remaining_to_close)
+                        affordable = (spendable / unit_cost) if spendable is not None else sz
+                        sz = min(sz, affordable)
+                        # Snap to the exchange minimum order size: a sub-minimum
+                        # order is rejected outright. Floor up to the minimum when
+                        # there is still at least that much to close and enough
+                        # balance for it; otherwise place nothing this tick.
+                        if sz < MAKER_MIN_ORDER_SIZE:
+                            if (remaining_to_close >= MAKER_MIN_ORDER_SIZE
+                                    and affordable >= MAKER_MIN_ORDER_SIZE):
+                                sz = MAKER_MIN_ORDER_SIZE
+                            else:
+                                sz = 0.0
+                        sz = round(sz, 1)
+                        if sz <= 0.0:
+                            continue
+                        if spendable is not None:
+                            spendable -= sz * unit_cost
+                        remaining_to_close -= sz
+                        if inv > 0:
                             capped_levels.append(QuoteIntent(l.token_id, bp, ap, 0.0, sz, reason))
-                        else:  # short YES — buy to reduce
-                            sz = min(l.bid_size, remaining_to_close)
-                            unit_cost = max(bp, 0.01)
-                            if spendable is not None:
-                                sz = min(sz, spendable / unit_cost)
-                                spendable -= sz * unit_cost
-                            sz = round(sz, 1)
-                            remaining_to_close -= sz
+                        else:
                             capped_levels.append(QuoteIntent(l.token_id, bp, ap, sz, 0.0, reason))
                     new_levels = tuple(capped_levels)
                     ladder = LadderUpdate(token_id, new_levels, reason)

@@ -4,6 +4,7 @@ import asyncio
 import time
 from maker.state import MakerState
 from maker.types import LadderUpdate, CancelAll
+from config import MAKER_MIN_ORDER_SIZE
 from utils.logger import get_logger
 
 log = get_logger(__name__)
@@ -125,11 +126,36 @@ class OrderManager:
     def _place_one(self, token_id: str, price: float, size: float, side: str) -> str:
         if size <= 0:
             return ""
+        # Exchange minimum order size: a sub-minimum order is rejected outright.
+        # Skip it here (both modes, so paper mirrors live) rather than emitting
+        # a doomed request. Upstream sizing should floor or skip; this is the
+        # last-line guard.
+        if size < MAKER_MIN_ORDER_SIZE:
+            log.warning(
+                f"MIN-SIZE SKIP: {side} {size:.1f}sh < exchange minimum "
+                f"{MAKER_MIN_ORDER_SIZE:.0f}sh [{token_id[:12]}] -- not placed"
+            )
+            return ""
         if self._paper:
             return f"paper-{token_id[:8]}-{side.lower()}-{price:.4f}"
 
+        # Pre-trade affordability gate: BUY orders consume USDC; skip if the
+        # order cost exceeds the known on-chain balance.  SELL orders give back
+        # USDC so they are always safe to attempt.
+        if side == "BUY" and self._app is not None:
+            balance = getattr(getattr(self._app, "balance", None), "current", 0.0)
+            cost = price * size
+            if balance > 0.0 and cost > balance:
+                question = self._question(token_id)
+                log.warning(
+                    f"AFFORDABILITY GATE: BUY {size:.0f}sh@{price:.4f} = ${cost:.2f}"
+                    f" > balance ${balance:.2f} -- skipped"
+                    + (f" | q={question[:60]!r}" if question else "")
+                )
+                return ""
+
         # SELL YES requires holding YES tokens (unavailable on a fresh account).
-        # Convert to BUY NO at the complementary price — economically identical,
+        # Convert to BUY NO at the complementary price -- economically identical,
         # requires only USDC collateral.
         actual_token_id = token_id
         actual_side = side

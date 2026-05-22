@@ -202,6 +202,12 @@ MAKER_BALANCE_RESERVE_FRACTION = float(
 MAKER_ORDER_SIZE_CAP_FRACTION = float(
     os.getenv("MAKER_ORDER_SIZE_CAP_FRACTION",   "0.50"))
 
+# Polymarket's minimum order size (shares). Orders below this are rejected by
+# the exchange, so a computed size below it must be floored up (when safe) or
+# the order skipped — never sent.
+MAKER_MIN_ORDER_SIZE = float(
+    os.getenv("MAKER_MIN_ORDER_SIZE",            "5.0"))
+
 # Per-category inventory caps (0 = fall back to MAKER_MAX_INVENTORY_PER_MARKET)
 MAKER_WEATHER_INV_CAP = float(
     os.getenv("MAKER_WEATHER_INV_CAP",           "5"))
