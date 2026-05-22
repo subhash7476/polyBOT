@@ -161,6 +161,111 @@ async def _resolution_sweep_loop(
             )
 
 
+async def _reconcile_positions_once(
+    app_state: AppState,
+    maker_state: MakerState,
+    wallet: str,
+    settle_delay: float = 10.0,
+) -> None:
+    """One-shot startup reconciliation of maker inventory against real
+    on-chain Polymarket holdings.
+
+    The checkpoint and fill-ledger replay can desync from reality — manual
+    trades, hand-edited state, partial gap-replay. This fetches the wallet's
+    actual positions and overrides the reconstructed inventory so the bot
+    never quotes or drains a position that does not exist on-chain.
+
+    Runs once: at startup there are no in-flight fills, so the data-API has
+    no lag to fight. Mid-session manual trades are handled by restarting.
+    """
+    if not wallet:
+        return
+    from collections import defaultdict
+    from trading.redeemall import fetch_positions, extract_wallet_token_id
+
+    await asyncio.sleep(settle_delay)  # let CLOBMonitor seed app_state.markets
+    for _ in range(20):
+        async with app_state._lock:
+            seeded = len(app_state.markets)
+        if seeded:
+            break
+        await asyncio.sleep(2.0)
+
+    try:
+        positions = await fetch_positions(wallet)
+    except Exception as exc:
+        log.warning(f"position reconcile: data-API fetch failed — {exc}")
+        return
+
+    # Map every YES and NO token to (yes_token_id, sign). Bot inventory is
+    # signed-YES: +1 long YES, -1 holding NO (== short YES).
+    async with app_state._lock:
+        tok_map: dict[str, tuple[str, float]] = {}
+        mids: dict[str, float] = {}
+        for yes_id, cs in app_state.markets.items():
+            tok_map[yes_id] = (yes_id, 1.0)
+            mids[yes_id] = cs.mid
+            if cs.no_token_id:
+                tok_map[cs.no_token_id] = (yes_id, -1.0)
+
+    onchain: dict[str, float] = defaultdict(float)
+    unmapped = 0
+    for pos in positions:
+        token = extract_wallet_token_id(pos)
+        size = float(pos.get("size", 0.0) or 0.0)
+        if size == 0.0:
+            continue
+        mapped = tok_map.get(token)
+        if mapped is None:
+            unmapped += 1
+            continue
+        yes_id, sign = mapped
+        onchain[yes_id] += sign * size
+
+    async with maker_state._lock:
+        bot_nonzero = {t for t, v in maker_state.inventory.items() if v != 0.0}
+        corrected = 0
+        for tid in bot_nonzero | set(onchain):
+            bot_qty = maker_state.inventory.get(tid, 0.0)
+            true_qty = round(onchain.get(tid, 0.0), 2)
+            if abs(bot_qty - true_qty) < 0.01:
+                continue
+            corrected += 1
+            log.warning(
+                f"RECONCILE [{tid[:12]}]: bot inventory {bot_qty:+.2f} "
+                f"-> on-chain {true_qty:+.2f}"
+            )
+            if true_qty == 0.0:
+                maker_state.inventory.pop(tid, None)
+                maker_state._open_lots.pop(tid, None)
+                maker_state.inventory_entry_time.pop(tid, None)
+                maker_state.reduce_only_markets.discard(tid)
+                maker_state.cooldowns.pop(tid, None)
+            else:
+                # Synthetic single lot — the true entry price is unknown after
+                # a desync, so cost basis is approximate (current mid). Side
+                # matches the bot's signed-YES lot convention.
+                maker_state.inventory[tid] = true_qty
+                price = mids.get(tid, 0.5) or 0.5
+                side = "BUY" if true_qty > 0 else "SELL"
+                maker_state._open_lots[tid] = [[side, round(price, 4), abs(true_qty)]]
+                maker_state.inventory_entry_time[tid] = time.time()
+                maker_state.reduce_only_markets.add(tid)
+
+    if corrected:
+        log.warning(
+            f"position reconcile: corrected {corrected} market(s) "
+            f"against on-chain holdings"
+        )
+    else:
+        log.info("position reconcile: maker inventory matches on-chain holdings")
+    if unmapped:
+        log.info(
+            f"position reconcile: {unmapped} on-chain position(s) not in "
+            f"tracked markets — skipped"
+        )
+
+
 def build_maker_actors(
     app_state: AppState,
     paper: bool = True,
@@ -343,6 +448,11 @@ async def run_maker():
 
     if wallet_address:
         coros.append(BalancePoller(app_state, wallet_address, clob=clob).start())
+        # One-shot startup reconciliation against real on-chain holdings —
+        # corrects any checkpoint/ledger desync before it can be quoted.
+        coros.append(_reconcile_positions_once(
+            app_state, maker_state_ref, wallet_address,
+        ))
 
     if not paper:
         coros.append(_balance_guard_loop(
