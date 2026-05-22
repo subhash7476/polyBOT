@@ -152,6 +152,34 @@ class MakerState:
             category.lower() if category else "", self.max_inventory_per_market
         )
 
+    def book_resolution(self, token_id: str, resolved_yes: bool) -> float:
+        """Book a resolved market: realize P&L from open FIFO lots at terminal
+        value, zero the position, and drop all per-token state.
+
+        YES resolution => YES token pays $1, NO pays $0 (NO resolution: the
+        reverse). For each lot [side, price, size]:
+          BUY  lot realized = size * (terminal - price)
+          SELL lot realized = size * (price - terminal)
+
+        Without this, inventory in a resolved (untradeable) market is stuck
+        forever — it can never close, yet keeps consuming the inventory budget
+        and the active-market set. Returns the realized P&L delta booked.
+        """
+        terminal = 1.0 if resolved_yes else 0.0
+        realized = 0.0
+        for side, price, size in self._open_lots.get(token_id, []):
+            if side == "BUY":
+                realized += size * (terminal - price)
+            else:  # SELL
+                realized += size * (price - terminal)
+        self.realized_pnl += realized
+        self.inventory.pop(token_id, None)
+        self._open_lots.pop(token_id, None)
+        self.inventory_entry_time.pop(token_id, None)
+        self.reduce_only_markets.discard(token_id)
+        self.cooldowns.pop(token_id, None)
+        return realized
+
     def in_cooldown(self, token_id: str) -> bool:
         """True if market is in cooldown (circuit breaker fired recently)."""
         resume_at = self.cooldowns.get(token_id, 0.0)

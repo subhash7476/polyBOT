@@ -90,6 +90,77 @@ async def _heartbeat_loop(clob, interval: float = 30.0) -> None:
             log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
 
 
+async def _resolution_sweep_loop(
+    app_state: AppState,
+    maker_state: MakerState,
+    cancel_q: asyncio.Queue,
+    interval: float = 300.0,
+) -> None:
+    """Book resolved markets the bot still holds inventory in.
+
+    A position in a resolved (untradeable) market can never close on its own:
+    it stays in inventory forever, consuming the inventory budget and the
+    active-market set. This loop detects resolution, books the terminal P&L
+    via MakerState.book_resolution, and cancels any resting quotes.
+
+    A market is treated as resolved only when its price is terminal
+    (>= 0.95 YES / <= 0.05 NO) AND either its end date has passed or the price
+    is decisive (>= 0.99 / <= 0.01) — this avoids booking an intraday spike on
+    a market that is still genuinely open.
+    """
+    import httpx
+    from datetime import datetime
+
+    while True:
+        await asyncio.sleep(interval)
+        async with maker_state._lock:
+            held = {t: inv for t, inv in maker_state.inventory.items() if inv != 0.0}
+        if not held:
+            continue
+        async with app_state._lock:
+            end_iso = {
+                t: (getattr(app_state.markets.get(t), "end_date_iso", "") or "")
+                for t in held
+            }
+        now = time.time()
+        for token_id, inv in held.items():
+            end_passed = False
+            iso = end_iso.get(token_id, "")
+            if iso:
+                try:
+                    end_ts = datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()
+                    end_passed = now >= end_ts
+                except ValueError:
+                    pass
+            try:
+                async with httpx.AsyncClient(timeout=15) as client:
+                    resp = await client.get(
+                        "https://clob.polymarket.com/last-trade-price",
+                        params={"token_id": token_id},
+                    )
+                price = float(resp.json()["price"]) if resp.status_code == 200 else None
+            except Exception as exc:
+                log.debug(f"resolution sweep [{token_id[:8]}]: price fetch failed: {exc}")
+                continue
+            if price is None:
+                continue
+            decisive = price >= 0.99 or price <= 0.01
+            if price >= 0.95 and (end_passed or decisive):
+                resolved_yes = True
+            elif price <= 0.05 and (end_passed or decisive):
+                resolved_yes = False
+            else:
+                continue  # still open, or terminal price not yet trustworthy
+            async with maker_state._lock:
+                realized = maker_state.book_resolution(token_id, resolved_yes)
+            await cancel_q.put(CancelAll(token_id))
+            log.warning(
+                f"RESOLUTION [{token_id[:12]}] resolved "
+                f"{'YES' if resolved_yes else 'NO'} (price={price:.3f}) — "
+                f"booked inv={inv:+.1f}sh realized={realized:+.2f}"
+            )
+
+
 def build_maker_actors(
     app_state: AppState,
     paper: bool = True,
@@ -283,6 +354,12 @@ async def run_maker():
 
     if clob is not None:
         coros.append(_heartbeat_loop(clob))
+
+    # Resolution sweep — books resolved markets the bot still holds inventory
+    # in, so a resolved position cannot stay stuck in the inventory budget.
+    coros.append(_resolution_sweep_loop(
+        app_state, maker_state_ref, queues["cancel_q"],
+    ))
 
     # Redemption loop — recycles resolved positions every 15 min (no-op in paper mode)
     coros.append(
