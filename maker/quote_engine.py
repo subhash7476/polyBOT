@@ -318,7 +318,14 @@ class QuoteEngine:
                             await self._cancel_q.put(CancelAll(token_id))
                         continue
 
-            if self._maker.in_cooldown(token_id):
+            # reduce_only markets bypass per-market cooldown: a market that hit
+            # its inventory cap is promoted to reduce_only AND given a cooldown
+            # in the same step. Without this bypass the closing side is gagged
+            # for the whole cooldown while the price runs away — exactly how a
+            # capped position becomes a resolution loss. The reduce_only block
+            # below has its own guards (resolution skip, aggressive exit).
+            if (self._maker.in_cooldown(token_id)
+                    and token_id not in self._maker.reduce_only_markets):
                 continue
 
             # Hard inventory gate: never re-quote a market whose position is already
