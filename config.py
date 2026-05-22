@@ -190,6 +190,12 @@ MAKER_MAX_TOTAL_INVENTORY = float(
 MAKER_MAX_DAILY_LOSS_PCT = float(
     os.getenv("MAKER_MAX_DAILY_LOSS_PCT",        "0.03"))
 
+# Fraction of on-chain USDC balance kept in reserve — never spent on entry
+# (BUY) quotes. Guarantees the bot always retains cash to buy back / flatten
+# a position rather than getting trapped in inventory it cannot exit.
+MAKER_BALANCE_RESERVE_FRACTION = float(
+    os.getenv("MAKER_BALANCE_RESERVE_FRACTION",  "0.20"))
+
 # Per-category inventory caps (0 = fall back to MAKER_MAX_INVENTORY_PER_MARKET)
 MAKER_WEATHER_INV_CAP = float(
     os.getenv("MAKER_WEATHER_INV_CAP",           "5"))

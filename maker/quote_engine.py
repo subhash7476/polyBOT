@@ -19,6 +19,7 @@ from config import (
     MAKER_BASE_SPREAD, MAKER_MIN_SPREAD, MAKER_MAX_SPREAD,
     MAKER_QUOTE_SIZE, MAKER_LADDER_LEVELS, MAKER_LEVEL_STEP,
     MAKER_PRE_RES_HOURS, MAKER_NEGRISK_SIBLING_THRESHOLD,
+    MAKER_BALANCE_RESERVE_FRACTION,
 )
 from maker.regime import compute_regime_score, CATEGORY_SPREAD_MULTIPLIER
 from utils.logger import get_logger
@@ -455,6 +456,36 @@ class QuoteEngine:
                 regime_size_multiplier=regime.size_multiplier,
                 min_incentive_size=cs.min_incentive_size,
             )
+
+            # Fix #2: bound order size by inventory headroom and affordability
+            # BEFORE the ladder is built, so a single fill cannot overshoot the
+            # per-market cap or drain the wallet below the reserve. build_ladder
+            # caps every level's size at `base_size`, so bounding base_size here
+            # bounds the largest possible single fill. This may push size below
+            # min_incentive_size (forfeiting rewards on that market) — an
+            # intentional trade vs. taking a position the wallet cannot exit.
+            # reduce_only markets are exempt: they must quote the closing side
+            # at full size to flatten, and BUY-to-close affordability is already
+            # gated in OrderManager._place_one.
+            if token_id not in self._maker.reduce_only_markets:
+                cap = self._maker.max_inventory_for_category(cs.category)
+                headroom = max(1.0, cap - abs(inv)) if cap > 0.0 else base_size
+                # A two-sided resting level commits ≈ $1.00 of USDC per share
+                # (BUY YES @ p + BUY NO @ 1-p ≈ $1), so spendable dollars ≈
+                # affordable shares.
+                balance = getattr(getattr(self._app, "balance", None), "current", 0.0)
+                affordable = (
+                    balance * (1.0 - MAKER_BALANCE_RESERVE_FRACTION)
+                    if balance > 0.0 else base_size
+                )
+                bounded = max(1.0, min(base_size, headroom, affordable))
+                if bounded < base_size - 0.05:
+                    log.info(
+                        f"size bound [{token_id[:8]}]: {base_size:.0f}→{bounded:.0f}sh "
+                        f"(headroom={headroom:.0f} affordable={affordable:.0f} "
+                        f"incentive_min={cs.min_incentive_size:.0f})"
+                    )
+                base_size = bounded
 
             # Warn once per market when all ladder levels are outside the incentive spread
             # window — those orders score 0 for Liquidity Rewards (quadratic penalty).

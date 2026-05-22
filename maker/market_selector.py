@@ -17,7 +17,7 @@ from config import (
     MAKER_MIN_BID, MAKER_MAX_BID,
     CATEGORY_QUOTA_FILL_WEIGHT, CATEGORY_QUOTA_MARKOUT_WEIGHT, CATEGORY_QUOTA_PNL_WEIGHT,
     MAKER_REBATE_REQUIRE_FEES_ENABLED, MAKER_REBATE_DEFAULT_MIN_SIZE,
-    MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS,
+    MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS, MAKER_BALANCE_RESERVE_FRACTION,
 )
 
 log = get_logger(__name__)
@@ -328,13 +328,15 @@ class MarketSelector:
         feeds: FeedState | None = None,
         rolling_markouts: "dict[str, dict[int, float]] | None" = None,
         maker_state: MakerState | None = None,
+        available_balance: float = 0.0,
     ) -> "OrderedDict[str, ContractState]":
         """Filter to quotable markets, rank by spread × volume × falcon_score × markout_score."""
         candidates = []
         falcon_log: list[str] = []
 
         # Diagnostic counters
-        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_tight_spread = n_too_soon = n_no_date = 0
+        n_excluded_cat = n_low_vol = n_bad_bid = n_far_future = n_tight_spread = n_too_soon = n_no_date = n_unaffordable = 0
+        n_incentive_over_cap = 0
         cat_counts: dict[str, int] = {}
         now_ts = time.time()
 
@@ -371,6 +373,39 @@ class MarketSelector:
             if cs.best_bid < _MIN_BID or cs.best_bid > _MAX_BID:
                 n_bad_bid += 1
                 continue
+
+            # Incentive-size vs inventory-cap gate: a market whose reward-minimum
+            # order size exceeds the per-market inventory cap cannot be quoted
+            # safely — a single fill at the reward minimum would blow the cap.
+            # Bankroll-independent: ties directly to the operator's risk knob.
+            # Skipping forfeits the rebate on that market, which is the correct
+            # trade vs. taking a position the cap says is too large.
+            if maker_state is not None and cs.min_incentive_size > 0.0:
+                cap = maker_state.max_inventory_for_category(cs.category)
+                if cap > 0.0 and cs.min_incentive_size > cap:
+                    n_incentive_over_cap += 1
+                    log.info(
+                        f"INCENTIVE>CAP SKIP [{cs.question[:40]!r}]: "
+                        f"min_size={cs.min_incentive_size:.0f}sh > cap={cap:.0f}sh"
+                    )
+                    continue
+
+            # Affordability gate: a two-sided resting quote commits roughly
+            # $1.00 of USDC per share (BUY YES @ p + BUY NO @ 1-p ≈ $1). Skip
+            # markets where the reward-minimum size would consume more than the
+            # spendable balance (total balance minus the reserve fraction kept
+            # for buying back / flattening). Only fires once balance is known.
+            if available_balance > 0.0 and cs.min_incentive_size > 0.0:
+                spendable = available_balance * (1.0 - MAKER_BALANCE_RESERVE_FRACTION)
+                min_cost = cs.min_incentive_size  # ≈ $1.00/share, both legs
+                if min_cost > spendable:
+                    n_unaffordable += 1
+                    log.info(
+                        f"AFFORD SKIP [{cs.question[:40]!r}]: "
+                        f"min_size={cs.min_incentive_size:.0f}sh ≈ ${min_cost:.2f}"
+                        f" > spendable ${spendable:.2f} of ${available_balance:.2f}"
+                    )
+                    continue
 
             # Resolve-date guard: exclude markets with no known resolution date.
             # Empty end_date_iso = Gamma didn't provide one and contract_parser
@@ -462,7 +497,8 @@ class MarketSelector:
             f"(cats={cat_counts}) → "
             f"excluded_cat={n_excluded_cat} low_vol={n_low_vol} "
             f"tight_spread={n_tight_spread} bad_bid={n_bad_bid} "
-            f"no_date={n_no_date} far_future={n_far_future} too_soon={n_too_soon} → "
+            f"no_date={n_no_date} far_future={n_far_future} too_soon={n_too_soon} "
+            f"unaffordable={n_unaffordable} incentive_over_cap={n_incentive_over_cap} → "
             f"{len(candidates)} candidates → {min(len(candidates), max_markets)} selected"
         )
 
@@ -927,11 +963,13 @@ class MarketSelector:
             feeds = self._state.feeds
 
         rolling_markouts = self._maker_state.rolling_markouts if self._maker_state else None
+        balance = getattr(getattr(self._state, "balance", None), "current", 0.0)
         selected = self.filter_and_rank(
             markets,
             feeds=feeds,
             rolling_markouts=rolling_markouts,
             maker_state=self._maker_state,
+            available_balance=balance,
         )
         await self._fetch_incentive_params(selected)
         by_cat: dict[str, int] = {}
