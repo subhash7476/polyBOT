@@ -10,3 +10,11 @@ bot.pid
 logs/
 .claude/
 .mypy_cache/
+
+# Runtime data — changes every session
+fills_markout.jsonl
+maker_data/maker_checkpoint.json
+maker_data/maker_checkpoint.json.bak*
+maker_data/maker_lifetime.json
+maker_data/overnight_viability.json
+maker_data/maker_fills/
