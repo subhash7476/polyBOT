@@ -9,6 +9,7 @@ dispatcher in runner.py — no other changes needed.
 
 import asyncio
 import json
+import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -48,6 +49,33 @@ class FileSink(Sink):
             line += f" | {json.dumps(payload, default=str, separators=(',', ':'))}"
         with self._path.open("a", encoding="utf-8") as f:
             f.write(line + "\n")
+
+
+class TelegramSink(Sink):
+    """Sends CRITICAL/WARNING alerts to a Telegram chat via Bot API.
+
+    Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from env at push time so
+    the sink is safe to construct even before .env is loaded.
+    """
+
+    _SEVERITY_EMOJI = {"CRITICAL": "🚨", "WARNING": "⚠️"}
+
+    def push(self, severity, key, message, payload=None):
+        token   = os.getenv("TELEGRAM_BOT_TOKEN", "")
+        chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
+        if not token or not chat_id:
+            return
+        try:
+            import requests
+            emoji = self._SEVERITY_EMOJI.get(severity, "ℹ️")
+            text  = f"{emoji} <b>[{severity}]</b> {key}\n{message}"
+            requests.post(
+                f"https://api.telegram.org/bot{token}/sendMessage",
+                json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+                timeout=5,
+            )
+        except Exception as exc:
+            log.warning(f"TelegramSink failed: {exc}")
 
 
 # --- Shared state ------------------------------------------------------------

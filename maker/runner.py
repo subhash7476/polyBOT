@@ -20,7 +20,7 @@ from maker.fill_ledger import FillLedger
 from maker.vpin_poller import VPINPoller
 from maker.state_persistence import MakerCheckpointer, MakerStateLoader, LifetimeStatsCache
 from maker.liveness import (
-    LivenessState, AlertDispatcher, LivenessMonitor, FileSink, StdoutSink,
+    LivenessState, AlertDispatcher, LivenessMonitor, FileSink, StdoutSink, TelegramSink,
 )
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
@@ -620,7 +620,11 @@ async def run_maker():
 
     # Liveness state shared by heartbeat loop, LivenessMonitor, and /health endpoint.
     liveness_state = LivenessState()
-    dispatcher = AlertDispatcher([FileSink(), StdoutSink()])
+    sinks = [FileSink(), StdoutSink()]
+    if os.getenv("TELEGRAM_BOT_TOKEN") and os.getenv("TELEGRAM_CHAT_ID"):
+        sinks.append(TelegramSink())
+        log.info("liveness: TelegramSink enabled")
+    dispatcher = AlertDispatcher(sinks)
 
     if clob is not None:
         coros.append(_heartbeat_loop(

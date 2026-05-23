@@ -70,6 +70,12 @@ def get_pid() -> int | None:
 def is_running(pid: int | None) -> bool:
     if pid is None:
         return False
+    if platform.system() == "Windows":
+        result = subprocess.run(
+            ["tasklist", "/FI", f"PID eq {pid}", "/NH"],
+            capture_output=True, text=True,
+        )
+        return str(pid) in result.stdout
     try:
         os.kill(pid, 0)
         return True
@@ -91,19 +97,17 @@ def handle_status(chat_id: int) -> None:
 def handle_balance(chat_id: int) -> None:
     send_message(chat_id, "Fetching balance...")
     try:
-        result = subprocess.run(
-            [sys.executable, "-c",
-             "import asyncio, httpx, os; "
-             "r = asyncio.run(httpx.AsyncClient().get("
-             "'https://data-api.polymarket.com/value',"
-             " params={'user': os.getenv('FUNDER_ADDRESS', '')})); "
-             "print(r.json())"],
-            capture_output=True, text=True, timeout=30,
-        )
-        out = sanitize_output((result.stdout or result.stderr).strip()[:1000])
-        send_message(chat_id, out or "No data.")
-    except subprocess.TimeoutExpired:
-        send_message(chat_id, "balance fetch timed out.")
+        from trading.clob_factory import build_clob_client
+        from py_clob_client_v2.clob_types import BalanceAllowanceParams, AssetType
+
+        key      = os.getenv("POLY_PRIVATE_KEY", "")
+        sig_type = int(os.getenv("SIGNATURE_TYPE", "0"))
+        funder   = os.getenv("FUNDER_ADDRESS", "")
+
+        clob = build_clob_client(private_key=key, sig_type=sig_type, funder=funder)
+        r    = clob.get_balance_allowance(BalanceAllowanceParams(asset_type=AssetType.COLLATERAL))
+        bal  = int(r.get("balance", 0)) / 1_000_000
+        send_message(chat_id, f"USDC available: <b>${bal:.2f}</b>")
     except Exception as exc:
         send_message(chat_id, f"Error: {sanitize_output(str(exc))}")
 
