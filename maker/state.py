@@ -58,6 +58,11 @@ class MakerState:
     # Global cooldown: set when total inventory cap fires; blocks ALL quoting
     global_cooldown_until: float = 0.0
 
+    # Official P&L from Data API: used to override local drift-prone metrics.
+    # Set periodically by the reconciliation loop in runner.py.
+    official_cash_pnl: float = 0.0
+    official_mtm_pnl: float = 0.0
+
     # Cash-flow P&L: sum of (SELL price*size) - (BUY price*size) across all fills.
     # WARNING: does NOT account for open position value. Use mtm_pnl() for real P&L.
     cash_pnl: float = 0.0
@@ -256,20 +261,32 @@ class MakerState:
         """
         Mark-to-market P&L: cash_pnl + current value of all open positions.
 
-        cash_pnl alone is misleading — selling YES at 0.80 looks like +$8 profit
-        but you're short 10 units now worth $8 at current price, so net effect
-        on your real wealth is ~$0 until the position closes or resolves.
-
         mtm_pnl = cash_flow_pnl + sum(net_position[t] * current_mid[t])
 
-        This is 0 on first fill and only moves when you capture spread or the
-        market moves in your favour after you've taken a position.
+        PRIORITY:
+          1. official_mtm_pnl (from Data API, set by reconciliation loop)
+          2. local MTM (local cash_pnl + local inventory * current mid)
+          3. fallback MTM (local cash_pnl + local inventory * average fill price)
         """
+        if self.official_mtm_pnl != 0.0:
+            return self.official_mtm_pnl
+
         position_value = 0.0
         for token_id, net_units in self.inventory.items():
             cs = markets.get(token_id)
             if cs is not None:
                 position_value += net_units * cs.mid
+            else:
+                # Fallback: use average price of open lots if market data missing.
+                # Prevents trades from looking like -100% losses just because a 
+                # market was dropped from the current active/subscribed set.
+                lots = self._open_lots.get(token_id, [])
+                if lots:
+                    total_size = sum(lot[2] for lot in lots)
+                    if total_size > 0:
+                        avg_price = sum(lot[1] * lot[2] for lot in lots) / total_size
+                        position_value += net_units * avg_price
+
         return self.cash_pnl + position_value
 
     def reset_daily(self) -> None:

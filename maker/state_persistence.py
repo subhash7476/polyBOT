@@ -335,6 +335,15 @@ class MakerStateLoader:
             fill_id = rec.get("fill_id", "")
             if not fill_id or fill_id in self._state.daily_fills_seen:
                 continue
+            
+            # Restore inventory state for this fill BEFORE recording it in P&L trackers.
+            # Gap replay is the only place where these two are manually synced.
+            self._state.update_inventory(
+                token_id=rec["token_id"],
+                side=rec["side"],
+                size=rec["size"]
+            )
+            
             self._state.record_fill(
                 token_id=rec["token_id"],
                 side=rec["side"],

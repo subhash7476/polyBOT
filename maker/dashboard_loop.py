@@ -137,11 +137,7 @@ async def maker_dashboard_loop(
             total_abs = sum(abs(v) for v in inventory.values())
 
             # Mark-to-market P&L: cash flows + current value of open positions
-            position_value = sum(
-                net * (markets_snapshot[tid].mid if tid in markets_snapshot else 0.0)
-                for tid, net in inventory.items()
-            )
-            mtm_pnl = cash_pnl + position_value
+            mtm_pnl = maker_state.mtm_pnl(markets_snapshot)
 
             # USDC currently deployed: gross position value at current mid prices
             current_investment = sum(

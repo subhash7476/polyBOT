@@ -70,24 +70,73 @@ async def _balance_guard_loop(
                 triggered = False
 
 
-async def _heartbeat_loop(clob, interval: float = 30.0) -> None:
+def _extract_heartbeat_id(value: object) -> str:
+    """Best-effort extraction from SDK dicts or API error bodies."""
+    if isinstance(value, dict):
+        heartbeat_id = value.get("heartbeat_id")
+        return str(heartbeat_id) if heartbeat_id else ""
+
+    import re
+
+    msg = str(value)
+    patterns = (
+        r'["\']heartbeat_id["\']\s*:\s*["\']([^"\']+)["\']',
+        r'heartbeat_id\s*=\s*["\']([^"\']+)["\']',
+    )
+    for pattern in patterns:
+        match = re.search(pattern, msg)
+        if match:
+            return match.group(1)
+    return ""
+
+
+async def _post_heartbeat_once(clob, heartbeat_id: str) -> tuple[str, float]:
+    """Post one heartbeat and return the latest heartbeat id plus latency."""
+    loop = asyncio.get_running_loop()
+    t0 = time.time()
+    result = await loop.run_in_executor(None, clob.post_heartbeat, heartbeat_id)
+    latency_ms = (time.time() - t0) * 1000
+    return _extract_heartbeat_id(result) or heartbeat_id, latency_ms
+
+
+async def _heartbeat_loop(clob, interval: float = 5.0) -> None:
     """Send POST /heartbeat to CLOB every interval seconds (live mode only).
 
-    Without this, the CLOB auto-cancels all open orders if the session goes
-    quiet (network hiccup, rate-limit pause, etc.), wiping the Liquidity Rewards
-    Q-score for those missed minutes.
+    Polymarket's heartbeat protocol is session-based. The first request uses
+    an empty id, then every request sends the most recent heartbeat_id returned
+    by the server. If an id expires, the API returns 400 with the correct id;
+    update to that id and retry immediately.
     """
+    heartbeat_id = ""
+    log.info("heartbeat loop started (interval=%.0fs)", interval)
+    next_tick = time.monotonic()
+
     while True:
-        await asyncio.sleep(interval)
-        t0 = time.time()
         try:
-            result = await asyncio.get_event_loop().run_in_executor(
-                None, clob.post_heartbeat
-            )
-            latency_ms = (time.time() - t0) * 1000
-            log.debug(f"heartbeat OK ({latency_ms:.0f}ms): {result}")
+            heartbeat_id, latency_ms = await _post_heartbeat_once(clob, heartbeat_id)
+            log.info(f"heartbeat OK ({latency_ms:.0f}ms) id={heartbeat_id[:8]}...")
         except Exception as exc:
-            log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
+            corrected_id = _extract_heartbeat_id(exc)
+            if corrected_id:
+                heartbeat_id = corrected_id
+                log.info(f"heartbeat id refreshed from server, id={heartbeat_id[:8]}...")
+                try:
+                    heartbeat_id, latency_ms = await _post_heartbeat_once(
+                        clob, heartbeat_id
+                    )
+                    log.info(
+                        f"heartbeat retry OK ({latency_ms:.0f}ms) "
+                        f"id={heartbeat_id[:8]}..."
+                    )
+                except Exception as retry_exc:
+                    log.warning(
+                        f"heartbeat retry failed (orders may auto-cancel): {retry_exc}"
+                    )
+            else:
+                log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
+
+        next_tick += interval
+        await asyncio.sleep(max(0.0, next_tick - time.monotonic()))
 
 
 async def _resolution_sweep_loop(
@@ -264,6 +313,83 @@ async def _reconcile_positions_once(
             f"position reconcile: {unmapped} on-chain position(s) not in "
             f"tracked markets — skipped"
         )
+
+
+async def _periodic_data_api_sync(
+    app_state: AppState,
+    maker_state: MakerState,
+    wallet: str,
+    interval: float = 300.0,
+) -> None:
+    """Periodic loop to synchronize local state with Polymarket Data API ground truth.
+
+    Ensures the bot's inventory and P&L (Cash & MTM) never drift from the
+    official dashboard values. Automatically purges inventory for resolved
+    markets that the local state might have missed.
+    """
+    if not wallet:
+        return
+
+    from trading.redeemall import fetch_positions, extract_wallet_token_id
+    import httpx
+
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            positions = await fetch_positions(wallet)
+            
+            # Map every YES and NO token to (yes_token_id, sign).
+            async with app_state._lock:
+                tok_map: dict[str, tuple[str, float]] = {}
+                for yes_id, cs in app_state.markets.items():
+                    tok_map[yes_id] = (yes_id, 1.0)
+                    if cs.no_token_id:
+                        tok_map[cs.no_token_id] = (yes_id, -1.0)
+
+            onchain_inventory: dict[str, float] = {}
+            total_cash_pnl = 0.0
+            total_current_value = 0.0
+
+            for pos in positions:
+                token = extract_wallet_token_id(pos)
+                size = float(pos.get("size", 0.0) or 0.0)
+                cash_pnl = float(pos.get("cashPnl", 0.0) or 0.0)
+                cur_val = float(pos.get("currentValue", 0.0) or 0.0)
+                
+                total_cash_pnl += cash_pnl
+                total_current_value += cur_val
+
+                if size > 0:
+                    mapped = tok_map.get(token)
+                    if mapped:
+                        yes_id, sign = mapped
+                        onchain_inventory[yes_id] = onchain_inventory.get(yes_id, 0.0) + (sign * size)
+
+            async with maker_state._lock:
+                # Update P&L ground truth
+                maker_state.official_cash_pnl = round(total_cash_pnl, 4)
+                maker_state.official_mtm_pnl = round(total_cash_pnl + total_current_value, 4)
+                
+                # Update inventory ground truth
+                # Purge local inventory if not found on-chain (resolved or manual exit)
+                for tid in list(maker_state.inventory.keys()):
+                    if maker_state.inventory[tid] != 0.0 and tid not in onchain_inventory:
+                        log.warning(f"SYNC PURGE: [{tid[:8]}] not in official positions — zeroing inventory")
+                        maker_state.inventory[tid] = 0.0
+                        maker_state.inventory_entry_time.pop(tid, None)
+                        maker_state.reduce_only_markets.discard(tid)
+
+                # Update sizes for active positions
+                for tid, true_qty in onchain_inventory.items():
+                    bot_qty = maker_state.inventory.get(tid, 0.0)
+                    if abs(bot_qty - true_qty) > 0.01:
+                        log.info(f"SYNC RECONCILE: [{tid[:8]}] {bot_qty:+.1f} -> {true_qty:+.1f}sh")
+                        maker_state.inventory[tid] = true_qty
+
+            log.debug(f"Data API sync complete: MTM P&L=${maker_state.official_mtm_pnl:+.2f}")
+
+        except Exception as exc:
+            log.warning(f"Periodic Data API sync failed: {exc}")
 
 
 def build_maker_actors(
@@ -453,6 +579,10 @@ async def run_maker():
         coros.append(_reconcile_positions_once(
             app_state, maker_state_ref, wallet_address,
         ))
+        # Periodic sync loop: ensures P&L and inventory stay accurate over time.
+        coros.append(_periodic_data_api_sync(
+            app_state, maker_state_ref, wallet_address,
+        ))
 
     if not paper:
         coros.append(_balance_guard_loop(
@@ -463,7 +593,10 @@ async def run_maker():
         ))
 
     if clob is not None:
-        coros.append(_heartbeat_loop(clob))
+        coros.append(_heartbeat_loop(
+            clob,
+            interval=config.MAKER_HEARTBEAT_INTERVAL_SECONDS,
+        ))
 
     # Resolution sweep — books resolved markets the bot still holds inventory
     # in, so a resolved position cannot stay stuck in the inventory budget.
