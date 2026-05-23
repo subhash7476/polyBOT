@@ -293,8 +293,8 @@ class QuoteEngine:
                         f"best_ask={cs.best_ask:.4f} out of [{_bid_lo:.2f}, {_bid_hi:.2f}] "
                         f"(cat={cs.category}) — cancelling quotes"
                     )
-                if self._cancel_q is not None:
-                    await self._cancel_q.put(CancelAll(token_id))
+                    if self._cancel_q is not None:
+                        await self._cancel_q.put(CancelAll(token_id))
                 continue
 
             # NegRisk sibling guard: if another bucket for the same city+date has moved
@@ -317,8 +317,10 @@ class QuoteEngine:
                                 )
                             break
                     if sibling_resolved:
-                        if self._cancel_q is not None:
-                            await self._cancel_q.put(CancelAll(token_id))
+                        if token_id not in self._stale_skip_warned:
+                            self._stale_skip_warned.add(token_id)
+                            if self._cancel_q is not None:
+                                await self._cancel_q.put(CancelAll(token_id))
                         continue
 
             # reduce_only markets bypass per-market cooldown: a market that hit

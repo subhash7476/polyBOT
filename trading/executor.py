@@ -82,7 +82,8 @@ class CLOBExecutor:
         funder = os.getenv("FUNDER_ADDRESS", FUNDER_ADDRESS)
         if not private_key:
             self.wallet_address = ""
-        elif sig_type in (1, 2):
+        elif sig_type >= 1 and funder:
+            # Any non-EOA type: positions live under the funder/proxy address
             self.wallet_address = funder
         else:
             self.wallet_address = Account.from_key(private_key).address

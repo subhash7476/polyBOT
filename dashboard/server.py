@@ -31,6 +31,45 @@ def create_app(dash: DashboardState, maker_dash=None) -> Flask:
     def snapshot():
         return Response(dash.to_json(), content_type="application/json")
 
+    @app.get("/health")
+    def health():
+        """JSON snapshot of bot liveness for external monitoring / curl-able checks.
+
+        Same data the `python -m scripts.status` CLI prints. Read-only.
+        """
+        import json as _json
+        from scripts.status import (
+            process_status, last_heartbeat, todays_fills,
+            lifetime_pnl, recent_alerts,
+        )
+        try:
+            hb = last_heartbeat()
+            payload = {
+                "process": process_status(),
+                "heartbeat": hb,
+                "today": todays_fills(),
+                "lifetime": lifetime_pnl(),
+                "alerts_last_1h": recent_alerts(1.0),
+            }
+            if not payload["process"]["running"]:
+                overall = "down"
+            elif hb["age_s"] is None or hb["age_s"] > 30:
+                overall = "critical"
+            elif hb["age_s"] > 10:
+                overall = "stale"
+            elif any(a["severity"].strip() == "CRITICAL" for a in payload["alerts_last_1h"]):
+                overall = "alerting"
+            else:
+                overall = "ok"
+            payload["overall"] = overall
+            return Response(_json.dumps(payload, default=str), content_type="application/json")
+        except Exception as exc:
+            return Response(
+                _json.dumps({"overall": "error", "error": str(exc)}),
+                content_type="application/json",
+                status=500,
+            )
+
     @app.get("/stream")
     def stream():
         def _generate():

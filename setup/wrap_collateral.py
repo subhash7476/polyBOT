@@ -77,7 +77,10 @@ def run(rpc_url: str, private_key: str, amount_usdc: float | None) -> None:
     from web3 import Web3
     from eth_account import Account
 
+    from web3.middleware import ExtraDataToPOAMiddleware
+
     w3 = Web3(Web3.HTTPProvider(rpc_url))
+    w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
     if not w3.is_connected():
         raise RuntimeError(f"Cannot connect to RPC: {rpc_url}")
 

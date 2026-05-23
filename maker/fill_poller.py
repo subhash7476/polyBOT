@@ -35,6 +35,9 @@ class FillPoller:
         self._clob = clob
         self._paper = paper
         self._order_states: dict[str, str] = {}
+        # Persistent NO→YES mapping: accumulates across market-selector cycles so
+        # resolution sells on deselected markets are still captured.
+        self._known_no_to_yes: dict[str, str] = {}
 
     @staticmethod
     def check_paper_fills(
@@ -213,6 +216,8 @@ class FillPoller:
                             for tid, cs in snap.items()
                             if cs.no_token_id
                         }
+                        # Seed persistent cache with what we know now
+                        self._known_no_to_yes.update(no_to_yes_snap)
                         for trade in startup_trades:
                             if trade.get("type") != "TRADE":
                                 continue
@@ -226,9 +231,10 @@ class FillPoller:
                                 yes_tid = asset
                                 f_side = trade.get("side", "BUY")
                                 f_price = raw_price
-                            elif asset in no_to_yes_snap:
-                                yes_tid = no_to_yes_snap[asset]
-                                f_side = "SELL"
+                            elif asset in self._known_no_to_yes:
+                                yes_tid = self._known_no_to_yes[asset]
+                                no_side = trade.get("side", "BUY")
+                                f_side = "SELL" if no_side == "BUY" else "BUY"
                                 f_price = round(1.0 - raw_price, 6)
                             else:
                                 seen_tx.add(tx)
@@ -257,11 +263,15 @@ class FillPoller:
                     async with self._app._lock:
                         markets = dict(self._app.markets)
 
-                    no_to_yes: dict[str, str] = {
+                    # Merge current markets into persistent NO→YES cache.
+                    # This ensures resolution sells on deselected markets are still
+                    # captured even after the market falls out of the active set.
+                    cur_no_to_yes = {
                         cs.no_token_id: tid
                         for tid, cs in markets.items()
                         if cs.no_token_id
                     }
+                    self._known_no_to_yes.update(cur_no_to_yes)
 
                     for trade in trades:
                         if trade.get("type") != "TRADE":
@@ -276,19 +286,21 @@ class FillPoller:
                         size = float(trade.get("size", 0))
                         trade_ts = float(trade.get("timestamp", time.time()))
 
-                        # Map to YES-space: BUY NO @ p ≡ SELL YES @ (1-p)
-                        # For NO fills, actual_cash_flow is -(raw_no_price × size)
-                        # because we spent that USDC buying NO — not +yes_price × size.
+                        # Map to YES-space. For NO-token events:
+                        #   BUY  NO @ p → SELL YES @ (1-p), cash = -(p × size)  [spent]
+                        #   SELL NO @ p → BUY  YES @ (1-p), cash = +(p × size)  [received]
                         actual_cash_flow = None
                         if asset in markets:
                             yes_token_id = asset
                             fill_side = trade.get("side", "BUY")
                             fill_price = raw_price
-                        elif asset in no_to_yes:
-                            yes_token_id = no_to_yes[asset]
-                            fill_side = "SELL"
+                        elif asset in self._known_no_to_yes:
+                            yes_token_id = self._known_no_to_yes[asset]
+                            no_side = trade.get("side", "BUY")
+                            fill_side = "SELL" if no_side == "BUY" else "BUY"
                             fill_price = round(1.0 - raw_price, 6)
-                            actual_cash_flow = -(raw_price * size)
+                            # Sign based on whether we spent or received USDC on the NO side
+                            actual_cash_flow = -(raw_price * size) if no_side == "BUY" else +(raw_price * size)
                         else:
                             log.debug(f"FillPoller: unknown asset {asset[:16]} — skip")
                             continue

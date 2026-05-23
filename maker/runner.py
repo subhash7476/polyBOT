@@ -19,6 +19,9 @@ from maker.overnight_viability import OvernightViabilityMonitor
 from maker.fill_ledger import FillLedger
 from maker.vpin_poller import VPINPoller
 from maker.state_persistence import MakerCheckpointer, MakerStateLoader, LifetimeStatsCache
+from maker.liveness import (
+    LivenessState, AlertDispatcher, LivenessMonitor, FileSink, StdoutSink,
+)
 from trading.redeemall import redeemall_loop
 from utils.logger import get_logger
 
@@ -99,22 +102,42 @@ async def _post_heartbeat_once(clob, heartbeat_id: str) -> tuple[str, float]:
     return _extract_heartbeat_id(result) or heartbeat_id, latency_ms
 
 
-async def _heartbeat_loop(clob, interval: float = 5.0) -> None:
+async def _heartbeat_loop(
+    clob,
+    interval: float = 5.0,
+    liveness_state: "LivenessState | None" = None,
+) -> None:
     """Send POST /heartbeat to CLOB every interval seconds (live mode only).
 
     Polymarket's heartbeat protocol is session-based. The first request uses
     an empty id, then every request sends the most recent heartbeat_id returned
     by the server. If an id expires, the API returns 400 with the correct id;
     update to that id and retry immediately.
+
+    When `liveness_state` is supplied, success/failure timestamps and the
+    consecutive-failure counter are written to it for the LivenessMonitor and
+    /health endpoint to observe.
     """
     heartbeat_id = ""
     log.info("heartbeat loop started (interval=%.0fs)", interval)
     next_tick = time.monotonic()
 
+    def _mark_success() -> None:
+        if liveness_state is not None:
+            liveness_state.last_heartbeat_ok_ts = time.time()
+            liveness_state.last_heartbeat_attempt_ts = time.time()
+            liveness_state.consecutive_heartbeat_failures = 0
+
+    def _mark_failure() -> None:
+        if liveness_state is not None:
+            liveness_state.last_heartbeat_attempt_ts = time.time()
+            liveness_state.consecutive_heartbeat_failures += 1
+
     while True:
         try:
             heartbeat_id, latency_ms = await _post_heartbeat_once(clob, heartbeat_id)
             log.info(f"heartbeat OK ({latency_ms:.0f}ms) id={heartbeat_id[:8]}...")
+            _mark_success()
         except Exception as exc:
             corrected_id = _extract_heartbeat_id(exc)
             if corrected_id:
@@ -128,12 +151,15 @@ async def _heartbeat_loop(clob, interval: float = 5.0) -> None:
                         f"heartbeat retry OK ({latency_ms:.0f}ms) "
                         f"id={heartbeat_id[:8]}..."
                     )
+                    _mark_success()
                 except Exception as retry_exc:
                     log.warning(
                         f"heartbeat retry failed (orders may auto-cancel): {retry_exc}"
                     )
+                    _mark_failure()
             else:
                 log.warning(f"heartbeat failed (orders may auto-cancel): {exc}")
+                _mark_failure()
 
         next_tick += interval
         await asyncio.sleep(max(0.0, next_tick - time.monotonic()))
@@ -592,11 +618,19 @@ async def run_maker():
             min_balance=config.MAKER_MIN_BALANCE_USDC,
         ))
 
+    # Liveness state shared by heartbeat loop, LivenessMonitor, and /health endpoint.
+    liveness_state = LivenessState()
+    dispatcher = AlertDispatcher([FileSink(), StdoutSink()])
+
     if clob is not None:
         coros.append(_heartbeat_loop(
             clob,
             interval=config.MAKER_HEARTBEAT_INTERVAL_SECONDS,
+            liveness_state=liveness_state,
         ))
+        coros.append(LivenessMonitor(
+            clob, maker_state_ref, liveness_state, dispatcher, interval=30.0,
+        ).run())
 
     # Resolution sweep — books resolved markets the bot still holds inventory
     # in, so a resolved position cannot stay stuck in the inventory budget.

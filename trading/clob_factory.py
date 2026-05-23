@@ -55,22 +55,59 @@ def build_clob_client(
 
     Note: host and chain_id are positional; key is keyword-only.
     """
+    import os
     from config import POLYMARKET_CLOB_URL
+    from utils.logger import get_logger
     sdk = _import_sdk()
+    log = get_logger(__name__)
+
+    # Optional builder attribution. When BUILDER_ADDRESS + BUILDER_CODE are set,
+    # every order placed by this client gets stamped with the builder_code so
+    # Polymarket recognises the trade as coming from a registered builder.
+    builder_address = os.getenv("BUILDER_ADDRESS", "").strip()
+    builder_code = os.getenv("BUILDER_CODE", "").strip()
+    builder_config = None
+    if builder_address and builder_code:
+        from py_clob_client_v2.clob_types import BuilderConfig
+        builder_config = BuilderConfig(
+            builder_address=builder_address,
+            builder_code=builder_code,
+        )
+        log.info(f"builder_config set: addr={builder_address[:10]}... code={builder_code[:10]}...")
+
     client = sdk.ClobClient(
         POLYMARKET_CLOB_URL,
         chain_id,
         key=private_key,
         signature_type=sig_type,
         funder=funder or None,
+        builder_config=builder_config,
     )
-    # Derive and set L2 API credentials so cancel_all / get_open_orders work.
-    # derive_api_key() signs a GET with the L1 key — no server-side state created.
-    try:
-        creds = client.create_or_derive_api_key()
-        client.set_api_creds(creds)
-    except Exception:
-        pass  # non-fatal: L1-only ops still work; L2 ops will fail at call time
+
+    # L2 API credentials. Prefer explicit env vars (builder-generated API key);
+    # fall back to deriving from L1 signature for backward compatibility.
+    api_key = os.getenv("POLY_API_KEY", "").strip()
+    api_secret = os.getenv("POLY_API_SECRET", "").strip()
+    api_passphrase = os.getenv("POLY_PASSPHRASE", "").strip()
+
+    if api_key and api_secret and api_passphrase:
+        from py_clob_client_v2.clob_types import ApiCreds
+        client.set_api_creds(ApiCreds(
+            api_key=api_key,
+            api_secret=api_secret,
+            api_passphrase=api_passphrase,
+        ))
+        log.info("CLOB L2 creds loaded from env (POLY_API_KEY/SECRET/PASSPHRASE)")
+    else:
+        try:
+            creds = client.create_or_derive_api_key()
+            client.set_api_creds(creds)
+            log.info("CLOB L2 creds derived from L1 signature")
+        except Exception as exc:
+            log.error(
+                f"CLOB L2 api-key derivation failed — heartbeat/cancel/order-query "
+                f"will not work: {exc}"
+            )
     return client
 
 

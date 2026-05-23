@@ -58,6 +58,14 @@ MAKER_REBATE_DEFAULT_MIN_SIZE = float(
 MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS = float(
     os.getenv("MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS", "3")
 )
+# Testing knob: when true, skip the per-market rewards-param fetch entirely.
+# min_incentive_size / max_incentive_spread stay at the 0.0 sentinel, which
+# disables the INCENTIVE>CAP market drop, the reward-minimum size floor, and
+# the max-spread compression — letting the bot quote every otherwise-eligible
+# market at MAKER_QUOTE_SIZE and its own spread. Set false to farm rewards.
+MAKER_IGNORE_INCENTIVE_PARAMS = os.getenv(
+    "MAKER_IGNORE_INCENTIVE_PARAMS", "false"
+).lower() == "true"
 
 # Exposure
 MAX_GROUP_EXPOSURE_PCT = 0.20   # 20% of bankroll per direction-bucket
@@ -292,6 +300,13 @@ MAKER_PRE_RES_HOURS = float(os.getenv("MAKER_PRE_RES_HOURS",          "2.0"))
 # Stop quoting when on-chain USDC balance falls below this floor.
 # Prevents flooding the CLOB with orders the account cannot fund.
 MAKER_MIN_BALANCE_USDC = float(os.getenv("MAKER_MIN_BALANCE_USDC",    "2.0"))
+
+# Polymarket cancels open orders if the authenticated order session stops
+# heartbeating. Support recommends about every 5s; keep this below the
+# 10s expiry window.
+MAKER_HEARTBEAT_INTERVAL_SECONDS = float(
+    os.getenv("MAKER_HEARTBEAT_INTERVAL_SECONDS", "5.0")
+)
 
 # ── Maker bot: Category spread multipliers (regime.py baseline) ───────────
 MAKER_SPREAD_MULT_FINANCE = float(

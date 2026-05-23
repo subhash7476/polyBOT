@@ -9,6 +9,12 @@ from utils.logger import get_logger
 
 log = get_logger(__name__)
 
+# A resting order whose price never changes is otherwise reused indefinitely
+# (no API call). If the exchange drops it — fill, CLOB-side cancel, expiry —
+# the bot would never notice and keep logging a phantom quote. Force a
+# cancel+replace once a level is older than this so quotes self-heal.
+_ORDER_REFRESH_SECONDS = 300.0
+
 
 class OrderManager:
     """Translates LadderUpdates into CLOB API calls."""
@@ -56,8 +62,12 @@ class OrderManager:
                 and abs(old.get("bid_size", -1) - intent.bid_size) < 0.5
                 and abs(old.get("ask_size", -1) - intent.ask_size) < 0.5
             )
+            fresh = (
+                old is not None
+                and time.time() - old.get("placed_at", 0.0) < _ORDER_REFRESH_SECONDS
+            )
 
-            if price_unchanged:
+            if price_unchanged and fresh:
                 # Reuse existing order IDs — no API calls needed for this level
                 new_levels.append(old)
                 continue
@@ -75,6 +85,7 @@ class OrderManager:
                 "ask_price": intent.ask_price,
                 "bid_size": intent.bid_size,
                 "ask_size": intent.ask_size,
+                "placed_at": time.time(),
             })
 
         # Cancel any surplus old levels (ladder shrank)

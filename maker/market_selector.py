@@ -18,6 +18,7 @@ from config import (
     CATEGORY_QUOTA_FILL_WEIGHT, CATEGORY_QUOTA_MARKOUT_WEIGHT, CATEGORY_QUOTA_PNL_WEIGHT,
     MAKER_REBATE_REQUIRE_FEES_ENABLED, MAKER_REBATE_DEFAULT_MIN_SIZE,
     MAKER_REBATE_DEFAULT_MAX_SPREAD_CENTS, MAKER_BALANCE_RESERVE_FRACTION,
+    MAKER_IGNORE_INCENTIVE_PARAMS,
 )
 
 log = get_logger(__name__)
@@ -844,6 +845,18 @@ class MarketSelector:
         # Keep unit tests deterministic: they do not mock the outbound rewards fetch.
         # The live bot still uses the full reward-config path.
         if os.getenv("PYTEST_CURRENT_TEST"):
+            return
+
+        # Testing mode: leave min_incentive_size / max_incentive_spread at the
+        # 0.0 sentinel so the INCENTIVE>CAP drop, size floor, and spread
+        # compression all stay off. Re-enable to farm rewards.
+        if MAKER_IGNORE_INCENTIVE_PARAMS:
+            return
+
+        # Testing mode: leave min_incentive_size / max_incentive_spread at the
+        # 0.0 sentinel so the INCENTIVE>CAP drop, size floor, and spread
+        # compression all stay off. Re-enable to farm rewards.
+        if MAKER_IGNORE_INCENTIVE_PARAMS:
             return
 
         _now = time.time()

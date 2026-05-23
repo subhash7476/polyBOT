@@ -132,7 +132,16 @@ The bot earns **three stacking revenue streams** on every eligible fill:
 
 **Maker fee rates by category:** Sports 3%, Finance/Politics 4%, Crypto 7.2%, Weather/Other 5%, Geopolitics 0% (fee-free). Maker fee = **zero** on all categories. Rebate = 20–25% of taker fees, paid daily in USDC.
 
-**Heartbeat (`maker/runner.py`):** In live mode, `_heartbeat_loop(clob)` runs as a coroutine calling `clob.post_heartbeat()` every 30s. Prevents CLOB from auto-cancelling all open orders during network quiet periods. No-op in paper mode (`clob=None`). Failures logged as WARNING.
+**Heartbeat (`maker/runner.py`):** In live mode, `_heartbeat_loop(clob)` runs as a coroutine calling `clob.post_heartbeat(heartbeat_id)` **every 5 seconds** (NOT 30s). Polymarket's CLOB auto-cancels open orders within ~10s of the last successful heartbeat — confirmed by Polymarket support, May 2026. No-op in paper mode (`clob=None`).
+
+Protocol is session-id based:
+- **First call:** send empty `heartbeat_id`. Server returns 400 `Invalid Heartbeat ID` with the freshly-issued id in the error body. Capture it via `_extract_heartbeat_id`.
+- **Subsequent calls:** send the most recent id from the prior response. Server rotates the id on each success — always use the latest one returned.
+- **Mid-session 400:** the error body carries the corrected id. Refresh and retry *immediately within the same tick*, do **not** wait the next interval.
+
+Failures logged as WARNING. **Do not raise the interval above 5s** — orders die deterministically at ~10s without keepalive, regardless of bot still running, sig type, builder config, geo, or other client-side state. Symptom of a wrong cadence: orders return `status=live` from the placement endpoint, are visible in the UI for a few seconds, then vanish; the bot's internal LADDER reprice keeps firing but never logs `ORDER FAIL` because the bot has no order-status polling. **Always check heartbeat cadence first** before investigating auth/signature/architecture causes for vanishing orders.
+
+**Polymarket Builders Program — required for API trading:** Programmatic order placement requires a Builder Profile registered via polymarket.com → Settings → Builders. Without it, the CLOB returns `400 'maker address not allowed, please use the deposit wallet flow'` on every placement under SIG_TYPE 1/2; SIG_TYPE 3 (1271) squeaks through placement but orders still die. The Builders page exposes `builder_address` (your proxy/maker) and `builder_code` (bytes32). Set these as `BUILDER_ADDRESS` and `BUILDER_CODE` env vars; `trading/clob_factory.py` wires them into the V2 SDK's `BuilderConfig` so every order is stamped for attribution and fee-rebate accounting.
 
 **WebSocket `custom_feature_enabled` (`market/clob_monitor.py`):** The subscription message includes `"custom_feature_enabled": True`, which unlocks three additional event types:
 - `best_bid_ask` — handled by `_handle_best_bid_ask()`: updates `cs.best_bid`/`cs.best_ask` and nudges `price_update_q`
@@ -253,8 +262,13 @@ Stop escalation: SIGTERM → `taskkill /F` (Windows) or SIGKILL (Linux/macOS).
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `POLY_PRIVATE_KEY` | Yes (live) | — | 0x-prefixed EOA private key |
-| `SIGNATURE_TYPE` | No | `0` | `0`=EOA, `1`=POLY_PROXY, `2`=GNOSIS_SAFE |
-| `FUNDER_ADDRESS` | If type 1/2 | — | Proxy wallet address |
+| `SIGNATURE_TYPE` | No | `0` | `0`=EOA, `1`=POLY_PROXY, `2`=GNOSIS_SAFE, `3`=POLY_1271 (smart-contract / 7702) |
+| `FUNDER_ADDRESS` | If type 1/2/3 | — | Proxy wallet address (maker of record) |
+| `POLY_API_KEY` | Optional | — | Builder/trading API key. Explicit creds preferred; bot falls back to `create_or_derive_api_key()` if any of the three POLY_API_* vars is missing |
+| `POLY_API_SECRET` | Optional | — | Paired secret for `POLY_API_KEY` |
+| `POLY_PASSPHRASE` | Optional | — | Paired passphrase for `POLY_API_KEY` |
+| `BUILDER_ADDRESS` | Recommended for live | — | Your Polymarket builder address (typically same as `FUNDER_ADDRESS`). Required for orders to be attributed to your Builder Profile |
+| `BUILDER_CODE` | Recommended for live | — | bytes32 builder code from polymarket.com → Settings → Builders. Stamped on every order via `BuilderConfig` |
 | `RPC_URL` | No | `https://polygon-rpc.com` | Polygon RPC (Alchemy/Ankr recommended for stability) |
 | `BANKROLL_USDC` | No | `500` | Total bankroll for Kelly sizing |
 | `PAPER` | No | `true` | Set `false` only after paper validation checklist passes |
@@ -338,6 +352,14 @@ MAKER_PRE_RES_HOURS=4.0
 ## Assessing a Maker Bot Run
 
 When asked to "assess the run" or "how did the bot do", execute this checklist in order:
+
+### 0. Liveness sanity check (do this FIRST when orders are "missing" from the UI)
+Before any P&L analysis, confirm the bot's orders are actually reaching the CLOB and surviving:
+1. `grep "heartbeat OK" logs/maker.runner.log | tail -5` — expect entries every ~5s with rotating ids. If interval is 30s or warnings present, **heartbeat is the bug** (Polymarket's order TTL is ~10s without a successful keepalive in the last interval). Do not investigate auth/signature theories until heartbeat cadence is confirmed.
+2. `grep "ORDER OK" logs/maker.order_manager.log | tail -10` — confirm placements are succeeding (no `maker address not allowed`). If failing under SIG_TYPE 1/2, check that a Builder Profile exists at polymarket.com → Settings → Builders.
+3. Query the latest `ORDER OK` id via SDK `client.get_order(id)` and confirm `status` is `LIVE`, not `CANCELED`, after 30+ seconds. The bot does not poll order state; logs alone cannot tell you whether orders survived placement.
+
+Skip this only when the question is explicitly about P&L/fills on a known-working run.
 
 ### 1. Markout quality — `fills_markout.jsonl`
 Parse all records, group by `interval_s` (5, 30, 60). Compute avg markout and adverse rate per interval.
@@ -444,4 +466,4 @@ asyncio.run(main())
 
 ## Environment
 
-Copy `.env.template` to `.env`. Only `POLY_PRIVATE_KEY` and `POLY_API_KEY` are needed for live mode. `FRED_API_KEY` adds consensus forecast detail (CPI/GDP/unemployment); basic rate/CPI data works without it via free CSV endpoints.
+Copy `.env.template` to `.env`. For live maker operation you need: `POLY_PRIVATE_KEY`, `FUNDER_ADDRESS` (proxy), `SIGNATURE_TYPE`, `BUILDER_ADDRESS` + `BUILDER_CODE` (from the Builders Profile — without this orders die ~10s after placement), and `RPC_URL`. The `POLY_API_KEY/SECRET/PASSPHRASE` trio is optional — the bot derives them from the L1 signature at startup when absent. `FRED_API_KEY` adds consensus forecast detail (CPI/GDP/unemployment); basic rate/CPI data works without it via free CSV endpoints.
